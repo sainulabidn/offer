@@ -1,0 +1,11 @@
+---
+import Base from '../../layouts/Base.astro';
+import AccountPanel from '../../islands/AccountPanel';
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+---
+
+<Base title="My account · offer">
+  <h1 class="mb-4 text-2xl font-bold">My account</h1>
+  <AccountPanel client:only="react" />
+</Base>

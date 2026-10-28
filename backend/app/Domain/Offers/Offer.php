@@ -40,6 +40,8 @@ class Offer extends Model
             'effective_unit_price' => 'decimal:4',
             'discount_pct' => 'decimal:2',
             'deal_score' => 'decimal:2',
+            'is_lowest_90d' => 'boolean',
+            'was_price_suspicious' => 'boolean',
             'valid_from' => 'date',
             'valid_to' => 'date',
             'status' => OfferStatus::class,

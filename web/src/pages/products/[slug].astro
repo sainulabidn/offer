@@ -3,6 +3,8 @@ import Base from '../../layouts/Base.astro';
 import OfferGrid from '../../components/OfferGrid.astro';
 import ResponsiveImage from '../../components/ResponsiveImage.astro';
 import AddToPlan from '../../islands/AddToPlan';
+import AlertButton from '../../islands/AlertButton';
+import PriceChart from '../../components/PriceChart.astro';
 import LikeButton from '../../islands/LikeButton';
 import ReportButton from '../../islands/ReportButton';
 import ShareButton from '../../islands/ShareButton';
@@ -20,6 +22,8 @@ const variant =
   product.variants.find((v) => v.offers.length > 0) ??
   product.variants.find((v) => v.is_default) ??
   product.variants[0];
+
+const history = variant ? ((await api.history(product.slug))[String(variant.id)] ?? []) : [];
 
 const similar = await searchOffers({
   filters: [`product_group_id:=${product.product_group.id}`, `product_id:!=${product.id}`],
@@ -80,6 +84,7 @@ const jsonLd = {
       <h1 class="text-2xl font-bold">{product.name}</h1>
       <div class="mt-2 flex items-center gap-3">
         <ShareButton client:visible title={`${product.name}${best ? ` from ${aed(best.price)} at ${best.chain.name}` : ''}`} path={Astro.url.pathname + Astro.url.search} />
+        <AlertButton client:visible productId={product.id} groupId={product.product_group.id} groupName={product.product_group.name} unitLabel={product.product_group.unit_label} />
         <ReportButton client:visible type="product" id={product.id} label="Report a problem" />
       </div>
       {product.description && <p class="mt-2 text-zinc-600">{product.description}</p>}
@@ -114,6 +119,8 @@ const jsonLd = {
                 <a href={`/stores/${offer.chain.slug}`} class="font-medium hover:underline">{offer.chain.name}</a>
                 {i === 0 && variant.offers.length > 1 && <span class="ms-2 rounded bg-brand-50 px-1.5 text-xs font-semibold text-brand-700">Cheapest</span>}
                 <p class="text-xs text-zinc-500">
+                  {offer.is_lowest_90d && <span class="font-semibold text-brand-700">Lowest in 90 days · </span>}
+                  {offer.was_price_suspicious && <span class="text-amber-700" title="This 'was' price is higher than any price this store charged in the last 90 days">“Was” price unusually high · </span>}
                   {offer.promo_label && <span class="font-semibold text-deal">{offer.promo_label} · </span>}{endsIn(offer.valid_to)} ·{' '}
                   <ReportButton client:visible type="offer" id={offer.id} label="Wrong price?" />
                 </p>
@@ -133,6 +140,12 @@ const jsonLd = {
       )}
     </div>
   </div>
+
+  {history.length > 0 && variant && (
+    <section class="mt-8 max-w-3xl">
+      <PriceChart series={history} title={`Price history for ${variant.label} (AED)`} />
+    </section>
+  )}
 
   {similar.hits.length > 0 && (
     <section class="mt-10">

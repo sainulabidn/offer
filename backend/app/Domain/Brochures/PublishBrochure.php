@@ -3,6 +3,8 @@
 namespace App\Domain\Brochures;
 
 use App\Domain\Geo\Region;
+use App\Domain\Alerts\MatchAlerts;
+use App\Domain\Offers\DealScorer;
 use App\Domain\Offers\Offer;
 use App\Domain\Offers\OfferStatus;
 use App\Domain\Search\OfferDocument;
@@ -14,10 +16,13 @@ use RuntimeException;
 
 /**
  * Publishes a reviewed brochure: resolves its branch scope, publishes its draft/approved offers,
- * marks it published (or scheduled when it starts later), and indexes the offers in Typesense.
+ * scores each deal against its 90-day history, marks the brochure published (or scheduled when it
+ * starts later), indexes the offers in Typesense and queues alert matching.
  */
 final class PublishBrochure
 {
+    public function __construct(private readonly DealScorer $scorer) {}
+
     /** @return int number of offers published */
     public function __invoke(Brochure $brochure): int
     {
@@ -28,9 +33,13 @@ final class PublishBrochure
         $published = DB::transaction(function () use ($brochure) {
             $brochure->branches()->sync($this->branchIds($brochure));
 
-            $published = $brochure->offers()
-                ->whereIn('status', [OfferStatus::Draft, OfferStatus::Approved])
-                ->update(['status' => OfferStatus::Published, 'published_at' => now()]);
+            $pending = $brochure->offers()->whereIn('status', [OfferStatus::Draft, OfferStatus::Approved])->get();
+            foreach ($pending as $offer) {
+                $this->scorer->score($offer);
+                // Quiet save: no Scout sync per offer; the whole brochure is indexed in one batch below.
+                $offer->forceFill(['status' => OfferStatus::Published, 'published_at' => now()])->saveQuietly();
+            }
+            $published = $pending->count();
 
             $brochure->forceFill([
                 'status' => $brochure->valid_from->isFuture() ? BrochureStatus::Scheduled : BrochureStatus::Published,
@@ -47,6 +56,11 @@ final class PublishBrochure
             ->with(OfferDocument::RELATIONS)
             ->get()
             ->searchable();
+
+        // Tell shoppers whose alerts or liked products just went on offer (queued; one email per person).
+        if ($published > 0) {
+            MatchAlerts::dispatch($brochure->id);
+        }
 
         return $published;
     }

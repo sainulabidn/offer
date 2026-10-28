@@ -21,3 +21,9 @@ Artisan::command('likes:sync-search', function (App\Domain\Engagement\Likes $lik
 })->purpose('Push changed offer like counts to Typesense');
 
 Schedule::command('likes:sync-search')->everyFiveMinutes()->withoutOverlapping();
+
+Artisan::command('digest:weekly', function (App\Domain\Alerts\WeeklyDigest $digest) {
+    $this->info('Sent '.$digest->send().' weekly digest emails.');
+})->purpose('Email each shopper this week\'s deals on products they like');
+
+Schedule::command('digest:weekly')->weeklyOn(0, '09:00')->timezone(config('app.market_timezone'))->withoutOverlapping();

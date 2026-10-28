@@ -24,6 +24,9 @@ export interface StoreOffer {
   effective_unit_price: number | null;
   unit_label: string;
   discount_pct: number | null;
+  deal_score: number | null;
+  is_lowest_90d: boolean;
+  was_price_suspicious: boolean;
   promo_type: string;
   promo_label: string | null;
   valid_to: string;
@@ -56,6 +59,8 @@ export const api = {
   product: (slug: string) => get<Product>(`products/${encodeURIComponent(slug)}`),
   chain: (slug: string) => get<Chain>(`chains/${encodeURIComponent(slug)}`),
   sitemap: () => get<{ products: { slug: string; updated: string }[]; chains: string[]; categories: string[] }>('sitemap'),
+  /** variant id → per-store series of offers in the last 120 days */
+  history: (slug: string) => get<Record<string, { chain: string; points: { from: string; to: string; price: number; regular_price: number | null }[] }[]>>(`products/${encodeURIComponent(slug)}/history`).then((h) => h ?? {}),
   searchConfig: () => get<{ url: string; collection: string; key: string }>('search-config'),
 };
 

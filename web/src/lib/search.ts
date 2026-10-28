@@ -25,6 +25,9 @@ export interface OfferHit {
   valid_to: number;
   like_count: number;
   under_review?: boolean;
+  deal_score?: number;
+  is_lowest_90d?: boolean;
+  was_price_suspicious?: boolean;
   /** Base URL of the product photo; append "-{width}.avif|webp". */
   image?: string;
 }

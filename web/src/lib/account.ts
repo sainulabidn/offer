@@ -21,7 +21,7 @@ let csrfReady: Promise<void> | null = null;
 const ensureCsrf = () =>
   (csrfReady ??= fetch(`${PUBLIC_API_URL}/sanctum/csrf-cookie`, { credentials: 'include' }).then(() => undefined));
 
-export async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
+export async function call<T>(method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown): Promise<T> {
   if (method !== 'GET') await ensureCsrf();
   const response = await fetch(`${PUBLIC_API_URL}/api/v1/${path}`, {
     method,

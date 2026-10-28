@@ -70,6 +70,9 @@ return [
     // Offer dates are calendar days in the market's local time (UAE).
     'market_timezone' => env('APP_MARKET_TIMEZONE', 'Asia/Dubai'),
 
+    // The public website, for links in emails.
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:4321'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

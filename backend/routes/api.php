@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AlertController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\ChainController;
@@ -16,6 +17,7 @@ Route::prefix('v1')->group(function () {
         Route::get('chains', [ChainController::class, 'index']);
         Route::get('chains/{slug}', [ChainController::class, 'show']);
         Route::get('products/{slug}', [ProductController::class, 'show']);
+        Route::get('products/{slug}/history', [ProductController::class, 'history']);
         Route::get('directory', DirectoryController::class);
         Route::get('sitemap', [CatalogController::class, 'sitemap']);
     });
@@ -32,5 +34,8 @@ Route::prefix('v1')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::get('likes', [EngagementController::class, 'likes']);
         Route::post('likes', [EngagementController::class, 'toggleLike']);
+        Route::get('alerts', [AlertController::class, 'index']);
+        Route::post('alerts', [AlertController::class, 'store']);
+        Route::delete('alerts/{alert}', [AlertController::class, 'destroy']);
     });
 });
