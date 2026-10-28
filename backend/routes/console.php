@@ -27,3 +27,14 @@ Artisan::command('digest:weekly', function (App\Domain\Alerts\WeeklyDigest $dige
 })->purpose('Email each shopper this week\'s deals on products they like');
 
 Schedule::command('digest:weekly')->weeklyOn(0, '09:00')->timezone(config('app.market_timezone'))->withoutOverlapping();
+
+// Without Horizon (shared hosting), the scheduler drains the queues every minute.
+if (config('queue.cron_worker')) {
+    Schedule::command('queue:work --queue=default,render --stop-when-empty --max-time=50 --tries=3')
+        ->everyMinute()->withoutOverlapping()->runInBackground();
+}
+
+Artisan::command('demo:seed', function () {
+    $this->call('db:seed', ['--class' => Database\Seeders\DemoCatalogSeeder::class, '--force' => true]);
+    $this->call('db:seed', ['--class' => Database\Seeders\DemoOffersSeeder::class, '--force' => true]);
+})->purpose('Load the demo catalog, store and offers (for staging servers)');

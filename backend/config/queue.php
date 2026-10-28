@@ -15,6 +15,9 @@ return [
 
     'default' => env('QUEUE_CONNECTION', 'database'),
 
+    // Shared hosting has no long-running Horizon: run a worker from cron every minute instead.
+    'cron_worker' => (bool) env('QUEUE_CRON_WORKER', false),
+
     /*
     |--------------------------------------------------------------------------
     | Queue Connections

@@ -39,6 +39,8 @@ return [
     'typesense' => [
         'search_key' => env('TYPESENSE_SEARCH_KEY'),
         'public_url' => env('TYPESENSE_PUBLIC_URL', 'http://localhost:8108'),
+        // true where Typesense listens on localhost only: serve search through Laravel at /typesense/…
+        'proxy' => (bool) env('TYPESENSE_PROXY', false),
     ],
 
     'turnstile' => [

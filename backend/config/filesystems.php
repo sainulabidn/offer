@@ -60,7 +60,26 @@ return [
             'report' => false,
         ],
 
+        // Cloudflare R2 (S3-compatible, no egress fees): product images and their AVIF/WebP sizes.
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => 'auto',
+            'bucket' => env('R2_BUCKET', 'offer'),
+            'endpoint' => env('R2_ACCOUNT_ID') ? 'https://'.env('R2_ACCOUNT_ID').'.r2.cloudflarestorage.com' : null,
+            // Public bucket URL: an r2.dev address or a custom domain such as https://media.example.com
+            'url' => env('R2_PUBLIC_URL'),
+            'use_path_style_endpoint' => true,
+            'visibility' => 'public',
+            'throw' => true,
+            'report' => true,
+        ],
+
     ],
+
+    // Where product images live: "public" (local, development) or "r2" (production).
+    'media_disk' => env('MEDIA_DISK', 'public'),
 
     /*
     |--------------------------------------------------------------------------

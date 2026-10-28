@@ -4,7 +4,6 @@ namespace App\Domain\Catalog;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 use Spatie\Translatable\HasTranslations;
 
 /** `path` is the uploaded original on the public disk; AVIF/WebP sizes (160–1200 px) are generated next to it. */
@@ -27,7 +26,7 @@ class ProductImage extends Model
         static::deleted(function (ProductImage $image) {
             $base = GenerateImageSizes::basePath($image->path);
             $sizes = collect(GenerateImageSizes::WIDTHS)->flatMap(fn (int $w) => ["{$base}-{$w}.avif", "{$base}-{$w}.webp"]);
-            Storage::disk('public')->delete([$image->path, ...$sizes]);
+            GenerateImageSizes::disk()->delete([$image->path, ...$sizes]);
         });
     }
 

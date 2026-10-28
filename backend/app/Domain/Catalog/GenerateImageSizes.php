@@ -5,6 +5,7 @@ namespace App\Domain\Catalog;
 use App\Domain\Offers\Offer;
 use App\Domain\Search\OfferDocument;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -39,21 +40,36 @@ class GenerateImageSizes implements ShouldQueue
             return;
         }
 
-        $disk = Storage::disk('public');
-        $source = $disk->path($image->path);
+        // Work on local temp files so the same code serves the local disk and R2.
+        $disk = self::disk();
         $base = self::basePath($image->path);
+        $work = sys_get_temp_dir().'/offer-image-'.$image->id.'-'.bin2hex(random_bytes(4));
+        mkdir($work, 0700, true);
 
-        $size = Process::run(['vipsheader', '-f', 'width', $source]);
-        $height = Process::run(['vipsheader', '-f', 'height', $source]);
-        if ($size->failed()) {
-            throw new RuntimeException('Not a readable image: '.$size->errorOutput());
-        }
+        try {
+            $source = $work.'/original';
+            file_put_contents($source, $disk->get($image->path) ?? throw new RuntimeException("Missing upload {$image->path}"));
 
-        foreach (self::WIDTHS as $width) {
-            foreach (['avif' => 'Q=55,keep=none', 'webp' => 'Q=78,keep=none'] as $format => $options) {
-                $target = $disk->path("{$base}-{$width}.{$format}");
-                Process::timeout(60)->run(['vips', 'thumbnail', $source, "{$target}[{$options}]", (string) $width, '--size', 'down'])->throw();
+            $size = Process::run(['vipsheader', '-f', 'width', $source]);
+            $height = Process::run(['vipsheader', '-f', 'height', $source]);
+            if ($size->failed()) {
+                throw new RuntimeException('Not a readable image: '.$size->errorOutput());
             }
+
+            foreach (self::WIDTHS as $width) {
+                foreach (['avif' => 'Q=55,keep=none', 'webp' => 'Q=78,keep=none'] as $format => $options) {
+                    $target = "{$work}/{$width}.{$format}";
+                    Process::timeout(60)->run(['vips', 'thumbnail', $source, "{$target}[{$options}]", (string) $width, '--size', 'down'])->throw();
+                    $disk->put("{$base}-{$width}.{$format}", file_get_contents($target), [
+                        'visibility' => 'public',
+                        'ContentType' => "image/{$format}",
+                        'CacheControl' => 'public, max-age=31536000, immutable',
+                    ]);
+                }
+            }
+        } finally {
+            array_map('unlink', glob("{$work}/*") ?: []);
+            rmdir($work);
         }
 
         $image->forceFill(['width' => (int) trim($size->output()), 'height' => (int) trim($height->output())])->saveQuietly();
@@ -74,6 +90,12 @@ class GenerateImageSizes implements ShouldQueue
     /** Public URL prefix for one image's sizes; the site appends "-{width}.avif" or ".webp". */
     public static function baseUrl(string $path): string
     {
-        return Storage::disk('public')->url(self::basePath($path));
+        return self::disk()->url(self::basePath($path));
+    }
+
+    /** The configured media disk: local "public" in development, "r2" in production. */
+    public static function disk(): Filesystem
+    {
+        return Storage::disk(config('filesystems.media_disk'));
     }
 }

@@ -1,0 +1,23 @@
+{
+  // Cloudflare Worker for the public website. Local development ignores env.production.
+  // Deploy: CLOUDFLARE_ENV=production pnpm build && pnpm exec wrangler deploy   (see /deploy.ps1)
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "offer-web",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": "./dist", "binding": "ASSETS" },
+  "observability": { "enabled": true },
+  "env": {
+    "production": {
+      "name": "offer-web",
+      // The Worker owns the whole hostname; src/middleware.ts hands Laravel's paths to the origin server.
+      "routes": [{ "pattern": "offer.emirait.com/*", "zone_name": "emirait.com" }],
+      "vars": {
+        "API_URL": "https://offer.emirait.com",
+        "TYPESENSE_URL": "https://offer.emirait.com/typesense",
+        "PASS_TO_ORIGIN": "true"
+      }
+    }
+  }
+}
