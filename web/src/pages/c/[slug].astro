@@ -1,0 +1,22 @@
+---
+import Base from '../../layouts/Base.astro';
+import SearchResults from '../../components/SearchResults.astro';
+import { api, findCategory } from '../../lib/api';
+import { cacheFor } from '../../lib/format';
+
+const category = findCategory(await api.categories(), Astro.params.slug ?? '');
+if (!category) return new Response('Category not found', { status: 404 });
+
+cacheFor(Astro.response.headers);
+---
+
+<Base title={`${category.name} offers in the UAE · offer`} description={`This week's ${category.name.toLowerCase()} deals from UAE supermarkets, compared by unit price.`}>
+  {category.children.length > 0 && (
+    <nav class="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4" aria-label="Subcategories">
+      {category.children.map((child) => (
+        <a href={`/c/${child.slug}`} class="shrink-0 rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-sm">{child.name}</a>
+      ))}
+    </nav>
+  )}
+  <SearchResults title={category.name} baseFilters={[`category_ids:=${category.id}`]} />
+</Base>

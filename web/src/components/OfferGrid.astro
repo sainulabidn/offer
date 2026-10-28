@@ -1,0 +1,21 @@
+---
+import OfferCard from './OfferCard.astro';
+import type { OfferHit } from '../lib/search';
+
+interface Props {
+  offers: OfferHit[];
+  empty?: string;
+  /** brochure id → nearest branch, when the shopper filtered by location */
+  distances?: Map<number, { km: number; branch: string }>;
+}
+
+const { offers, empty = 'No offers right now.', distances } = Astro.props;
+---
+
+{offers.length ? (
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    {offers.map((offer) => <OfferCard offer={offer} nearest={distances?.get(offer.brochure_id)} />)}
+  </div>
+) : (
+  <p class="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-zinc-500">{empty}</p>
+)}

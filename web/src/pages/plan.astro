@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+import PlanBuilder from '../islands/PlanBuilder';
+
+// The plan lives in the browser, so this page is a static shell; prices load client-side.
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=86400');
+---
+
+<Base title="My shopping plan · offer" description="Build a shopping list and see which nearby store is cheapest for all of it.">
+  <h1 class="mb-1 text-2xl font-bold">My shopping plan</h1>
+  <p class="mb-5 text-sm text-zinc-500">Saved on this device. We compare every nearby store's current offers for your whole list.</p>
+  <PlanBuilder client:only="react">
+    <p slot="fallback" class="text-zinc-500">Loading your plan…</p>
+  </PlanBuilder>
+</Base>

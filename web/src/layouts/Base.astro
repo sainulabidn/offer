@@ -1,0 +1,52 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Compare supermarket offers across the UAE by true unit price.' } = Astro.props;
+const q = Astro.url.searchParams.get('q') ?? '';
+---
+
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site ?? Astro.url).href} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-dvh bg-zinc-50 text-zinc-900 antialiased">
+    <header class="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 backdrop-blur">
+      <div class="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
+        <a href="/" class="text-xl font-bold text-brand-700">offer</a>
+        <form action="/search" method="get" role="search" class="flex flex-1">
+          <label for="site-search" class="sr-only">Search offers</label>
+          <input
+            id="site-search"
+            name="q"
+            value={q}
+            type="search"
+            placeholder="Search rice, milk, Almarai…"
+            class="w-full rounded-s-lg border border-zinc-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none"
+          />
+          <button class="rounded-e-lg bg-brand-600 px-4 text-sm font-medium text-white">Search</button>
+        </form>
+        <a href="/plan" class="shrink-0 text-sm font-medium text-zinc-700">My plan</a>
+        <a href="/account/sign-in" class="shrink-0 text-sm font-medium text-zinc-700">Sign in</a>
+      </div>
+    </header>
+    <main class="mx-auto max-w-7xl px-4 py-6">
+      <slot />
+    </main>
+    <footer class="mt-12 border-t border-zinc-200 py-6 text-center text-xs text-zinc-500">
+      Prices as published in store brochures; please confirm in store.
+    </footer>
+  </body>
+</html>

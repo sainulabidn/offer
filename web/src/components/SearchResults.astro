@@ -1,0 +1,94 @@
+---
+// Shared by /search and /c/[slug]: filter sidebar (a plain GET form, works without JavaScript), sort and results.
+import OfferGrid from './OfferGrid.astro';
+import Pagination from './Pagination.astro';
+import { SORTS, filterValue, searchOffers, type SortKey } from '../lib/search';
+import { directory, nearbyBrochures, parseNear } from '../lib/near';
+import LocationPicker from '../islands/LocationPicker';
+
+interface Props {
+  title: string;
+  baseFilters?: string[];
+}
+
+const { title, baseFilters = [] } = Astro.props;
+const params = Astro.url.searchParams;
+const q = params.get('q') ?? '';
+const sort = (params.get('sort') ?? (q ? 'unit' : 'deal')) as SortKey;
+const page = Math.max(1, Number(params.get('page')) || 1);
+const chains = params.getAll('store');
+const brands = params.getAll('brand');
+const cardOnly = params.get('card') === '1';
+const minDiscount = Number(params.get('min_discount')) || 0;
+
+const filters = [...baseFilters];
+if (chains.length) filters.push(`chain_name:[${chains.map(filterValue).join(',')}]`);
+if (brands.length) filters.push(`brand:[${brands.map(filterValue).join(',')}]`);
+if (cardOnly) filters.push('card_required:true');
+if (minDiscount) filters.push(`discount_pct:>=${minDiscount}`);
+
+// "Near me": keep only brochures live at a branch inside the radius.
+const near = parseNear(Astro.url);
+const dir = await directory();
+const nearby = near ? nearbyBrochures(dir, near) : null;
+if (nearby) filters.push(nearby.size ? `brochure_id:[${[...nearby.keys()].join(',')}]` : 'brochure_id:=0');
+
+const result = await searchOffers({ q, filters, sort, page, facets: ['chain_name', 'brand'] });
+const facet = (field: string) => result.facets.find((f) => f.field === field)?.values ?? [];
+---
+
+<h1 class="mb-1 text-2xl font-bold">{title}</h1>
+<p class="mb-4 text-sm text-zinc-500">
+  {result.found} {result.found === 1 ? 'offer' : 'offers'}{near && ` within ${near.radiusKm} km of ${near.label}`}
+</p>
+
+<div class="grid gap-6 lg:grid-cols-[14rem_1fr]">
+  <div class="space-y-5 text-sm">
+  <LocationPicker client:idle areas={dir.areas} current={near ? { label: near.label, radiusKm: near.radiusKm } : null} />
+  <form method="get" class="space-y-5" aria-label="Filters">
+    {q && <input type="hidden" name="q" value={q} />}
+    {near && ['near', 'r', 'place'].map((k) => params.get(k) && <input type="hidden" name={k} value={params.get(k)!} />)}
+    <details open class="lg:open">
+      <summary class="cursor-pointer font-semibold">Sort</summary>
+      <select name="sort" class="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-2 py-1.5">
+        {Object.entries(SORTS).map(([key, option]) => <option value={key} selected={key === sort}>{option.label}</option>)}
+      </select>
+    </details>
+    {facet('chain_name').length > 0 && (
+      <fieldset>
+        <legend class="font-semibold">Store</legend>
+        {facet('chain_name').map((v) => (
+          <label class="mt-1.5 flex items-center gap-2">
+            <input type="checkbox" name="store" value={v.value} checked={chains.includes(v.value)} />
+            {v.value} <span class="text-zinc-400">({v.count})</span>
+          </label>
+        ))}
+      </fieldset>
+    )}
+    {facet('brand').length > 0 && (
+      <fieldset>
+        <legend class="font-semibold">Brand</legend>
+        {facet('brand').map((v) => (
+          <label class="mt-1.5 flex items-center gap-2">
+            <input type="checkbox" name="brand" value={v.value} checked={brands.includes(v.value)} />
+            {v.value} <span class="text-zinc-400">({v.count})</span>
+          </label>
+        ))}
+      </fieldset>
+    )}
+    <fieldset>
+      <legend class="font-semibold">Discount</legend>
+      <select name="min_discount" class="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-2 py-1.5">
+        {[0, 10, 20, 30, 50].map((d) => <option value={d} selected={d === minDiscount}>{d ? `${d}% or more` : 'Any'}</option>)}
+      </select>
+    </fieldset>
+    <label class="flex items-center gap-2"><input type="checkbox" name="card" value="1" checked={cardOnly} /> Loyalty card prices only</label>
+    <button class="w-full rounded-lg bg-brand-600 py-2 font-medium text-white">Apply filters</button>
+  </form>
+  </div>
+
+  <div>
+    <OfferGrid offers={result.hits} distances={nearby ?? undefined} empty={near ? `No offers within ${near.radiusKm} km. Try a bigger radius.` : 'No offers match these filters.'} />
+    <Pagination page={result.page} pages={result.pages} />
+  </div>
+</div>

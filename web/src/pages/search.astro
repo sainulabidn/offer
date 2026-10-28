@@ -1,0 +1,12 @@
+---
+import Base from '../layouts/Base.astro';
+import SearchResults from '../components/SearchResults.astro';
+import { cacheFor } from '../lib/format';
+
+const q = Astro.url.searchParams.get('q')?.trim() ?? '';
+cacheFor(Astro.response.headers, 120);
+---
+
+<Base title={q ? `${q} offers · offer` : 'All offers · offer'}>
+  <SearchResults title={q ? `Offers for “${q}”` : 'All offers'} />
+</Base>

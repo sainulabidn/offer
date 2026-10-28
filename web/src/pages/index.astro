@@ -1,0 +1,43 @@
+---
+import Base from '../layouts/Base.astro';
+import OfferGrid from '../components/OfferGrid.astro';
+import { api } from '../lib/api';
+import { searchOffers } from '../lib/search';
+import { cacheFor } from '../lib/format';
+
+const [categories, deals, ending] = await Promise.all([
+  api.categories(),
+  searchOffers({ sort: 'deal', perPage: 10 }),
+  searchOffers({ sort: 'ending', perPage: 5 }),
+]);
+
+cacheFor(Astro.response.headers);
+---
+
+<Base title="offer · Supermarket deals across the UAE">
+  <nav class="-mx-4 mb-6 flex gap-2 overflow-x-auto px-4 pb-1" aria-label="Categories">
+    {categories.map((category) => (
+      <a href={`/c/${category.slug}`} class="shrink-0 rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-sm hover:border-brand-600">
+        {category.name}
+      </a>
+    ))}
+  </nav>
+
+  <section class="mb-10">
+    <div class="mb-3 flex items-baseline justify-between">
+      <h1 class="text-2xl font-bold">Best deals this week</h1>
+      <a href="/search?sort=deal" class="text-sm text-brand-700">See all {deals.found}</a>
+    </div>
+    <OfferGrid offers={deals.hits} />
+  </section>
+
+  {ending.hits.length > 0 && (
+    <section>
+      <div class="mb-3 flex items-baseline justify-between">
+        <h2 class="text-xl font-bold">Ending soon</h2>
+        <a href="/search?sort=ending" class="text-sm text-brand-700">See all</a>
+      </div>
+      <OfferGrid offers={ending.hits} />
+    </section>
+  )}
+</Base>

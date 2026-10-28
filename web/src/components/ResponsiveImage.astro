@@ -1,0 +1,33 @@
+---
+// Product photo as <picture>: AVIF first, WebP fallback, and only the width the layout needs.
+// `base` comes from the API/search index; files are "{base}-{width}.avif|webp" (see backend GenerateImageSizes).
+interface Props {
+  base: string;
+  alt: string;
+  sizes: string;
+  width?: number | null;
+  height?: number | null;
+  priority?: boolean;
+  class?: string;
+}
+
+const { base, alt, sizes, width, height, priority = false, class: className } = Astro.props;
+const widths = [160, 320, 480, 800, 1200];
+const srcset = (format: 'avif' | 'webp') => widths.map((w) => `${base}-${w}.${format} ${w}w`).join(', ');
+---
+
+<picture>
+  <source type="image/avif" srcset={srcset('avif')} sizes={sizes} />
+  <img
+    src={`${base}-480.webp`}
+    srcset={srcset('webp')}
+    sizes={sizes}
+    alt={alt}
+    width={width ?? 800}
+    height={height ?? 800}
+    loading={priority ? 'eager' : 'lazy'}
+    fetchpriority={priority ? 'high' : 'auto'}
+    decoding="async"
+    class={className}
+  />
+</picture>

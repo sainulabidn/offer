@@ -1,0 +1,44 @@
+---
+// One store's offer, shown like an online-shop product card. Plain HTML; only the like button hydrates.
+import LikeButton from '../islands/LikeButton';
+import ResponsiveImage from './ResponsiveImage.astro';
+import type { OfferHit } from '../lib/search';
+import { aed, endsIn } from '../lib/format';
+
+const { offer, nearest } = Astro.props as { offer: OfferHit; nearest?: { km: number; branch: string } };
+const href = `/products/${offer.product_slug}?variant=${encodeURIComponent(offer.variant_slug)}`;
+---
+
+<article class="relative flex flex-col rounded-xl border border-zinc-200 bg-white p-3 shadow-xs transition hover:shadow-md">
+  <div class="relative mb-3 grid aspect-square place-items-center overflow-hidden rounded-lg bg-zinc-100 text-3xl text-zinc-300">
+    {offer.image ? (
+      <ResponsiveImage base={offer.image} alt="" sizes="(min-width: 1280px) 15vw, (min-width: 1024px) 20vw, (min-width: 640px) 30vw, 45vw" class="size-full object-contain" />
+    ) : (
+      <span aria-hidden="true">{offer.product_name.charAt(0)}</span>
+    )}
+    {offer.discount_pct && offer.discount_pct >= 1 && (
+      <span class="absolute start-2 top-2 rounded-md bg-deal px-1.5 py-0.5 text-xs font-semibold text-white">-{Math.round(offer.discount_pct)}%</span>
+    )}
+  </div>
+  <div class="absolute end-5 top-5 z-10">
+    <LikeButton client:visible target={`offer:${offer.id}`} />
+  </div>
+  <p class="text-xs font-medium text-brand-700">
+    {offer.chain_name}{nearest && <span class="font-normal text-zinc-500"> · {nearest.km < 1 ? '<1' : nearest.km.toFixed(1)} km, {nearest.branch}</span>}
+  </p>
+  <h3 class="line-clamp-2 text-sm font-medium">
+    <a href={href} class="after:absolute after:inset-0">{offer.product_name}</a>
+  </h3>
+  <p class="text-xs text-zinc-500">{offer.variant_label}</p>
+  <div class="mt-auto pt-2">
+    <p class="text-lg font-bold">
+      {aed(offer.price)}
+      {offer.regular_price && offer.regular_price > offer.price && <s class="ms-1 text-xs font-normal text-zinc-400">{offer.regular_price.toFixed(2)}</s>}
+    </p>
+    {offer.promo_label && <p class="text-xs font-semibold text-deal">{offer.promo_label}</p>}
+    {offer.under_review && <p class="text-xs font-medium text-amber-700">Being checked: shoppers reported this price</p>}
+    <p class="text-xs text-zinc-600">
+      {offer.effective_unit_price && <>{aed(offer.effective_unit_price)} {offer.unit_label} · </>}{endsIn(offer.valid_to)}
+    </p>
+  </div>
+</article>

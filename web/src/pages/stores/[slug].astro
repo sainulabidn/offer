@@ -1,0 +1,37 @@
+---
+import Base from '../../layouts/Base.astro';
+import OfferGrid from '../../components/OfferGrid.astro';
+import Pagination from '../../components/Pagination.astro';
+import { api } from '../../lib/api';
+import { searchOffers } from '../../lib/search';
+import { cacheFor } from '../../lib/format';
+
+const chain = await api.chain(Astro.params.slug ?? '');
+if (!chain) return new Response('Store not found', { status: 404 });
+
+const page = Math.max(1, Number(Astro.url.searchParams.get('page')) || 1);
+const offers = await searchOffers({ filters: [`chain_id:=${chain.id}`], sort: 'deal', page });
+
+cacheFor(Astro.response.headers);
+---
+
+<Base title={`${chain.name} offers this week · offer`} description={`All current ${chain.name} offers and branches in the UAE.`}>
+  <h1 class="text-2xl font-bold">{chain.name} offers</h1>
+  <p class="mb-4 text-sm text-zinc-500">{offers.found} offers · {chain.branches.length} {chain.branches.length === 1 ? 'branch' : 'branches'}</p>
+
+  <OfferGrid offers={offers.hits} />
+  <Pagination page={offers.page} pages={offers.pages} />
+
+  <section class="mt-10">
+    <h2 class="mb-3 text-xl font-bold">Branches</h2>
+    <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {chain.branches.map((branch) => (
+        <li class="rounded-xl border border-zinc-200 bg-white p-3 text-sm">
+          <p class="font-medium">{branch.name}</p>
+          {branch.area && <p class="text-zinc-500">{branch.area}</p>}
+          <a class="mt-1 inline-block text-brand-700" href={`https://www.google.com/maps/dir/?api=1&destination=${branch.lat},${branch.lng}`} target="_blank" rel="noopener">Directions</a>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Base>

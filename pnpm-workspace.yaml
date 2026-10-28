@@ -1,0 +1,9 @@
+packages:
+  - web
+  - packages/*
+
+# pnpm 12 blocks dependency install scripts unless listed here.
+# workerd: Cloudflare's local runtime; esbuild: native binary used by Vite/Wrangler.
+allowBuilds:
+  workerd: true
+  esbuild: true

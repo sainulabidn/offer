@@ -1,0 +1,143 @@
+---
+import Base from '../../layouts/Base.astro';
+import OfferGrid from '../../components/OfferGrid.astro';
+import ResponsiveImage from '../../components/ResponsiveImage.astro';
+import AddToPlan from '../../islands/AddToPlan';
+import LikeButton from '../../islands/LikeButton';
+import ReportButton from '../../islands/ReportButton';
+import ShareButton from '../../islands/ShareButton';
+import { api } from '../../lib/api';
+import { searchOffers } from '../../lib/search';
+import { aed, cacheFor, endsIn } from '../../lib/format';
+
+const product = await api.product(Astro.params.slug ?? '');
+if (!product) return new Response('Product not found', { status: 404 });
+
+// Variant picker uses plain links (?variant=…), so it works and caches without JavaScript.
+const wanted = Astro.url.searchParams.get('variant');
+const variant =
+  product.variants.find((v) => v.slug === wanted) ??
+  product.variants.find((v) => v.offers.length > 0) ??
+  product.variants.find((v) => v.is_default) ??
+  product.variants[0];
+
+const similar = await searchOffers({
+  filters: [`product_group_id:=${product.product_group.id}`, `product_id:!=${product.id}`],
+  sort: 'unit',
+  perPage: 5,
+});
+
+cacheFor(Astro.response.headers);
+const best = variant?.offers[0];
+
+// schema.org Product + AggregateOffer, so search engines can show price ranges and validity.
+const allOffers = product.variants.flatMap((v) => v.offers);
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.name,
+  ...(product.brand && { brand: { '@type': 'Brand', name: product.brand.name } }),
+  ...(product.images[0] && { image: `${product.images[0].base}-800.webp` }),
+  category: product.category.name,
+  ...(allOffers.length && {
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'AED',
+      lowPrice: Math.min(...allOffers.map((o) => o.price)).toFixed(2),
+      highPrice: Math.max(...allOffers.map((o) => o.price)).toFixed(2),
+      offerCount: allOffers.length,
+      offers: allOffers.slice(0, 20).map((o) => ({
+        '@type': 'Offer',
+        price: o.price.toFixed(2),
+        priceCurrency: 'AED',
+        priceValidUntil: o.valid_to,
+        availability: 'https://schema.org/InStoreOnly',
+        seller: { '@type': 'Organization', name: o.chain.name },
+      })),
+    },
+  }),
+};
+---
+
+<Base title={`${product.name}${variant ? ` ${variant.label}` : ''} price comparison · offer`} description={best ? `${product.name} from ${aed(best.price)} at ${best.chain.name}. Compare every store's price.` : undefined}>
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd).replaceAll('<', '\\u003c')} />
+  <nav class="mb-4 text-sm text-zinc-500" aria-label="Breadcrumb">
+    <a href={`/c/${product.category.slug}`} class="hover:underline">{product.category.name}</a> › {product.product_group.name}
+  </nav>
+
+  <div class="grid gap-6 md:grid-cols-[minmax(0,20rem)_1fr]">
+    <div class="relative grid aspect-square place-items-center overflow-hidden rounded-2xl bg-white text-6xl text-zinc-300 shadow-xs">
+      {product.images[0] ? (
+        <ResponsiveImage base={product.images[0].base} alt={product.images[0].alt ?? product.name} width={product.images[0].width} height={product.images[0].height} sizes="(min-width: 768px) 20rem, 100vw" priority class="size-full object-contain" />
+      ) : (
+        <span aria-hidden="true">{product.name.charAt(0)}</span>
+      )}
+      <div class="absolute end-3 top-3"><LikeButton client:visible target={`product:${product.id}`} /></div>
+    </div>
+
+    <div>
+      {product.brand && <p class="text-sm font-medium text-brand-700">{product.brand.name}</p>}
+      <h1 class="text-2xl font-bold">{product.name}</h1>
+      <div class="mt-2 flex items-center gap-3">
+        <ShareButton client:visible title={`${product.name}${best ? ` from ${aed(best.price)} at ${best.chain.name}` : ''}`} path={Astro.url.pathname + Astro.url.search} />
+        <ReportButton client:visible type="product" id={product.id} label="Report a problem" />
+      </div>
+      {product.description && <p class="mt-2 text-zinc-600">{product.description}</p>}
+
+      {product.variants.length > 1 && (
+        <div class="mt-4 flex flex-wrap gap-2" role="group" aria-label="Choose a variant">
+          {product.variants.map((v) => (
+            <a
+              href={`?variant=${encodeURIComponent(v.slug)}`}
+              aria-current={v.id === variant?.id ? 'true' : undefined}
+              class:list={['rounded-lg border px-3 py-1.5 text-sm', v.id === variant?.id ? 'border-brand-600 bg-brand-50 font-semibold' : 'border-zinc-300 bg-white']}
+            >
+              {v.label}
+              {v.offers.length > 0 && <span class="ms-1 text-xs text-zinc-500">· {v.offers.length} {v.offers.length === 1 ? 'store' : 'stores'}</span>}
+            </a>
+          ))}
+        </div>
+      )}
+
+      {variant && (
+        <div class="mt-4">
+          <AddToPlan client:visible variantId={variant.id} label={`${product.name} · ${variant.label}`} groupId={product.product_group.id} groupName={product.product_group.name} />
+        </div>
+      )}
+
+      <h2 class="mt-6 mb-2 font-semibold">Prices today{variant ? ` for ${variant.label}` : ''}</h2>
+      {variant && variant.offers.length > 0 ? (
+        <ul class="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+          {variant.offers.map((offer, i) => (
+            <li class="flex items-center gap-3 p-3">
+              <div class="flex-1">
+                <a href={`/stores/${offer.chain.slug}`} class="font-medium hover:underline">{offer.chain.name}</a>
+                {i === 0 && variant.offers.length > 1 && <span class="ms-2 rounded bg-brand-50 px-1.5 text-xs font-semibold text-brand-700">Cheapest</span>}
+                <p class="text-xs text-zinc-500">
+                  {offer.promo_label && <span class="font-semibold text-deal">{offer.promo_label} · </span>}{endsIn(offer.valid_to)} ·{' '}
+                  <ReportButton client:visible type="offer" id={offer.id} label="Wrong price?" />
+                </p>
+              </div>
+              <div class="text-end">
+                <p class="font-bold">
+                  {aed(offer.price)}
+                  {offer.regular_price && offer.regular_price > offer.price && <s class="ms-1 text-xs font-normal text-zinc-400">{offer.regular_price.toFixed(2)}</s>}
+                </p>
+                {offer.effective_unit_price && <p class="text-xs text-zinc-600">{aed(offer.effective_unit_price)} {offer.unit_label}</p>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="rounded-xl border border-dashed border-zinc-300 p-4 text-sm text-zinc-500">No store has this on offer right now.</p>
+      )}
+    </div>
+  </div>
+
+  {similar.hits.length > 0 && (
+    <section class="mt-10">
+      <h2 class="mb-3 text-xl font-bold">Other {product.product_group.name.toLowerCase()} on offer, cheapest {product.product_group.unit_label}</h2>
+      <OfferGrid offers={similar.hits} />
+    </section>
+  )}
+</Base>
