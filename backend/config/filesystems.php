@@ -68,7 +68,7 @@ return [
             'region' => 'auto',
             'bucket' => env('R2_BUCKET', 'offer'),
             'endpoint' => env('R2_ACCOUNT_ID') ? 'https://'.env('R2_ACCOUNT_ID').'.r2.cloudflarestorage.com' : null,
-            // Public bucket URL: an r2.dev address or a custom domain such as https://media.example.com
+            // Public URL: the website Worker serves the bucket at https://{site}/media (web/src/middleware.ts).
             'url' => env('R2_PUBLIC_URL'),
             'use_path_style_endpoint' => true,
             'visibility' => 'public',

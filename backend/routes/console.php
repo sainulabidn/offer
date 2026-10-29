@@ -38,3 +38,19 @@ Artisan::command('demo:seed', function () {
     $this->call('db:seed', ['--class' => Database\Seeders\DemoCatalogSeeder::class, '--force' => true]);
     $this->call('db:seed', ['--class' => Database\Seeders\DemoOffersSeeder::class, '--force' => true]);
 })->purpose('Load the demo catalog, store and offers (for staging servers)');
+
+Artisan::command('media:copy {from=public} {--to=}', function (string $from) {
+    // Moving product photos between disks (e.g. local "public" → "r2"): copy, then re-index so cards get the new URLs.
+    $source = Illuminate\Support\Facades\Storage::disk($from);
+    $target = Illuminate\Support\Facades\Storage::disk($this->option('to') ?: config('filesystems.media_disk'));
+    $copied = 0;
+    foreach ($source->allFiles('products') as $path) {
+        if (! $target->exists($path)) {
+            $target->put($path, $source->get($path), ['visibility' => 'public', 'CacheControl' => 'public, max-age=31536000, immutable']);
+            $copied++;
+        }
+    }
+    $this->info("Copied {$copied} files.");
+    App\Domain\Offers\Offer::query()->live()->with(App\Domain\Search\OfferDocument::RELATIONS)->chunkById(500, fn ($offers) => $offers->searchable());
+    $this->info('Re-indexed live offers.');
+})->purpose('Copy product photos to the media disk (or --to) and re-index offers');

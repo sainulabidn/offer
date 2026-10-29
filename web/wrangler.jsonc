@@ -13,6 +13,8 @@
       "name": "offer-web",
       // The Worker owns the whole hostname; src/middleware.ts hands Laravel's paths to the origin server.
       "routes": [{ "pattern": "offer.emirait.com/*", "zone_name": "emirait.com" }],
+      // Product photos, served by src/middleware.ts at /media/products/… (Laravel's R2_PUBLIC_URL).
+      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "offer" }],
       "vars": {
         "API_URL": "https://offer.emirait.com",
         "TYPESENSE_URL": "https://offer.emirait.com/typesense",

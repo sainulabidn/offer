@@ -1,5 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 import { PASS_TO_ORIGIN } from 'astro:env/server';
+import { env } from 'cloudflare:workers';
 
 /**
  * In production the Worker serves the whole of offer.emirait.com. Laravel's paths go straight to the
@@ -15,10 +16,40 @@ const ORIGIN_PATTERN = /^\/livewire(-[0-9a-f]+)?(\/|$)/;
 // (likes, plan, sign-in) lives in the browser, so the same HTML is right for everyone.
 const edgeCache = () => (globalThis as unknown as { caches: { default: Cache } }).caches.default;
 
+// Product photos live in the R2 bucket (binding MEDIA, production only) and are served here at
+// /media/products/…, so the bucket stays private and needs no domain of its own. Only image files
+// are served, with the type taken from the extension, never from the stored object.
+const MEDIA_TYPES: Record<string, string> = { avif: 'image/avif', webp: 'image/webp', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
+
+async function media(url: URL): Promise<Response> {
+  const key = url.pathname.slice('/media/'.length);
+  const type = MEDIA_TYPES[key.split('.').pop()?.toLowerCase() ?? ''];
+  if (!type || !env.MEDIA) return new Response('Not found', { status: 404 });
+
+  const cacheKey = new Request(`${url.origin}/media/${key}`, { method: 'GET' });
+  const hit = await edgeCache().match(cacheKey);
+  if (hit) return hit;
+
+  const object = await env.MEDIA.get(key);
+  if (!object) return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'public, max-age=60' } });
+  // Sizes are written once per upload (a new upload gets a new file name), so they never change.
+  const response = new Response(object.body, {
+    headers: {
+      'Content-Type': type,
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      ETag: object.httpEtag,
+      'X-Content-Type-Options': 'nosniff',
+    },
+  });
+  await edgeCache().put(cacheKey, response.clone());
+  return response;
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
+  const path = context.url.pathname;
+  if (path.startsWith('/media/products/') && context.request.method === 'GET' && env.MEDIA) return media(context.url);
   if (!PASS_TO_ORIGIN) return next();
 
-  const path = context.url.pathname;
   // Search-as-you-type: identical queries from many shoppers (the key is the same public scoped key),
   // so answer them from the edge for a minute instead of going to the origin on every keystroke.
   if (path.startsWith('/typesense/') && context.request.method === 'GET') {
