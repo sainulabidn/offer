@@ -67,7 +67,7 @@ artisan optimize
 artisan filament:optimize
 
 # Rebuild the search index on the first deploy and whenever the document shape changed.
-if [[ $first_run -eq 1 ]] || git -C "$APP" diff --name-only "$OLD" "$NEW" 2>/dev/null | grep -q 'Search/OfferDocument.php'; then
+if [[ $first_run -eq 1 ]] || git --git-dir="$HOME/deploy.git" diff --name-only "$OLD" "$NEW" 2>/dev/null | grep -q 'Search/OfferDocument.php'; then
     step "search index"
     artisan scout:flush 'App\Domain\Offers\Offer'
     artisan scout:import 'App\Domain\Offers\Offer'
@@ -75,4 +75,4 @@ fi
 
 artisan queue:restart
 echo
-echo "Deployed $(git -C "$APP" log -1 --format='%h %s')"
+echo "Deployed $(git --git-dir="$HOME/deploy.git" log -1 --format='%h %s')"
