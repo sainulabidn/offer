@@ -3,6 +3,7 @@
 namespace App\Domain\Catalog;
 
 use App\Domain\Retail\Chain;
+use App\Domain\Search\Synonyms;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,6 +23,17 @@ class Brand extends Model
             'is_private_label' => 'boolean',
             'synonyms' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Other spellings ("IG") are search synonyms of the brand name.
+        static::saved(function (Brand $brand) {
+            if ($brand->synonyms && ($brand->wasRecentlyCreated || $brand->wasChanged(['synonyms', 'name']))) {
+                app(Synonyms::class)->syncQuietly();
+            }
+        });
+        static::deleted(fn (Brand $brand) => $brand->synonyms && app(Synonyms::class)->syncQuietly());
     }
 
     /** For private labels: the chain that owns the brand. */

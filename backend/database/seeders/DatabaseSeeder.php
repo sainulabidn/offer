@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             GeoSeeder::class,
             CatalogStructureSeeder::class,
             StaffSeeder::class,
+            SynonymSeeder::class,
         ]);
 
         if (app()->isLocal()) {

@@ -1,8 +1,17 @@
 <?php
 
+use App\Domain\Alerts\WeeklyDigest;
+use App\Domain\Engagement\Likes;
 use App\Domain\Offers\ExpireOffers;
+use App\Domain\Offers\Offer;
+use App\Domain\Search\OfferDocument;
+use App\Domain\Search\SearchKeys;
+use App\Domain\Search\Synonyms;
+use Database\Seeders\DemoCatalogSeeder;
+use Database\Seeders\DemoOffersSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
 
 Artisan::command('offers:expire', function (ExpireOffers $expire) {
     $result = $expire();
@@ -11,18 +20,25 @@ Artisan::command('offers:expire', function (ExpireOffers $expire) {
 
 Schedule::command('offers:expire')->dailyAt('00:05')->timezone(config('app.market_timezone'))->withoutOverlapping();
 
-Artisan::command('search:create-key', function (App\Domain\Search\SearchKeys $keys) {
+Artisan::command('search:create-key', function (SearchKeys $keys) {
     $this->info('Add this to backend/.env as TYPESENSE_SEARCH_KEY (Typesense shows it only once):');
     $this->line($keys->createSearchOnlyKey());
 })->purpose('Create the search-only Typesense key the public website uses');
 
-Artisan::command('likes:sync-search', function (App\Domain\Engagement\Likes $likes) {
+Artisan::command('likes:sync-search', function (Likes $likes) {
     $this->info('Re-indexed '.$likes->syncSearch().' offers with new like counts.');
 })->purpose('Push changed offer like counts to Typesense');
 
 Schedule::command('likes:sync-search')->everyFiveMinutes()->withoutOverlapping();
 
-Artisan::command('digest:weekly', function (App\Domain\Alerts\WeeklyDigest $digest) {
+Artisan::command('search:sync-synonyms', function (Synonyms $synonyms) {
+    $this->info('Search has '.$synonyms->sync().' synonym groups.');
+})->purpose('Push the admin synonyms and brand spellings to Typesense');
+
+// Saves sync straight away; this catches up after a search outage or a rebuilt collection.
+Schedule::command('search:sync-synonyms')->hourly()->withoutOverlapping();
+
+Artisan::command('digest:weekly', function (WeeklyDigest $digest) {
     $this->info('Sent '.$digest->send().' weekly digest emails.');
 })->purpose('Email each shopper this week\'s deals on products they like');
 
@@ -35,14 +51,14 @@ if (config('queue.cron_worker')) {
 }
 
 Artisan::command('demo:seed', function () {
-    $this->call('db:seed', ['--class' => Database\Seeders\DemoCatalogSeeder::class, '--force' => true]);
-    $this->call('db:seed', ['--class' => Database\Seeders\DemoOffersSeeder::class, '--force' => true]);
+    $this->call('db:seed', ['--class' => DemoCatalogSeeder::class, '--force' => true]);
+    $this->call('db:seed', ['--class' => DemoOffersSeeder::class, '--force' => true]);
 })->purpose('Load the demo catalog, store and offers (for staging servers)');
 
 Artisan::command('media:copy {from=public} {--to=}', function (string $from) {
     // Moving product photos between disks (e.g. local "public" → "r2"): copy, then re-index so cards get the new URLs.
-    $source = Illuminate\Support\Facades\Storage::disk($from);
-    $target = Illuminate\Support\Facades\Storage::disk($this->option('to') ?: config('filesystems.media_disk'));
+    $source = Storage::disk($from);
+    $target = Storage::disk($this->option('to') ?: config('filesystems.media_disk'));
     $copied = 0;
     foreach ($source->allFiles('products') as $path) {
         if (! $target->exists($path)) {
@@ -51,6 +67,6 @@ Artisan::command('media:copy {from=public} {--to=}', function (string $from) {
         }
     }
     $this->info("Copied {$copied} files.");
-    App\Domain\Offers\Offer::query()->live()->with(App\Domain\Search\OfferDocument::RELATIONS)->chunkById(500, fn ($offers) => $offers->searchable());
+    Offer::query()->live()->with(OfferDocument::RELATIONS)->chunkById(500, fn ($offers) => $offers->searchable());
     $this->info('Re-indexed live offers.');
 })->purpose('Copy product photos to the media disk (or --to) and re-index offers');

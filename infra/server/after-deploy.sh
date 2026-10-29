@@ -72,6 +72,7 @@ if [[ $first_run -eq 1 ]] || git --git-dir="$HOME/deploy.git" diff --name-only "
     artisan scout:flush 'App\Domain\Offers\Offer'
     artisan scout:import 'App\Domain\Offers\Offer'
 fi
+artisan search:sync-synonyms
 
 artisan queue:restart
 echo

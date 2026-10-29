@@ -37,10 +37,11 @@ export async function suggest(query: string, signal?: AbortSignal): Promise<Sugg
   const { url, collection, key } = await searchConfig();
   const params = new URLSearchParams({
     q,
-    query_by: 'product_name,brand,product_group,chain_name,variant_label',
-    query_by_weights: '5,4,3,2,1',
-    prefix: 'true,true,true,true,false', // "basm" already finds basmati
-    num_typos: '2,2,2,1,0',
+    // Synonyms (admin → Search synonyms) apply on the server: "atta" also finds "wheat flour".
+    query_by: 'product_name,product_name_ar,brand,product_group,chain_name,variant_label',
+    query_by_weights: '5,5,4,3,2,1',
+    prefix: 'true,true,true,true,true,false', // "basm" already finds basmati
+    num_typos: '2,1,2,2,1,0',
     min_len_1typo: '3', // short grocery words: "rce" → rice, "egs" → eggs
     min_len_2typo: '6',
     typo_tokens_threshold: '1',
