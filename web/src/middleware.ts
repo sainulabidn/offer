@@ -16,6 +16,17 @@ const ORIGIN_PATTERN = /^\/livewire(-[0-9a-f]+)?(\/|$)/;
 // (likes, plan, sign-in) lives in the browser, so the same HTML is right for everyone.
 const edgeCache = () => (globalThis as unknown as { caches: { default: Cache } }).caches.default;
 
+// Each deploy gets its own page cache: HTML cached before a deploy links /_astro files the deploy removed,
+// which shows the page without styles. CF_VERSION_METADATA changes with every deploy.
+const pageCacheKey = (url: URL) => {
+  const key = new URL(url);
+  key.searchParams.set('__build', env.CF_VERSION_METADATA?.id ?? 'dev');
+  return new Request(key.toString(), { method: 'GET' });
+};
+// Browsers re-check every page (answered from the edge cache in milliseconds). Without this, the cached
+// copy comes back with the zone's Browser Cache TTL (4 h) and a browser keeps showing pre-deploy HTML.
+const BROWSER_CACHE = 'public, max-age=0, must-revalidate';
+
 // Product photos live in the R2 bucket (binding MEDIA, production only) and are served here at
 // /media/products/…, so the bucket stays private and needs no domain of its own. Only image files
 // are served, with the type taken from the extension, never from the stored object.
@@ -79,10 +90,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
   if (context.request.method !== 'GET') return next();
 
-  const key = new Request(context.url.toString(), { method: 'GET' });
+  const key = pageCacheKey(context.url);
   const hit = await edgeCache().match(key);
   if (hit) {
     const cached = new Response(hit.body, hit);
+    cached.headers.set('Cache-Control', BROWSER_CACHE);
     cached.headers.set('X-Edge-Cache', 'HIT');
     return cached;
   }
@@ -93,6 +105,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (response.status === 200 && /\bpublic\b/.test(cacheControl) && /s-maxage=\d+/.test(cacheControl) && !response.headers.has('Set-Cookie')) {
     try {
       await edgeCache().put(key, response.clone());
+      response.headers.set('Cache-Control', BROWSER_CACHE);
       response.headers.set('X-Edge-Cache', 'MISS');
     } catch (error) {
       response.headers.set('X-Edge-Cache', `ERROR ${String(error).slice(0, 120)}`);
