@@ -42,6 +42,13 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Staff in the Filament admin sign in separately from shoppers on the website, so a shopper
+        // session in the same browser never stands in for (or blocks) an admin one.
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
     ],
 
     /*

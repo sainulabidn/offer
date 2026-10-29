@@ -81,7 +81,7 @@ it('lists open reports for staff and resolves them from the queue', function () 
     postJson('/api/v1/reports', ['type' => 'offer', 'id' => $this->offer->id, 'reason' => 'expired']);
     $staff = User::factory()->create();
     $staff->assignRole('reviewer');
-    actingAs($staff);
+    actingAs($staff, 'admin');
 
     Pest\Laravel\get('/admin/reports')->assertOk()->assertSee('India Gate Classic Basmati Rice');
 

@@ -28,6 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->authGuard('admin')
             // Import results (and later alerts for staff) arrive as panel notifications.
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')

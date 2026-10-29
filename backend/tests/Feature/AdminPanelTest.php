@@ -26,13 +26,18 @@ beforeEach(function () {
 });
 
 it('keeps shoppers out of the admin panel', function () {
-    actingAs(User::factory()->create());
+    $shopper = User::factory()->create();
 
+    // Signed in on the website: the admin still asks for its own sign-in.
+    actingAs($shopper, 'web');
+    get('/admin')->assertRedirect('/admin/login');
+
+    actingAs($shopper, 'admin');
     get('/admin')->assertForbidden();
 });
 
 it('renders every admin list, create and edit page', function (string $resource, string $model) {
-    actingAs($this->operator);
+    actingAs($this->operator, 'admin');
     $record = $model::query()->firstOrFail();
 
     get("/admin/{$resource}")->assertOk();
@@ -49,14 +54,14 @@ it('renders every admin list, create and edit page', function (string $resource,
 ]);
 
 it('renders the brochure list and create pages', function () {
-    actingAs($this->operator);
+    actingAs($this->operator, 'admin');
 
     get('/admin/brochures')->assertOk();
     get('/admin/brochures/create')->assertOk();
 });
 
 it('adds a variant through the product page', function () {
-    actingAs($this->operator);
+    actingAs($this->operator, 'admin');
     $rice = Product::where('slug', 'india-gate-classic-basmati-rice')->firstOrFail();
     $size = $rice->options()->firstOrFail();
     $twoKg = $size->values()->create(['label' => ['en' => '2 kg'], 'code' => '2-kg', 'sort' => 9]);
@@ -77,7 +82,7 @@ it('adds a variant through the product page', function () {
 });
 
 it('rejects a second variant with the same option values', function () {
-    actingAs($this->operator);
+    actingAs($this->operator, 'admin');
     $rice = Product::where('slug', 'india-gate-classic-basmati-rice')->firstOrFail();
     $fiveKg = $rice->variants()->where('slug', '5-kg')->firstOrFail();
 
@@ -93,7 +98,7 @@ it('rejects a second variant with the same option values', function () {
 });
 
 it('saves branch coordinates as a PostGIS point', function () {
-    actingAs($this->operator);
+    actingAs($this->operator, 'admin');
     $chain = Chain::firstOrFail();
 
     livewire(CreateBranch::class)

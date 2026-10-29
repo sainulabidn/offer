@@ -101,7 +101,7 @@ it('seeds the starter list once', function () {
 
 it('lets staff add synonyms in the admin', function () use ($found) {
     $this->seed(StaffSeeder::class);
-    $this->actingAs(User::factory()->create()->assignRole('data_operator'));
+    $this->actingAs(User::factory()->create()->assignRole('data_operator'), 'admin');
 
     Livewire::test(CreateSynonym::class)
         ->fillForm(['terms' => ['chawal'], 'is_active' => true])

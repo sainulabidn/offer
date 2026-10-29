@@ -83,7 +83,7 @@ it('refuses to publish an empty brochure', function () {
 it('enters an offer through the brochure page', function () {
     $operator = User::factory()->create();
     $operator->assignRole('data_operator');
-    actingAs($operator);
+    actingAs($operator, 'admin');
 
     get("/admin/brochures/{$this->brochure->id}/edit")->assertOk();
 
