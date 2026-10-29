@@ -26,6 +26,7 @@ say()  { printf '\n== %s\n' "$*"; }
 note() { printf '   %s\n' "$*"; }
 
 [[ $EUID -eq 0 ]] || die "Run this as root."
+cd /tmp # runuser keeps the current directory; postgres must be able to read it
 id "$ACCOUNT" >/dev/null 2>&1 || die "No account $ACCOUNT on this server."
 
 say "PHP 8.4 for $VHOST"
@@ -36,11 +37,21 @@ else
 fi
 
 say "packages"
-# postgis36_18 comes from the PGDG repo that already provides postgresql18; vips-tools from EPEL.
+# postgis36_18 comes from the PGDG repo that already provides postgresql18. It and vips-tools need EPEL
+# plus EL8's PowerTools repo (GEOS, PROJ, GDAL…). One package per dnf call, so one failure can't block
+# the others, and dnf's own message is shown when it fails.
 rpm -q epel-release >/dev/null 2>&1 || dnf -y -q install epel-release
-dnf -y -q install postgis36_18 vips-tools poppler-utils >/dev/null 2>&1 || note "dnf reported a problem; check the lines below"
-for p in postgis36_18 vips-tools poppler-utils; do
-    rpm -q "$p" >/dev/null 2>&1 && note "ok       $p" || note "MISSING  $p"
+rpm -q dnf-plugins-core >/dev/null 2>&1 || dnf -y -q install dnf-plugins-core
+dnf config-manager --set-enabled powertools >/dev/null 2>&1 || note "could not enable the powertools repo"
+for p in poppler-utils postgis36_18 vips-tools; do
+    if rpm -q "$p" >/dev/null 2>&1; then
+        note "ok       $p"
+    elif out="$(dnf -y -q install "$p" 2>&1)"; then
+        note "installed $p"
+    else
+        note "MISSING  $p: dnf said:"
+        printf '%s\n' "$out" | grep -vE '^\s*$' | tail -8 | sed 's/^/            /'
+    fi
 done
 if command -v vips >/dev/null 2>&1; then
     tmp="$(mktemp -d)"
@@ -51,9 +62,9 @@ if command -v vips >/dev/null 2>&1; then
 fi
 
 say "PostgreSQL role and database"
-psql_su() { su - postgres -c "psql -X -q -v ON_ERROR_STOP=1 $*"; }
+psql_su() { runuser -u postgres -- sh -c "psql -X -q -v ON_ERROR_STOP=1 $*"; }
 systemctl is-active postgresql-18 >/dev/null 2>&1 || systemctl is-active postgresql >/dev/null 2>&1 || die "PostgreSQL is not running."
-port="$(su - postgres -c "psql -X -At -c 'show port'")"
+port="$(runuser -u postgres -- sh -c "psql -X -At -c 'show port'")"
 
 if [[ -f "$CRED_FILE" ]] && grep -q '^DB_PASSWORD=.' "$CRED_FILE"; then
     password="$(grep '^DB_PASSWORD=' "$CRED_FILE" | cut -d= -f2-)"
@@ -71,24 +82,23 @@ DO \$\$ BEGIN
     END IF;
 END \$\$;
 SQL
-if [[ "$(su - postgres -c "psql -X -At -c \"SELECT 1 FROM pg_database WHERE datname = '${DB}'\"")" != "1" ]]; then
-    su - postgres -c "createdb -O ${ROLE} ${DB}" && note "created  database $DB"
+if [[ "$(runuser -u postgres -- sh -c "psql -X -At -c \"SELECT 1 FROM pg_database WHERE datname = '${DB}'\"")" != "1" ]]; then
+    runuser -u postgres -- sh -c "createdb -O ${ROLE} ${DB}" && note "created  database $DB"
 else
     note "ok       database $DB exists"
 fi
 # postgis needs a superuser; creating them here means the app's own migration only finds them present.
-su - postgres -c "psql -X -q -v ON_ERROR_STOP=1 -d ${DB}" <<'SQL'
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE EXTENSION IF NOT EXISTS unaccent;
-CREATE EXTENSION IF NOT EXISTS btree_gist;
-SQL
-note "extensions: $(su - postgres -c "psql -X -At -d ${DB} -c \"SELECT string_agg(extname || ' ' || extversion, ', ' ORDER BY extname) FROM pg_extension\"")"
+# One at a time, so a missing PostGIS package doesn't block the other three.
+for ext in postgis pg_trgm unaccent btree_gist; do
+    out="$(runuser -u postgres -- sh -c "psql -X -q -d ${DB} -c 'CREATE EXTENSION IF NOT EXISTS ${ext}'" 2>&1)" \
+        || note "MISSING  extension $ext: $(printf '%s' "$out" | grep -m1 ERROR)"
+done
+note "extensions: $(runuser -u postgres -- sh -c "psql -X -At -d ${DB} -c \"SELECT string_agg(extname || ' ' || extversion, ', ' ORDER BY extname) FROM pg_extension\"")"
 
 umask 077
 cat > "$CRED_FILE" <<EOF
 DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
+DB_HOST=/var/run/postgresql
 DB_PORT=${port}
 DB_DATABASE=${DB}
 DB_USERNAME=${ROLE}
@@ -98,11 +108,14 @@ chown "$ACCOUNT:$ACCOUNT" "$CRED_FILE"
 chmod 600 "$CRED_FILE"
 note "wrote    $CRED_FILE (owner $ACCOUNT, mode 600)"
 
-say "login check as $ROLE over 127.0.0.1:$port"
-if PGPASSWORD="$password" psql -X -At -h 127.0.0.1 -p "$port" -U "$ROLE" -d "$DB" -c "SELECT postgis_lib_version()" >/dev/null 2>&1; then
-    note "ok       $ROLE can log in and sees PostGIS"
+# The Unix socket with a password works under this server's pg_hba.conf; TCP from 127.0.0.1 has no rule.
+say "login check as $ROLE over the Unix socket"
+if PGPASSWORD="$password" psql -X -At -h /var/run/postgresql -p "$port" -U "$ROLE" -d "$DB" -c "SELECT 1" >/dev/null 2>&1; then
+    note "ok       $ROLE can log in"
+    PGPASSWORD="$password" psql -X -At -h /var/run/postgresql -p "$port" -U "$ROLE" -d "$DB" -c "SELECT postgis_lib_version()" >/dev/null 2>&1 \
+        && note "ok       PostGIS works for $ROLE" || note "MISSING  PostGIS in $DB"
 else
-    note "FAILED   $ROLE cannot log in over TCP: add 'host ${DB} ${ROLE} 127.0.0.1/32 scram-sha-256' to pg_hba.conf and reload"
+    note "FAILED   $ROLE cannot log in over /var/run/postgresql"
 fi
 
 say "Typesense (Docker, 127.0.0.1:8108 only)"
