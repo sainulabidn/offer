@@ -6,7 +6,9 @@ import { PASS_TO_ORIGIN } from 'astro:env/server';
  * origin server: a Worker's fetch to its own zone skips the Worker, so this doesn't loop.
  * Locally (PASS_TO_ORIGIN false) the admin and API are on localhost:8000 instead.
  */
-const ORIGIN_PATHS = ['/admin', '/api', '/sanctum', '/livewire', '/filament', '/storage', '/typesense', '/up', '/css/filament', '/js/filament', '/fonts/filament'];
+const ORIGIN_PATHS = ['/admin', '/api', '/sanctum', '/filament', '/storage', '/typesense', '/up', '/css/filament', '/js/filament', '/fonts/filament'];
+// Livewire 4 (Filament's admin) uses an app-specific prefix such as /livewire-f83ae909/update.
+const ORIGIN_PATTERN = /^\/livewire(-[0-9a-f]+)?(\/|$)/;
 
 // Cloudflare doesn't cache a Worker's own responses, so public pages are kept in the Cache API here.
 // Pages opt in with "Cache-Control: public, s-maxage=N" (lib/format.ts cacheFor); personal state
@@ -17,7 +19,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (!PASS_TO_ORIGIN) return next();
 
   const path = context.url.pathname;
-  if (ORIGIN_PATHS.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
+  if (ORIGIN_PATTERN.test(path) || ORIGIN_PATHS.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
     return fetch(context.request);
   }
   if (context.request.method !== 'GET') return next();
