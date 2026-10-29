@@ -68,7 +68,8 @@ return [
             'region' => 'auto',
             'bucket' => env('R2_BUCKET', 'offer'),
             'endpoint' => env('R2_ACCOUNT_ID') ? 'https://'.env('R2_ACCOUNT_ID').'.r2.cloudflarestorage.com' : null,
-            // Public URL: the website Worker serves the bucket at https://{site}/media (web/src/middleware.ts).
+            // Public URL: the bucket's custom domain (https://media.emirait.com), cached by Cloudflare.
+            // The website Worker can also serve it at https://{site}/media (web/src/middleware.ts).
             'url' => env('R2_PUBLIC_URL'),
             'use_path_style_endpoint' => true,
             'visibility' => 'public',
