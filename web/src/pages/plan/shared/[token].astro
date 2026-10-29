@@ -1,0 +1,13 @@
+---
+import Base from '../../../layouts/Base.astro';
+import SharedPlan from '../../../islands/SharedPlan';
+
+// The list belongs to whoever shared it; don't cache or index it.
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex');
+---
+
+<Base title="Shared shopping plan · offer">
+  <h1 class="mb-4 text-2xl font-bold">Shared shopping plan</h1>
+  <SharedPlan client:only="react" token={Astro.params.token ?? ''} />
+</Base>

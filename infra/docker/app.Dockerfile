@@ -5,6 +5,8 @@
 FROM dunglas/frankenphp:1.13-php8.5-trixie AS base
 
 RUN install-php-extensions pdo_pgsql pgsql redis intl pcntl zip bcmath exif ffi
+# GD with AVIF: the image fallback on servers without libvips (production runs AlmaLinux 8).
+RUN IPE_GD_WITHAVIF=1 install-php-extensions gd
 
 # poppler-utils: pdftoppm/pdftotext for brochure pages; libvips-tools: AVIF/WebP resizing (the aomenc plugin
 # adds the AV1 encoder AVIF needs); qpdf: PDF repair

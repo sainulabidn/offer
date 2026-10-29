@@ -81,6 +81,9 @@ return [
     // Where product images live: "public" (local, development) or "r2" (production).
     'media_disk' => env('MEDIA_DISK', 'public'),
 
+    // Image resizing: "auto" uses libvips when installed, otherwise PHP's GD; or force "vips" / "gd".
+    'image_tool' => env('IMAGE_TOOL', 'auto'),
+
     /*
     |--------------------------------------------------------------------------
     | Symbolic Links

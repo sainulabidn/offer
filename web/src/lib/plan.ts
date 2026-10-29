@@ -1,5 +1,6 @@
 import { PUBLIC_API_URL } from 'astro:env/client';
 import type { CandidateOffer, PlanItem, Store } from '@offer/basket';
+import { ApiError, call, isSignedIn } from './account';
 
 /**
  * Browser-side plan data: the plan lives in localStorage (no account needed), offers come straight
@@ -15,18 +16,27 @@ export interface PlanSettings {
 }
 
 export interface Plan {
+  /** Made on the device, so a plan keeps its id when it first reaches the account. */
+  id: string;
+  name: string;
   items: PlanItem[];
   settings: PlanSettings;
+  /** ISO time of the last local change; the account keeps the newest version. */
+  updatedAt: string;
 }
 
 const KEY = 'offer:plan';
 
+const newId = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(16)}-0000-4000-8000-${Math.random().toString(16).slice(2, 14).padEnd(12, '0')}`);
+
 export function loadPlan(): Plan {
-  const fallback: Plan = { items: [], settings: { lat: null, lng: null, place: '', radiusKm: 10, maxStores: 2, extraStoreCost: 10 } };
+  const fallback: Plan = { id: newId(), name: 'My plan', items: [], settings: { lat: null, lng: null, place: '', radiusKm: 10, maxStores: 2, extraStoreCost: 10 }, updatedAt: new Date(0).toISOString() };
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Plan | null;
+    const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<Plan> | null;
     const near = JSON.parse(localStorage.getItem('offer:near') ?? 'null') as { lat: number; lng: number; place: string } | null;
-    const plan = saved ?? fallback;
+    // Plans saved before accounts sync had no id/name/updatedAt.
+    const plan: Plan = { ...fallback, ...(saved ?? {}), settings: { ...fallback.settings, ...(saved?.settings ?? {}) } };
+    if (!saved?.id) storeLocally(plan);
     if (plan.settings.lat === null && near) Object.assign(plan.settings, { lat: near.lat, lng: near.lng, place: near.place });
     return plan;
   } catch {
@@ -34,7 +44,7 @@ export function loadPlan(): Plan {
   }
 }
 
-export function savePlan(plan: Plan) {
+function storeLocally(plan: Plan) {
   try {
     localStorage.setItem(KEY, JSON.stringify(plan));
     window.dispatchEvent(new CustomEvent('offer:plan-changed', { detail: plan.items.length }));
@@ -42,6 +52,95 @@ export function savePlan(plan: Plan) {
     // Storage blocked: the plan lives for this tab only.
   }
 }
+
+let pushTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Saves on this device now and, when signed in, to the account a moment later (one request per burst of edits). */
+export function savePlan(plan: Plan, onConflict?: (server: Plan) => void) {
+  plan.updatedAt = new Date().toISOString();
+  storeLocally(plan);
+  if (!isSignedIn()) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => pushPlan(plan).then((server) => server && onConflict?.(server)), 800);
+}
+
+interface ServerPlan {
+  id: string;
+  name: string;
+  items: PlanItem[];
+  settings: Partial<PlanSettings>;
+  updated_at: string;
+  is_owner: boolean;
+  members: number;
+}
+
+const fromServer = (p: ServerPlan, local: Plan): Plan => ({
+  id: p.id,
+  name: p.name,
+  items: p.items,
+  settings: { ...local.settings, ...p.settings },
+  updatedAt: p.updated_at,
+});
+
+/** Returns the account's newer copy when it wins a conflict. */
+async function pushPlan(plan: Plan): Promise<Plan | null> {
+  try {
+    await call('PUT', `plans/${plan.id}`, { name: plan.name, items: plan.items, settings: plan.settings, updated_at: plan.updatedAt });
+    return null;
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 409) {
+      const server = fromServer((e.body as { plan: ServerPlan }).plan, plan);
+      storeLocally(server);
+      return server;
+    }
+    return null; // offline or server trouble: the next save retries
+  }
+}
+
+/**
+ * On opening the plan page while signed in: take the account's copy when it is newer (edited on
+ * another device or by family), otherwise push this device's copy. Also lists the shopper's plans.
+ */
+export async function syncPlan(local: Plan): Promise<{ plan: Plan; plans: ServerPlan[] }> {
+  if (!isSignedIn()) return { plan: local, plans: [] };
+  try {
+    const plans = await call<ServerPlan[]>('GET', 'plans');
+    const server = plans.find((p) => p.id === local.id) ?? (local.items.length === 0 ? plans[0] : undefined);
+    if (server && server.updated_at > local.updatedAt) {
+      const adopted = fromServer(server, local);
+      storeLocally(adopted);
+      return { plan: adopted, plans };
+    }
+    if (local.items.length > 0) await pushPlan(local);
+    return { plan: local, plans };
+  } catch {
+    return { plan: local, plans: [] };
+  }
+}
+
+export async function switchPlan(id: string, local: Plan): Promise<Plan> {
+  const plans = await call<ServerPlan[]>('GET', 'plans');
+  const target = plans.find((p) => p.id === id);
+  if (!target) return local;
+  const plan = fromServer(target, local);
+  storeLocally(plan);
+  return plan;
+}
+
+export async function sharePlan(plan: Plan): Promise<string> {
+  await pushPlan(plan);
+  const { token } = await call<{ token: string }>('POST', `plans/${plan.id}/share`);
+  return `${location.origin}/plan/shared/${token}`;
+}
+
+export function startNewPlan(): Plan {
+  const current = loadPlan();
+  const plan: Plan = { ...current, id: newId(), name: 'My plan', items: [], updatedAt: new Date().toISOString() };
+  storeLocally(plan);
+  return plan;
+}
+
+export type { ServerPlan };
 
 export function addToPlan(item: PlanItem) {
   const plan = loadPlan();

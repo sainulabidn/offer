@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { compare, type PlanItem } from '@offer/basket';
-import { loadDirectory, loadPlan, nearbyStores, savePlan, searchHits, toCandidate, type Hit, type Plan } from '../lib/plan';
+import { isSignedIn, signInUrl } from '../lib/account';
+import { loadDirectory, loadPlan, nearbyStores, savePlan, searchHits, sharePlan, startNewPlan, switchPlan, syncPlan, toCandidate, type Hit, type Plan, type ServerPlan } from '../lib/plan';
 
 const aed = (n: number) => `AED ${n.toFixed(2)}`;
 
@@ -13,11 +14,29 @@ export default function PlanBuilder() {
   const [scope, setScope] = useState<ReturnType<typeof nearbyStores> | null>(null);
   const [areas, setAreas] = useState<{ slug: string; name: string; lat: number; lng: number }[]>([]);
   const [error, setError] = useState('');
+  const [plans, setPlans] = useState<ServerPlan[]>([]);
+  const [shareUrl, setShareUrl] = useState('');
 
   const update = (next: Plan) => {
     setPlan(next);
-    savePlan(next);
+    savePlan(next, setPlan); // the account's newer copy replaces ours on a conflict
   };
+
+  // Signed in: bring in the newest copy from the account (another device, or family edits).
+  useEffect(() => {
+    syncPlan(plan).then(({ plan: synced, plans: list }) => {
+      setPlan(synced);
+      setPlans(list);
+    });
+  }, []);
+
+  async function share() {
+    if (!isSignedIn()) {
+      location.href = signInUrl();
+      return;
+    }
+    setShareUrl(await sharePlan(plan));
+  }
   const setSetting = <K extends keyof Plan['settings']>(key: K, value: Plan['settings'][K]) =>
     update({ ...plan, settings: { ...plan.settings, [key]: value } });
 
@@ -83,6 +102,28 @@ export default function PlanBuilder() {
   return (
     <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
       <section className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          {plans.length > 1 ? (
+            <select aria-label="Choose a plan" className="rounded-lg border border-zinc-300 bg-white px-2 py-1.5" value={plan.id} onChange={(e) => switchPlan(e.target.value, plan).then(setPlan)}>
+              {plans.map((p) => <option key={p.id} value={p.id}>{p.name}{p.is_owner ? '' : ' (shared with me)'}</option>)}
+            </select>
+          ) : (
+            <span className="font-medium">{plan.name}</span>
+          )}
+          <button type="button" onClick={share} className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5">Share plan</button>
+          <button type="button" onClick={() => setPlan(startNewPlan())} className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5">New plan</button>
+          {!isSignedIn() && <a href={signInUrl()} className="text-brand-700 underline">Sign in to use it on all your devices</a>}
+        </div>
+        {shareUrl && (
+          <div className="rounded-lg border border-brand-600 bg-brand-50 p-3 text-sm">
+            <p className="mb-1">Anyone with this link can see the list; signed-in family members can join and edit it.</p>
+            <input readOnly value={shareUrl} onFocus={(e) => e.target.select()} className="w-full rounded border px-2 py-1" />
+            <div className="mt-2 flex gap-3">
+              <a href={`https://wa.me/?text=${encodeURIComponent(`Our shopping plan: ${shareUrl}`)}`} target="_blank" rel="noopener" className="text-brand-700 underline">Send on WhatsApp</a>
+              <button type="button" onClick={() => navigator.clipboard.writeText(shareUrl)} className="text-brand-700 underline">Copy link</button>
+            </div>
+          </div>
+        )}
         <div className="relative">
           <label htmlFor="plan-add" className="mb-1 block font-semibold">Add to your list</label>
           <input id="plan-add" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="rice, milk 2L, Almarai…" className="w-full rounded-lg border border-zinc-300 px-3 py-2" autoComplete="off" />

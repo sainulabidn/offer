@@ -50,17 +50,11 @@ class GenerateImageSizes implements ShouldQueue
             $source = $work.'/original';
             file_put_contents($source, $disk->get($image->path) ?? throw new RuntimeException("Missing upload {$image->path}"));
 
-            $size = Process::run(['vipsheader', '-f', 'width', $source]);
-            $height = Process::run(['vipsheader', '-f', 'height', $source]);
-            if ($size->failed()) {
-                throw new RuntimeException('Not a readable image: '.$size->errorOutput());
-            }
+            [$width, $height] = self::hasVips() ? $this->resizeWithVips($source, $work) : $this->resizeWithGd($source, $work);
 
-            foreach (self::WIDTHS as $width) {
-                foreach (['avif' => 'Q=55,keep=none', 'webp' => 'Q=78,keep=none'] as $format => $options) {
-                    $target = "{$work}/{$width}.{$format}";
-                    Process::timeout(60)->run(['vips', 'thumbnail', $source, "{$target}[{$options}]", (string) $width, '--size', 'down'])->throw();
-                    $disk->put("{$base}-{$width}.{$format}", file_get_contents($target), [
+            foreach (self::WIDTHS as $size) {
+                foreach (['avif', 'webp'] as $format) {
+                    $disk->put("{$base}-{$size}.{$format}", file_get_contents("{$work}/{$size}.{$format}"), [
                         'visibility' => 'public',
                         'ContentType' => "image/{$format}",
                         'CacheControl' => 'public, max-age=31536000, immutable',
@@ -72,13 +66,66 @@ class GenerateImageSizes implements ShouldQueue
             rmdir($work);
         }
 
-        $image->forceFill(['width' => (int) trim($size->output()), 'height' => (int) trim($height->output())])->saveQuietly();
+        $image->forceFill(['width' => $width, 'height' => $height])->saveQuietly();
 
         Offer::query()->live()
             ->whereHas('variant', fn ($q) => $q->where('product_id', $image->product_id))
             ->with(OfferDocument::RELATIONS)
             ->get()
             ->searchable();
+    }
+
+    /** libvips is faster and strips metadata; servers without it (AlmaLinux 8) use PHP's GD. */
+    public static function hasVips(): bool
+    {
+        return match (config('filesystems.image_tool')) {
+            'vips' => true,
+            'gd' => false,
+            default => Process::run(['sh', '-c', 'command -v vips'])->successful(),
+        };
+    }
+
+    /** @return array{int, int} original width and height */
+    private function resizeWithVips(string $source, string $work): array
+    {
+        $width = Process::run(['vipsheader', '-f', 'width', $source]);
+        $height = Process::run(['vipsheader', '-f', 'height', $source]);
+        if ($width->failed()) {
+            throw new RuntimeException('Not a readable image: '.$width->errorOutput());
+        }
+
+        foreach (self::WIDTHS as $size) {
+            foreach (['avif' => 'Q=55,keep=none', 'webp' => 'Q=78,keep=none'] as $format => $options) {
+                Process::timeout(60)->run(['vips', 'thumbnail', $source, "{$work}/{$size}.{$format}[{$options}]", (string) $size, '--size', 'down'])->throw();
+            }
+        }
+
+        return [(int) trim($width->output()), (int) trim($height->output())];
+    }
+
+    /** Same files with GD (no metadata is copied: GD re-encodes pixels only). @return array{int, int} */
+    private function resizeWithGd(string $source, string $work): array
+    {
+        $original = @imagecreatefromstring((string) file_get_contents($source));
+        if (! $original) {
+            throw new RuntimeException('Not a readable image (JPG, PNG or WebP expected).');
+        }
+        $width = imagesx($original);
+        $height = imagesy($original);
+
+        foreach (self::WIDTHS as $size) {
+            // Never upscale: small originals keep their own size.
+            $resized = $size < $width ? imagescale($original, $size, -1, IMG_BICUBIC) : $original;
+            imagesavealpha($resized, true);
+            imageavif($resized, "{$work}/{$size}.avif", 55, 6) || throw new RuntimeException('GD could not write AVIF.');
+            imagewebp($resized, "{$work}/{$size}.webp", 78) || throw new RuntimeException('GD could not write WebP.');
+            if ($resized !== $original) {
+                imagedestroy($resized);
+            }
+        }
+        imagedestroy($original);
+
+        return [$width, $height];
     }
 
     /** "products/abc.jpg" → "products/abc"; sizes are "{base}-{width}.{avif|webp}". */

@@ -7,7 +7,7 @@ import { PUBLIC_API_URL } from 'astro:env/client';
 const SIGNED_IN = 'offer:signed-in';
 
 export class ApiError extends Error {
-  constructor(public status: number, public errors: Record<string, string[]> = {}) {
+  constructor(public status: number, public errors: Record<string, string[]> = {}, public body: unknown = null) {
     super(Object.values(errors)[0]?.[0] ?? `Request failed (${status})`);
   }
 }
@@ -21,7 +21,7 @@ let csrfReady: Promise<void> | null = null;
 const ensureCsrf = () =>
   (csrfReady ??= fetch(`${PUBLIC_API_URL}/sanctum/csrf-cookie`, { credentials: 'include' }).then(() => undefined));
 
-export async function call<T>(method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown): Promise<T> {
+export async function call<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown): Promise<T> {
   if (method !== 'GET') await ensureCsrf();
   const response = await fetch(`${PUBLIC_API_URL}/api/v1/${path}`, {
     method,
@@ -32,7 +32,7 @@ export async function call<T>(method: 'GET' | 'POST' | 'DELETE', path: string, b
   if (response.status === 401) markSignedOut();
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new ApiError(response.status, data.errors ?? (data.message ? { message: [data.message] } : {}));
+    throw new ApiError(response.status, data.errors ?? (data.message ? { message: [data.message] } : {}), data);
   }
   return (await response.json()) as T;
 }

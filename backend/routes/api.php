@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\ChainController;
 use App\Http\Controllers\Api\V1\DirectoryController;
 use App\Http\Controllers\Api\V1\EngagementController;
+use App\Http\Controllers\Api\V1\PlanController;
 use App\Http\Controllers\Api\V1\ProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +30,9 @@ Route::prefix('v1')->group(function () {
     // Reports are open to guests (Turnstile-checked), but rate limited.
     Route::post('reports', [EngagementController::class, 'report'])->middleware('throttle:reports');
 
+    // Anyone with a plan's share link can view it.
+    Route::get('shared-plans/{token}', [PlanController::class, 'shared'])->middleware('throttle:public-read');
+
     Route::middleware(['auth:sanctum', 'throttle:account'])->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::post('auth/logout', [AuthController::class, 'logout']);
@@ -37,5 +41,10 @@ Route::prefix('v1')->group(function () {
         Route::get('alerts', [AlertController::class, 'index']);
         Route::post('alerts', [AlertController::class, 'store']);
         Route::delete('alerts/{alert}', [AlertController::class, 'destroy']);
+        Route::get('plans', [PlanController::class, 'index']);
+        Route::put('plans/{id}', [PlanController::class, 'upsert']);
+        Route::delete('plans/{plan}', [PlanController::class, 'destroy']);
+        Route::post('plans/{plan}/share', [PlanController::class, 'share']);
+        Route::post('shared-plans/{token}/join', [PlanController::class, 'join']);
     });
 });
