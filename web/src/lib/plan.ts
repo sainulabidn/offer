@@ -161,7 +161,8 @@ export const loadDirectory = () =>
   (directoryCache ??= fetch(`${PUBLIC_API_URL}/api/v1/directory`).then((r) => r.json() as Promise<Directory>));
 
 let searchCache: Promise<{ url: string; collection: string; key: string }> | null = null;
-const searchConfig = () => (searchCache ??= fetch(`${PUBLIC_API_URL}/api/v1/search-config`).then((r) => r.json()));
+/** Public search endpoint and scoped key (cached for the page). */
+export const searchConfig = () => (searchCache ??= fetch(`${PUBLIC_API_URL}/api/v1/search-config`).then((r) => r.json()));
 
 export interface Hit {
   id: string;

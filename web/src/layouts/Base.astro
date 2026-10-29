@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import SearchBox from '../islands/SearchBox';
 
 interface Props {
   title: string;
@@ -26,18 +27,8 @@ const q = Astro.url.searchParams.get('q') ?? '';
     <header class="sticky top-0 z-20 border-b border-zinc-200 bg-white/95 backdrop-blur">
       <div class="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3">
         <a href="/" class="text-xl font-bold text-brand-700">offer</a>
-        <form action="/search" method="get" role="search" class="flex flex-1">
-          <label for="site-search" class="sr-only">Search offers</label>
-          <input
-            id="site-search"
-            name="q"
-            value={q}
-            type="search"
-            placeholder="Search rice, milk, Almarai…"
-            class="w-full rounded-s-lg border border-zinc-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none"
-          />
-          <button class="rounded-e-lg bg-brand-600 px-4 text-sm font-medium text-white">Search</button>
-        </form>
+        <!-- Server-rendered as a plain search form; suggestions start once the page is idle. -->
+        <SearchBox client:idle initial={q} />
         <a href="/plan" class="shrink-0 text-sm font-medium text-zinc-700">My plan</a>
         <a href="/account" class="shrink-0 text-sm font-medium text-zinc-700">Account</a>
       </div>

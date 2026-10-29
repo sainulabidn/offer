@@ -75,6 +75,9 @@ export async function searchOffers({ q = '', filters = [], sort = 'deal', page =
   const params = new URLSearchParams({
     q: q.trim() || '*',
     query_by: 'product_name,brand,product_group,variant_label,chain_name',
+    // Same typo rules as the search box (lib/suggest.ts), so Enter finds what the suggestions showed.
+    min_len_1typo: '3',
+    min_len_2typo: '6',
     sort_by: SORTS[sort]?.by ?? SORTS.deal.by,
     page: String(page),
     per_page: String(perPage),

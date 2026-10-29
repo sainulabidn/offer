@@ -28,7 +28,8 @@ final class OfferDocument
         return [
             'fields' => [
                 ['name' => 'id', 'type' => 'string'],
-                ['name' => 'product_id', 'type' => 'int32'],
+                // facet: suggestions group offers by product (one row per product).
+                ['name' => 'product_id', 'type' => 'int32', 'facet' => true],
                 ['name' => 'product_slug', 'type' => 'string', 'index' => false, 'optional' => true],
                 ['name' => 'product_name', 'type' => 'string'],
                 ['name' => 'product_name_ar', 'type' => 'string', 'optional' => true],
