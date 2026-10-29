@@ -19,6 +19,21 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (!PASS_TO_ORIGIN) return next();
 
   const path = context.url.pathname;
+  // Search-as-you-type: identical queries from many shoppers (the key is the same public scoped key),
+  // so answer them from the edge for a minute instead of going to the origin on every keystroke.
+  if (path.startsWith('/typesense/') && context.request.method === 'GET') {
+    const key = new Request(context.url.toString(), { method: 'GET' });
+    const hit = await edgeCache().match(key);
+    if (hit) return hit;
+    const origin = await fetch(context.request);
+    if (origin.status === 200) {
+      const response = new Response(origin.body, origin);
+      response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=60');
+      await edgeCache().put(key, response.clone());
+      return response;
+    }
+    return origin;
+  }
   if (ORIGIN_PATTERN.test(path) || ORIGIN_PATHS.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
     return fetch(context.request);
   }
