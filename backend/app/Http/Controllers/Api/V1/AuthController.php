@@ -81,6 +81,6 @@ class AuthController extends Controller
 
     private function profile(User $user): array
     {
-        return ['id' => $user->id, 'name' => $user->name, 'email' => $user->email];
+        return $user->toProfile();
     }
 }

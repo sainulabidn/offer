@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { call, isSignedIn, markSignedOut, signInUrl } from '../lib/account';
+import { addPasskey, listPasskeys, passkeyError, passkeysSupported, removePasskey, type PasskeyRow } from '../lib/passkeys';
 
 interface AlertRow {
   id: number;
@@ -10,7 +11,7 @@ interface AlertRow {
   last_notified_at: string | null;
 }
 
-/** Signed-in shopper: who am I, my alerts (with delete), sign out. */
+/** Signed-in shopper: who am I, passkeys, my alerts (with delete), sign out. */
 export default function AccountPanel() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [alerts, setAlerts] = useState<AlertRow[]>([]);
@@ -40,6 +41,7 @@ export default function AccountPanel() {
   return (
     <div className="space-y-6">
       <p>Signed in as <strong>{user.email}</strong>. <button type="button" onClick={signOut} className="text-brand-700 underline">Sign out</button></p>
+      {passkeysSupported() && <Passkeys />}
       <section>
         <h2 className="mb-2 text-lg font-semibold">My alerts</h2>
         {alerts.length === 0 ? (
@@ -63,5 +65,65 @@ export default function AccountPanel() {
         )}
       </section>
     </div>
+  );
+}
+
+/** Passkeys on this account: sign in with fingerprint, face or screen lock instead of an email code. */
+function Passkeys() {
+  const [passkeys, setPasskeys] = useState<PasskeyRow[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const load = () => listPasskeys().then(setPasskeys).catch(() => setPasskeys([]));
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function add() {
+    setBusy(true);
+    setError('');
+    try {
+      await addPasskey();
+      await load();
+    } catch (e) {
+      setError(passkeyError(e) ?? '');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(passkey: PasskeyRow) {
+    if (!confirm(`Remove “${passkey.name}”? You can still sign in with an email code.`)) return;
+    await removePasskey(passkey.id).catch(() => null);
+    setPasskeys((list) => list?.filter((p) => p.id !== passkey.id) ?? null);
+  }
+
+  const date = (iso: string) => new Date(iso).toLocaleDateString();
+
+  return (
+    <section>
+      <h2 className="mb-1 text-lg font-semibold">Passkeys</h2>
+      <p className="mb-2 text-sm text-zinc-500">Sign in with your fingerprint, face or screen lock. Nothing to type, nothing to forget.</p>
+      {passkeys && passkeys.length > 0 && (
+        <ul className="mb-3 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white text-sm">
+          {passkeys.map((p) => (
+            <li key={p.id} className="flex items-center gap-3 p-3">
+              <div className="flex-1">
+                <p className="font-medium">{p.name}</p>
+                <p className="text-xs text-zinc-500">
+                  {p.authenticator && `${p.authenticator} · `}added {date(p.created_at)}
+                  {p.last_used_at ? ` · last used ${date(p.last_used_at)}` : ' · not used yet'}
+                </p>
+              </div>
+              <button type="button" onClick={() => remove(p)} className="text-xs text-deal underline">Remove</button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {error && <p className="mb-2 text-sm text-deal">{error}</p>}
+      <button type="button" disabled={busy || passkeys === null} onClick={add} className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium disabled:opacity-60">
+        {busy ? 'Waiting for your device…' : passkeys?.length ? 'Add another passkey' : 'Create a passkey'}
+      </button>
+    </section>
   );
 }

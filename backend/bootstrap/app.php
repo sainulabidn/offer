@@ -5,6 +5,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Webauthn\Exception\WebauthnException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -29,4 +30,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // A passkey that fails the WebAuthn checks (wrong site, bad signature, reused answer) is the
+        // shopper's problem to retry, not a server error: answer 422 and don't log it.
+        $exceptions->dontReport(WebauthnException::class);
+        $exceptions->render(fn (WebauthnException $e) => response()->json([
+            'message' => 'This passkey could not be verified. Please try again.',
+            'errors' => ['credential' => ['This passkey could not be verified. Please try again.']],
+        ], 422));
     })->create();

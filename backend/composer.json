@@ -13,6 +13,7 @@
         "laravel/framework": "^13.17",
         "laravel/horizon": "^5.50",
         "laravel/octane": "^2.22",
+        "laravel/passkeys": "^0.2.1",
         "laravel/sanctum": "^4.0",
         "laravel/scout": "^11.9",
         "laravel/tinker": "^3.0",

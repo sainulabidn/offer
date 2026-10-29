@@ -6,9 +6,12 @@ use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\ChainController;
 use App\Http\Controllers\Api\V1\DirectoryController;
 use App\Http\Controllers\Api\V1\EngagementController;
+use App\Http\Controllers\Api\V1\PasskeyController;
 use App\Http\Controllers\Api\V1\PlanController;
 use App\Http\Controllers\Api\V1\ProductController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Passkeys\Http\Controllers\PasskeyLoginController;
+use Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController;
 
 Route::prefix('v1')->group(function () {
     // Public, cacheable reads. The website renders at the edge and caches these, so the limit is generous.
@@ -26,6 +29,19 @@ Route::prefix('v1')->group(function () {
     // Sign-in by emailed code.
     Route::post('auth/code', [AuthController::class, 'sendCode'])->middleware('throttle:login-code');
     Route::post('auth/verify', [AuthController::class, 'verify'])->middleware('throttle:login-verify');
+
+    // Passkeys (laravel/passkeys). The challenge is kept in the session between the two requests.
+    Route::middleware(config('passkeys.throttle'))->group(function () {
+        Route::get('auth/passkey/options', [PasskeyLoginController::class, 'index']);
+        Route::post('auth/passkey', [PasskeyLoginController::class, 'store']);
+
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::get('passkeys', [PasskeyController::class, 'index']);
+            Route::get('passkeys/options', [PasskeyRegistrationController::class, 'index']);
+            Route::post('passkeys', [PasskeyRegistrationController::class, 'store']);
+            Route::delete('passkeys/{passkey}', [PasskeyRegistrationController::class, 'destroy']);
+        });
+    });
 
     // Reports are open to guests (Turnstile-checked), but rate limited.
     Route::post('reports', [EngagementController::class, 'report'])->middleware('throttle:reports');
