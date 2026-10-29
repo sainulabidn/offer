@@ -18,7 +18,7 @@ class ProductGroupForm
             ->components([
                 Fields::translatable('name', 'Name', fillsSlug: true)->columnSpanFull(),
                 Fields::slug(),
-                Fields::belongsTo('category_id', 'category', 'Category')->required(),
+                Fields::belongsTo('category_id', 'category', 'Category', section: 'categories')->required(),
                 TextInput::make('comparison_quantity')
                     ->label('Compare per quantity')
                     ->numeric()

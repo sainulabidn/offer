@@ -2,6 +2,9 @@
 
 namespace App\Domain\Catalog;
 
+use App\Domain\Access\Audited;
+use App\Domain\Access\NeedsReview;
+use App\Domain\Access\RecordsCreator;
 use App\Domain\Engagement\Like;
 use App\Domain\Engagement\Report;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +16,7 @@ use Spatie\Translatable\HasTranslations;
 /** One product page with a variant picker ("India Gate Classic Basmati Rice"). */
 class Product extends Model
 {
+    use Audited, NeedsReview, RecordsCreator;
     use HasTranslations;
 
     protected $guarded = [];

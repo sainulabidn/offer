@@ -2,6 +2,9 @@
 
 namespace App\Domain\Catalog;
 
+use App\Domain\Access\Audited;
+use App\Domain\Access\NeedsReview;
+use App\Domain\Access\RecordsCreator;
 use App\Domain\Retail\Chain;
 use App\Domain\Search\Synonyms;
 use Illuminate\Database\Eloquent\Model;
@@ -11,6 +14,7 @@ use Spatie\Translatable\HasTranslations;
 
 class Brand extends Model
 {
+    use Audited, NeedsReview, RecordsCreator;
     use HasTranslations;
 
     protected $guarded = [];

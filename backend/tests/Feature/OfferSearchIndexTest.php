@@ -3,6 +3,7 @@
 use App\Domain\Brochures\Brochure;
 use App\Domain\Brochures\BrochureStatus;
 use App\Domain\Brochures\PublishBrochure;
+use App\Domain\Catalog\Category;
 use App\Domain\Catalog\Product;
 use App\Domain\Offers\ExpireOffers;
 use App\Domain\Offers\Offer;
@@ -65,7 +66,7 @@ it('indexes multi-buy details for the shopping plan', function () {
 
 it('finds offers of a parent category', function () {
     app(PublishBrochure::class)($this->brochure);
-    $pantry = App\Domain\Catalog\Category::where('slug', 'pantry')->value('id');
+    $pantry = Category::where('slug', 'pantry')->value('id');
 
     $found = Offer::search('*')->options(['filter_by' => "category_ids:={$pantry}"])->raw()['found'];
 

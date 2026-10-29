@@ -2,6 +2,9 @@
 
 namespace App\Domain\Catalog;
 
+use App\Domain\Access\Audited;
+use App\Domain\Access\NeedsReview;
+use App\Domain\Access\RecordsCreator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +15,7 @@ use Spatie\Translatable\HasTranslations;
 /** Category tree; `path` holds ancestor IDs ("/1/5/") so a parent query can include every child. */
 class Category extends Model
 {
+    use Audited, NeedsReview, RecordsCreator;
     use HasTranslations;
 
     protected $guarded = [];

@@ -8,6 +8,8 @@ use App\Filament\Resources\Brands\Pages\EditBrand;
 use App\Filament\Resources\Brands\Pages\ListBrands;
 use App\Filament\Resources\Brands\Schemas\BrandForm;
 use App\Filament\Resources\Brands\Tables\BrandsTable;
+use App\Filament\Support\Review;
+use App\Filament\Support\ScopedByAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -17,6 +19,13 @@ use UnitEnum;
 
 class BrandResource extends Resource
 {
+    use ScopedByAccess;
+
+    public static function getNavigationBadge(): ?string
+    {
+        return Review::badge('brands', static::getModel());
+    }
+
     protected static ?string $model = Brand::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;

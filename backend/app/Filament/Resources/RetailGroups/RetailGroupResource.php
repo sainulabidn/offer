@@ -8,6 +8,7 @@ use App\Filament\Resources\RetailGroups\Pages\EditRetailGroup;
 use App\Filament\Resources\RetailGroups\Pages\ListRetailGroups;
 use App\Filament\Resources\RetailGroups\Schemas\RetailGroupForm;
 use App\Filament\Resources\RetailGroups\Tables\RetailGroupsTable;
+use App\Filament\Support\ScopedByAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -17,6 +18,8 @@ use UnitEnum;
 
 class RetailGroupResource extends Resource
 {
+    use ScopedByAccess;
+
     protected static ?string $model = RetailGroup::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;

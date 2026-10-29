@@ -2,6 +2,8 @@
 
 namespace App\Domain\Brochures;
 
+use App\Domain\Access\Audited;
+use App\Domain\Access\RecordsCreator;
 use App\Domain\Offers\Offer;
 use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
@@ -15,6 +17,7 @@ use Spatie\Translatable\HasTranslations;
 /** A weekly/daily brochure (PDF, images, or "digital" for web-only offers). `validity` is a generated daterange. */
 class Brochure extends Model
 {
+    use Audited, RecordsCreator;
     use HasTranslations;
 
     protected $guarded = ['validity'];

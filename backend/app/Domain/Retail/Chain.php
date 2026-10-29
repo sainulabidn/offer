@@ -2,6 +2,8 @@
 
 namespace App\Domain\Retail;
 
+use App\Domain\Access\Audited;
+use App\Domain\Access\RecordsCreator;
 use App\Domain\Brochures\Brochure;
 use App\Domain\Geo\Country;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +14,7 @@ use Spatie\Translatable\HasTranslations;
 /** A store banner/format such as "Lulu Hypermarket". */
 class Chain extends Model
 {
+    use Audited, RecordsCreator;
     use HasTranslations;
 
     protected $guarded = [];

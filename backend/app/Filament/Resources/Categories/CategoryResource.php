@@ -8,6 +8,8 @@ use App\Filament\Resources\Categories\Pages\EditCategory;
 use App\Filament\Resources\Categories\Pages\ListCategories;
 use App\Filament\Resources\Categories\Schemas\CategoryForm;
 use App\Filament\Resources\Categories\Tables\CategoriesTable;
+use App\Filament\Support\Review;
+use App\Filament\Support\ScopedByAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -17,6 +19,13 @@ use UnitEnum;
 
 class CategoryResource extends Resource
 {
+    use ScopedByAccess;
+
+    public static function getNavigationBadge(): ?string
+    {
+        return Review::badge('categories', static::getModel());
+    }
+
     protected static ?string $model = Category::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolder;

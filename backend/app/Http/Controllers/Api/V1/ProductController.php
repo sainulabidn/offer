@@ -16,7 +16,7 @@ class ProductController extends Controller
     /** Price history for the chart: per variant and store, every published offer of the last 120 days. */
     public function history(string $slug): JsonResponse
     {
-        $product = Product::where('slug', $slug)->where('status', ProductStatus::Active)->firstOrFail();
+        $product = Product::approved()->where('slug', $slug)->where('status', ProductStatus::Active)->firstOrFail();
 
         $offers = Offer::query()
             ->whereHas('variant', fn ($q) => $q->where('product_id', $product->id))
@@ -44,6 +44,7 @@ class ProductController extends Controller
     {
         $product = Product::query()
             ->where('slug', $slug)
+            ->approved()
             ->where('status', ProductStatus::Active)
             ->with([
                 'brand', 'category', 'productGroup', 'images',

@@ -9,6 +9,7 @@ use App\Filament\Resources\Brochures\Pages\ListBrochures;
 use App\Filament\Resources\Brochures\RelationManagers\OffersRelationManager;
 use App\Filament\Resources\Brochures\Schemas\BrochureForm;
 use App\Filament\Resources\Brochures\Tables\BrochuresTable;
+use App\Filament\Support\ScopedByAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -18,6 +19,8 @@ use UnitEnum;
 
 class BrochureResource extends Resource
 {
+    use ScopedByAccess;
+
     protected static ?string $model = Brochure::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedNewspaper;

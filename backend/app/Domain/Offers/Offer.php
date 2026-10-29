@@ -2,8 +2,11 @@
 
 namespace App\Domain\Offers;
 
+use App\Domain\Access\Audited;
+use App\Domain\Access\RecordsCreator;
 use App\Domain\Brochures\Brochure;
 use App\Domain\Brochures\BrochurePage;
+use App\Domain\Catalog\ProductStatus;
 use App\Domain\Catalog\ProductVariant;
 use App\Domain\Engagement\Like;
 use App\Domain\Engagement\Report;
@@ -21,6 +24,7 @@ use Spatie\Translatable\HasTranslations;
 /** A price for a variant at a chain's branches for given dates, taken from a brochure. */
 class Offer extends Model
 {
+    use Audited, RecordsCreator;
     use HasTranslations, Searchable;
 
     protected $guarded = ['validity'];
@@ -61,11 +65,15 @@ class Offer extends Model
             ->whereDate('valid_to', '>=', $day);
     }
 
-    /** Only live offers are searchable; expired ones drop out of Typesense. */
+    /** Only live offers are searchable; expired ones, and products not (yet) approved or active, drop out of Typesense. */
     public function shouldBeSearchable(): bool
     {
-        return $this->status === OfferStatus::Published
-            && $this->valid_to?->endOfDay()->isFuture();
+        if ($this->status !== OfferStatus::Published || ! $this->valid_to?->endOfDay()->isFuture()) {
+            return false;
+        }
+        $product = $this->loadMissing('variant.product')->variant?->product;
+
+        return $product !== null && $product->isApproved() && $product->status === ProductStatus::Active;
     }
 
     public function toSearchableArray(): array

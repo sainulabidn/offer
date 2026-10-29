@@ -8,6 +8,7 @@ use App\Filament\Resources\Branches\Pages\EditBranch;
 use App\Filament\Resources\Branches\Pages\ListBranches;
 use App\Filament\Resources\Branches\Schemas\BranchForm;
 use App\Filament\Resources\Branches\Tables\BranchesTable;
+use App\Filament\Support\ScopedByAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -17,6 +18,8 @@ use UnitEnum;
 
 class BranchResource extends Resource
 {
+    use ScopedByAccess;
+
     protected static ?string $model = Branch::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMapPin;

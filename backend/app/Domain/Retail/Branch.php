@@ -2,6 +2,8 @@
 
 namespace App\Domain\Retail;
 
+use App\Domain\Access\Audited;
+use App\Domain\Access\RecordsCreator;
 use App\Domain\Geo\Region;
 use Clickbar\Magellan\Data\Geometries\Point;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +14,7 @@ use Spatie\Translatable\HasTranslations;
 /** One physical store. */
 class Branch extends Model
 {
+    use Audited, RecordsCreator;
     use HasTranslations;
 
     protected $guarded = [];

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Support;
 
+use App\Domain\Access\Access;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -44,12 +45,17 @@ final class Fields
             ->unique(ignoreRecord: true);
     }
 
-    /** Searchable select for a related model with a translatable `name`; searches by slug, shows the name. */
-    public static function belongsTo(string $field, string $relationship, ?string $label = null): Select
+    /**
+     * Searchable select for a related model with a translatable `name`; searches by slug, shows the name.
+     * With an access section (e.g. "chains"), only offers what the signed-in person may see, such as their own stores.
+     */
+    public static function belongsTo(string $field, string $relationship, ?string $label = null, ?string $section = null): Select
     {
         return Select::make($field)
             ->label($label)
-            ->relationship($relationship, 'slug')
+            ->relationship($relationship, 'slug', modifyQueryUsing: $section
+                ? fn (Builder $query) => Access::scope($query, Access::user(), $section)
+                : null)
             ->getOptionLabelFromRecordUsing(fn (Model $record) => $record->name)
             ->searchable()
             ->preload();

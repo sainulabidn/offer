@@ -2,6 +2,8 @@
 
 namespace App\Domain\Search;
 
+use App\Domain\Access\Audited;
+use App\Domain\Access\RecordsCreator;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -11,6 +13,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Synonym extends Model
 {
+    use Audited, RecordsCreator;
+
     protected $table = 'search_synonyms';
 
     protected $guarded = [];

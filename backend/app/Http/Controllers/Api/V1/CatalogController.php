@@ -15,7 +15,7 @@ class CatalogController extends Controller
     /** Category tree for menus and filters. */
     public function categories(): JsonResponse
     {
-        $categories = Category::query()->where('is_active', true)->orderBy('sort')->get();
+        $categories = Category::query()->approved()->where('is_active', true)->orderBy('sort')->get();
         $node = function (Category $category) use (&$node, $categories): array {
             return [
                 'id' => $category->id,
@@ -34,10 +34,10 @@ class CatalogController extends Controller
     public function sitemap(): JsonResponse
     {
         return response()->json([
-            'products' => Product::query()->where('status', ProductStatus::Active)->get(['slug', 'updated_at'])
+            'products' => Product::query()->approved()->where('status', ProductStatus::Active)->get(['slug', 'updated_at'])
                 ->map(fn (Product $p) => ['slug' => $p->slug, 'updated' => $p->updated_at->toDateString()]),
             'chains' => Chain::query()->where('is_active', true)->pluck('slug'),
-            'categories' => Category::query()->where('is_active', true)->pluck('slug'),
+            'categories' => Category::query()->approved()->where('is_active', true)->pluck('slug'),
         ])->setCache(['public' => true, 'max_age' => 3600, 's_maxage' => 3600]);
     }
 

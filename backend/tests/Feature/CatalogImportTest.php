@@ -46,7 +46,7 @@ it('adds more variants to the same product and updates on re-import', function (
         ->and(ProductVariant::count())->toBe(2);
 });
 
-it('handles multipacks and per-100-sheet groups', function () use ($row) {
+it('handles multipacks and per-100-sheet groups', function () {
     $variant = ($this->import)([
         'category' => 'paper-tissues', 'product_group' => 'Facial Tissues', 'brand' => 'Fine',
         'product_name' => 'Fine Facial Tissues', 'pack_count' => '5', 'unit_qty' => '200', 'unit' => 'sheets',

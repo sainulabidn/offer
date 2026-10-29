@@ -2,6 +2,8 @@
 
 namespace App\Domain\Retail;
 
+use App\Domain\Access\Audited;
+use App\Domain\Access\RecordsCreator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Translatable\HasTranslations;
@@ -9,6 +11,7 @@ use Spatie\Translatable\HasTranslations;
 /** Operating company that owns one or more chains (banners). */
 class RetailGroup extends Model
 {
+    use Audited, RecordsCreator;
     use HasTranslations;
 
     protected $guarded = [];

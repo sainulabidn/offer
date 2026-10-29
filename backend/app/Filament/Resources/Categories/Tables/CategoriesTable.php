@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Categories\Tables;
 
 use App\Domain\Catalog\Category;
+use App\Filament\Support\Review;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -23,10 +24,13 @@ class CategoriesTable
                 TextColumn::make('slug')->toggleable(),
                 TextColumn::make('children_count')->label('Subcategories'),
                 IconColumn::make('is_active')->boolean(),
+                Review::column(),
             ])
+            ->filters([Review::filter()])
             ->paginated([25, 50, 100])
             ->recordActions([
                 EditAction::make(),
+                ...Review::actions('categories'),
             ]);
     }
 }

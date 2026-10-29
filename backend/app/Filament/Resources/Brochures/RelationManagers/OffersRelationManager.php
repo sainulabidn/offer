@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Brochures\RelationManagers;
 
+use App\Domain\Access\Access;
+use App\Domain\Brochures\BrochureStatus;
 use App\Domain\Catalog\ProductVariant;
 use App\Domain\Offers\Offer;
 use App\Domain\Offers\OfferStatus;
@@ -29,6 +31,20 @@ class OffersRelationManager extends RelationManager
 {
     protected static string $relationship = 'offers';
 
+    /** Without the publish permission, a live brochure's offers can be seen but not changed. */
+    public function isReadOnly(): bool
+    {
+        $brochure = $this->getOwnerRecord();
+
+        return ! Access::allows(Access::user(), 'brochures', 'edit', $brochure)
+            || ($brochure->status === BrochureStatus::Published && ! $this->canPublish());
+    }
+
+    private function canPublish(): bool
+    {
+        return Access::allows(Access::user(), 'brochures', 'publish', $this->getOwnerRecord());
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -39,10 +55,13 @@ class OffersRelationManager extends RelationManager
                     ->required()
                     ->searchable()
                     ->columnSpanFull()
+                    // Only products the person can see: approved ones, plus their own waiting for review.
                     ->getSearchResultsUsing(fn (string $search) => ProductVariant::query()
                         ->with(['product', 'optionValues'])
-                        ->whereHas('product', fn (Builder $q) => $q->whereRaw("name->>'en' ilike ?", ['%'.$search.'%']))
-                        ->orWhere('gtin', $search)
+                        ->whereHas('product', fn (Builder $q) => Access::scope($q, Access::user(), 'products'))
+                        ->where(fn (Builder $q) => $q
+                            ->whereHas('product', fn (Builder $q) => $q->whereRaw("name->>'en' ilike ?", ['%'.$search.'%']))
+                            ->orWhere('gtin', $search))
                         ->limit(30)
                         ->get()
                         ->mapWithKeys(fn (ProductVariant $v) => [$v->id => $v->label()]))
@@ -56,7 +75,13 @@ class OffersRelationManager extends RelationManager
                     ->default(PromoType::Price)
                     ->required()
                     ->live(),
-                Select::make('status')->options(OfferStatus::class)->default(OfferStatus::Draft)->required(),
+                // Publishing is a permission: others leave offers as draft/approved and submit the brochure.
+                Select::make('status')
+                    ->options(fn () => collect(OfferStatus::cases())
+                        ->reject(fn (OfferStatus $s) => ! $this->canPublish() && in_array($s, [OfferStatus::Published, OfferStatus::Expired], true))
+                        ->mapWithKeys(fn (OfferStatus $s) => [$s->value => $s->getLabel()]))
+                    ->default(OfferStatus::Draft)
+                    ->required(),
                 TextInput::make('promo_params.qty')->label('Buy quantity (n for X)')->integer()->minValue(2)
                     ->visible(fn (Get $get) => self::is($get('promo_type'), PromoType::Multibuy))->required(fn (Get $get) => self::is($get('promo_type'), PromoType::Multibuy)),
                 TextInput::make('promo_params.total')->label('For total (AED)')->numeric()->gt(0)

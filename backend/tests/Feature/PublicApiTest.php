@@ -1,6 +1,8 @@
 <?php
 
+use App\Domain\Catalog\Product;
 use App\Domain\Offers\Offer;
+use App\Domain\Search\SearchKeys;
 use Database\Seeders\CatalogStructureSeeder;
 use Database\Seeders\DemoCatalogSeeder;
 use Database\Seeders\DemoOffersSeeder;
@@ -28,7 +30,7 @@ it('returns a product with every store price per variant, cheapest per unit firs
 });
 
 it('hides draft products', function () {
-    App\Domain\Catalog\Product::where('slug', 'banana')->update(['status' => 'draft']);
+    Product::where('slug', 'banana')->update(['status' => 'draft']);
 
     getJson('/api/v1/products/banana')->assertNotFound();
 });
@@ -57,7 +59,7 @@ it('returns the category tree', function () {
 });
 
 it('hands out a scoped search key that can search but not write', function () {
-    config(['services.typesense.search_key' => app(App\Domain\Search\SearchKeys::class)->createSearchOnlyKey()]);
+    config(['services.typesense.search_key' => app(SearchKeys::class)->createSearchOnlyKey()]);
     $key = getJson('/api/v1/search-config')->assertOk()->json('key');
 
     $search = Http::withHeaders(['X-TYPESENSE-API-KEY' => $key])

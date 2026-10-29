@@ -7,8 +7,8 @@ use App\Filament\Support\Fields;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -29,12 +29,12 @@ class ProductForm
                             ->options(ProductStatus::class)
                             ->default(ProductStatus::Draft)
                             ->required(),
-                        Fields::belongsTo('brand_id', 'brand', 'Brand')
+                        Fields::belongsTo('brand_id', 'brand', 'Brand', section: 'brands')
                             ->helperText('Leave empty for unbranded fresh items such as bananas.'),
-                        Fields::belongsTo('product_group_id', 'productGroup', 'Product group')
+                        Fields::belongsTo('product_group_id', 'productGroup', 'Product group', section: 'product_groups')
                             ->required()
                             ->helperText('The generic item shoppers compare across brands, e.g. "Basmati Rice".'),
-                        Fields::belongsTo('category_id', 'category', 'Category')->required(),
+                        Fields::belongsTo('category_id', 'category', 'Category', section: 'categories')->required(),
                         Toggle::make('is_variable_weight')
                             ->label('Sold by weight (priced per kg)')
                             ->inline(false),

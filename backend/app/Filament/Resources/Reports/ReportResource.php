@@ -6,6 +6,7 @@ use App\Domain\Engagement\Report;
 use App\Domain\Engagement\ReportStatus;
 use App\Filament\Resources\Reports\Pages\ListReports;
 use App\Filament\Resources\Reports\Tables\ReportsTable;
+use App\Filament\Support\ScopedByAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
@@ -15,6 +16,8 @@ use UnitEnum;
 /** Shopper reports queue: staff check the item, fix it in the brochure or catalog, then accept or reject. */
 class ReportResource extends Resource
 {
+    use ScopedByAccess;
+
     protected static ?string $model = Report::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFlag;

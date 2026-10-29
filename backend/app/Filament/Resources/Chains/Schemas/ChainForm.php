@@ -20,7 +20,7 @@ class ChainForm
                 Fields::translatable('name', 'Name', fillsSlug: true)->columnSpanFull(),
                 Fields::slug(),
                 Select::make('format')->options(ChainFormat::class)->required(),
-                Fields::belongsTo('retail_group_id', 'retailGroup', 'Retail group'),
+                Fields::belongsTo('retail_group_id', 'retailGroup', 'Retail group', section: 'retail_groups'),
                 Select::make('country_id')
                     ->label('Country')
                     ->relationship('country', 'code')

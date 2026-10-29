@@ -20,7 +20,7 @@ class BranchForm
                     ->columnSpanFull()
                     ->columns(2)
                     ->schema([
-                        Fields::belongsTo('chain_id', 'chain', 'Chain')->required(),
+                        Fields::belongsTo('chain_id', 'chain', 'Chain', section: 'chains')->required(),
                         Fields::belongsTo('region_id', 'region', 'Area'),
                         Fields::translatable('name', 'Branch name', fillsSlug: true)->columnSpanFull(),
                         // Unique within the chain only: two chains can both have an "al-barsha" branch.

@@ -2,16 +2,19 @@
 
 use App\Domain\Catalog\Product;
 use App\Domain\Engagement\Report;
-use App\Domain\Engagement\ReportStatus;
 use App\Domain\Engagement\Reports;
+use App\Domain\Engagement\ReportStatus;
 use App\Domain\Offers\Offer;
+use App\Filament\Resources\Reports\Pages\ListReports;
 use App\Models\User;
 use App\Notifications\LoginCode;
 use Database\Seeders\CatalogStructureSeeder;
 use Database\Seeders\DemoCatalogSeeder;
 use Database\Seeders\DemoOffersSeeder;
 use Database\Seeders\GeoSeeder;
+use Database\Seeders\StaffSeeder;
 use Database\Seeders\UnitSeeder;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 
@@ -77,7 +80,7 @@ it('accepts a guest report once per item', function () {
 });
 
 it('lists open reports for staff and resolves them from the queue', function () {
-    $this->seed(Database\Seeders\StaffSeeder::class);
+    $this->seed(StaffSeeder::class);
     postJson('/api/v1/reports', ['type' => 'offer', 'id' => $this->offer->id, 'reason' => 'expired']);
     $staff = User::factory()->create();
     $staff->assignRole('reviewer');
@@ -85,8 +88,8 @@ it('lists open reports for staff and resolves them from the queue', function () 
 
     Pest\Laravel\get('/admin/reports')->assertOk()->assertSee('India Gate Classic Basmati Rice');
 
-    Pest\Livewire\livewire(App\Filament\Resources\Reports\Pages\ListReports::class)
-        ->callAction(Filament\Actions\Testing\TestAction::make('accept')->table(Report::first()), data: ['resolution' => 'Expired early'])
+    Pest\Livewire\livewire(ListReports::class)
+        ->callAction(TestAction::make('accept')->table(Report::first()), data: ['resolution' => 'Expired early'])
         ->assertHasNoErrors();
 
     expect(Report::first())->status->toBe(ReportStatus::Accepted)->handled_by->toBe($staff->id);

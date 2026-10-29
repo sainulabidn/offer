@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Reports\Tables;
 
+use App\Domain\Access\Access;
 use App\Domain\Catalog\Product;
 use App\Domain\Catalog\ProductVariant;
 use App\Domain\Engagement\Report;
@@ -55,9 +56,9 @@ class ReportsTable
         return Action::make($name)
             ->label($label)
             ->color($color)
-            ->visible(fn (Report $r) => $r->status === ReportStatus::Open)
+            ->visible(fn (Report $r) => $r->status === ReportStatus::Open && Access::allows(Access::user(), 'reports', 'resolve', $r))
             ->schema([Textarea::make('resolution')->label('Note')->rows(2)])
-            ->action(fn (Report $r, array $data, Reports $reports) => $reports->resolve($r, $status, $data['resolution'] ?? null, auth()->id()));
+            ->action(fn (Report $r, array $data, Reports $reports) => $reports->resolve($r, $status, $data['resolution'] ?? null, Access::user()?->id));
     }
 
     private static function describe(Report $report): string

@@ -8,6 +8,7 @@ use App\Filament\Resources\Synonyms\Pages\EditSynonym;
 use App\Filament\Resources\Synonyms\Pages\ListSynonyms;
 use App\Filament\Resources\Synonyms\Schemas\SynonymForm;
 use App\Filament\Resources\Synonyms\Tables\SynonymsTable;
+use App\Filament\Support\ScopedByAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -17,6 +18,8 @@ use UnitEnum;
 
 class SynonymResource extends Resource
 {
+    use ScopedByAccess;
+
     protected static ?string $model = Synonym::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLanguage;

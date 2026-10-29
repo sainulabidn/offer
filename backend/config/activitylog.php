@@ -27,7 +27,8 @@ return [
      * You can specify an auth driver here that gets user models.
      * If this is null we'll use the current Laravel auth driver.
      */
-    'default_auth_driver' => null,
+    // Changes are made in the admin panel, which signs staff in with its own guard.
+    'default_auth_driver' => 'admin',
 
     /*
      * If set to true, the subject relationship on activities

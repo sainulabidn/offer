@@ -2,6 +2,7 @@
 
 namespace App\Domain\Catalog;
 
+use App\Domain\Access\Audited;
 use App\Domain\Offers\Offer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,7 @@ use Spatie\Translatable\HasTranslations;
 /** One purchasable pack ("5 kg bag, India"). Brochure offers attach a price and dates to a variant. */
 class ProductVariant extends Model
 {
+    use Audited;
     use HasTranslations;
 
     protected $guarded = [];

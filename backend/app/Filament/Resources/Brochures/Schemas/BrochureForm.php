@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Brochures\Schemas;
 
+use App\Domain\Access\Access;
 use App\Domain\Geo\Region;
 use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
@@ -26,7 +27,7 @@ class BrochureForm
                     ->columnSpanFull()
                     ->columns(2)
                     ->schema([
-                        Fields::belongsTo('chain_id', 'chain', 'Chain')->required()->live(),
+                        Fields::belongsTo('chain_id', 'chain', 'Chain', section: 'chains')->required()->live(),
                         Select::make('type')
                             ->options(['pdf' => 'PDF', 'images' => 'Images', 'digital' => 'Digital (web-only offers)'])
                             ->default('pdf')
@@ -71,9 +72,9 @@ class BrochureForm
                                     ->searchable()
                                     ->options(fn (Get $get) => match ($get('scope_type')) {
                                         'region' => Region::query()->orderBy('type')->orderBy('sort')->get()->mapWithKeys(fn (Region $r) => [$r->id => $r->name]),
-                                        'branch' => Branch::where('chain_id', $get('../../chain_id'))->get()->mapWithKeys(fn (Branch $b) => [$b->id => $b->name]),
-                                        'chain' => Chain::all()->mapWithKeys(fn (Chain $c) => [$c->id => $c->name]),
-                                        'group' => RetailGroup::all()->mapWithKeys(fn (RetailGroup $g) => [$g->id => $g->name]),
+                                        'branch' => Access::scope(Branch::query(), Access::user(), 'branches')->where('chain_id', $get('../../chain_id'))->get()->mapWithKeys(fn (Branch $b) => [$b->id => $b->name]),
+                                        'chain' => Access::scope(Chain::query(), Access::user(), 'chains')->get()->mapWithKeys(fn (Chain $c) => [$c->id => $c->name]),
+                                        'group' => Access::scope(RetailGroup::query(), Access::user(), 'retail_groups')->get()->mapWithKeys(fn (RetailGroup $g) => [$g->id => $g->name]),
                                         default => [],
                                     }),
                             ]),

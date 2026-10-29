@@ -8,6 +8,7 @@ use App\Filament\Resources\Chains\Pages\EditChain;
 use App\Filament\Resources\Chains\Pages\ListChains;
 use App\Filament\Resources\Chains\Schemas\ChainForm;
 use App\Filament\Resources\Chains\Tables\ChainsTable;
+use App\Filament\Support\ScopedByAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -17,6 +18,8 @@ use UnitEnum;
 
 class ChainResource extends Resource
 {
+    use ScopedByAccess;
+
     protected static ?string $model = Chain::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingStorefront;

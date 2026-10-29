@@ -16,7 +16,7 @@ class CategoryForm
             ->components([
                 Fields::translatable('name', 'Name', fillsSlug: true)->columnSpanFull(),
                 Fields::slug(),
-                Fields::belongsTo('parent_id', 'parent', 'Parent category')
+                Fields::belongsTo('parent_id', 'parent', 'Parent category', section: 'categories')
                     ->helperText('Empty for a top-level category.'),
                 TextInput::make('icon')->helperText('Optional icon name for the website menu.'),
                 TextInput::make('sort')->numeric()->default(0),

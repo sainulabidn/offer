@@ -18,6 +18,8 @@
         </include>
     </source>
     <php>
+        <!-- One process runs the whole suite, including image resizing with GD. -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing" force="true"/>
         <!-- Tests index into test_* Typesense collections, never the real ones. -->
         <env name="SCOUT_PREFIX" value="test_" force="true"/>

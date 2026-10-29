@@ -23,7 +23,7 @@ class BrandForm
                     ->label('Store own brand (private label)')
                     ->live()
                     ->inline(false),
-                Fields::belongsTo('owner_chain_id', 'ownerChain', 'Owned by chain')
+                Fields::belongsTo('owner_chain_id', 'ownerChain', 'Owned by chain', section: 'chains')
                     ->visible(fn (Get $get) => (bool) $get('is_private_label')),
                 TagsInput::make('synonyms')
                     ->columnSpanFull()

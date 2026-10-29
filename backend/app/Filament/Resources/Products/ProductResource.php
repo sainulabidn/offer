@@ -10,6 +10,8 @@ use App\Filament\Resources\Products\RelationManagers\OptionsRelationManager;
 use App\Filament\Resources\Products\RelationManagers\VariantsRelationManager;
 use App\Filament\Resources\Products\Schemas\ProductForm;
 use App\Filament\Resources\Products\Tables\ProductsTable;
+use App\Filament\Support\Review;
+use App\Filament\Support\ScopedByAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -19,6 +21,13 @@ use UnitEnum;
 
 class ProductResource extends Resource
 {
+    use ScopedByAccess;
+
+    public static function getNavigationBadge(): ?string
+    {
+        return Review::badge('products', static::getModel());
+    }
+
     protected static ?string $model = Product::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingBag;

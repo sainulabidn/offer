@@ -1,19 +1,23 @@
 <?php
 
+use App\Domain\Catalog\Brand;
+use App\Domain\Catalog\Category;
 use App\Domain\Catalog\Product;
+use App\Domain\Catalog\ProductGroup;
 use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
+use App\Domain\Retail\RetailGroup;
 use App\Filament\Resources\Branches\Pages\CreateBranch;
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\RelationManagers\VariantsRelationManager;
-use Filament\Actions\CreateAction;
-use Filament\Actions\Testing\TestAction;
 use App\Models\User;
 use Database\Seeders\CatalogStructureSeeder;
 use Database\Seeders\DemoCatalogSeeder;
 use Database\Seeders\GeoSeeder;
 use Database\Seeders\StaffSeeder;
 use Database\Seeders\UnitSeeder;
+use Filament\Actions\CreateAction;
+use Filament\Actions\Testing\TestAction;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -44,12 +48,12 @@ it('renders every admin list, create and edit page', function (string $resource,
     get("/admin/{$resource}/create")->assertOk();
     get("/admin/{$resource}/{$record->getKey()}/edit")->assertOk();
 })->with([
-    'retail groups' => ['retail-groups', App\Domain\Retail\RetailGroup::class],
+    'retail groups' => ['retail-groups', RetailGroup::class],
     'chains' => ['chains', Chain::class],
     'branches' => ['branches', Branch::class],
-    'categories' => ['categories', App\Domain\Catalog\Category::class],
-    'brands' => ['brands', App\Domain\Catalog\Brand::class],
-    'product groups' => ['product-groups', App\Domain\Catalog\ProductGroup::class],
+    'categories' => ['categories', Category::class],
+    'brands' => ['brands', Brand::class],
+    'product groups' => ['product-groups', ProductGroup::class],
     'products' => ['products', Product::class],
 ]);
 

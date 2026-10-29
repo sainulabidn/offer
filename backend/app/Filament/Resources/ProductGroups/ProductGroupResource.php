@@ -8,6 +8,8 @@ use App\Filament\Resources\ProductGroups\Pages\EditProductGroup;
 use App\Filament\Resources\ProductGroups\Pages\ListProductGroups;
 use App\Filament\Resources\ProductGroups\Schemas\ProductGroupForm;
 use App\Filament\Resources\ProductGroups\Tables\ProductGroupsTable;
+use App\Filament\Support\Review;
+use App\Filament\Support\ScopedByAccess;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -17,6 +19,13 @@ use UnitEnum;
 
 class ProductGroupResource extends Resource
 {
+    use ScopedByAccess;
+
+    public static function getNavigationBadge(): ?string
+    {
+        return Review::badge('product_groups', static::getModel());
+    }
+
     protected static ?string $model = ProductGroup::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquares2x2;

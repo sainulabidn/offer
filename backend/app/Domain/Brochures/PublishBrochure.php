@@ -2,14 +2,14 @@
 
 namespace App\Domain\Brochures;
 
-use App\Domain\Geo\Region;
 use App\Domain\Alerts\MatchAlerts;
+use App\Domain\Geo\Region;
 use App\Domain\Offers\DealScorer;
 use App\Domain\Offers\Offer;
 use App\Domain\Offers\OfferStatus;
-use App\Domain\Search\OfferDocument;
 use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
+use App\Domain\Search\OfferDocument;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
