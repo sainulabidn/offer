@@ -46,6 +46,15 @@ async function media(url: URL): Promise<Response> {
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  // Plain-http visitors go to https. 308 for other methods so a form POST isn't turned into a GET.
+  // Static files (/_astro/…) are served before the Worker runs, but https pages only link them over https.
+  if (PASS_TO_ORIGIN && context.url.protocol === 'http:') {
+    const target = new URL(context.url);
+    target.protocol = 'https:';
+    const method = context.request.method;
+    return Response.redirect(target.toString(), method === 'GET' || method === 'HEAD' ? 301 : 308);
+  }
+
   const path = context.url.pathname;
   if (path.startsWith('/media/products/') && context.request.method === 'GET' && env.MEDIA) return media(context.url);
   if (!PASS_TO_ORIGIN) return next();
