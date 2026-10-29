@@ -20,6 +20,9 @@ $LiveRemote = "offeremirait:deploy.git"
 
 function Invoke-Step([string]$Label, [scriptblock]$Command) {
     Write-Host $Label
+    # Docker and git print progress on stderr; with "Stop" Windows PowerShell 5.1 turns that into a
+    # terminating error when output is redirected. Judge native tools by exit code only.
+    $ErrorActionPreference = "Continue"
     & $Command
     if ($LASTEXITCODE -ne 0) {
         Write-Host "FAILED: $Label (exit code $LASTEXITCODE)" -ForegroundColor Red
