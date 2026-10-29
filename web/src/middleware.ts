@@ -24,12 +24,24 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   const key = new Request(context.url.toString(), { method: 'GET' });
   const hit = await edgeCache().match(key);
-  if (hit) return hit;
+  if (hit) {
+    const cached = new Response(hit.body, hit);
+    cached.headers.set('X-Edge-Cache', 'HIT');
+    return cached;
+  }
 
-  const response = await next();
+  const rendered = await next();
+  const response = new Response(rendered.body, rendered); // mutable headers
   const cacheControl = response.headers.get('Cache-Control') ?? '';
   if (response.status === 200 && /\bpublic\b/.test(cacheControl) && /s-maxage=\d+/.test(cacheControl) && !response.headers.has('Set-Cookie')) {
-    await edgeCache().put(key, response.clone());
+    try {
+      await edgeCache().put(key, response.clone());
+      response.headers.set('X-Edge-Cache', 'MISS');
+    } catch (error) {
+      response.headers.set('X-Edge-Cache', `ERROR ${String(error).slice(0, 120)}`);
+    }
+  } else {
+    response.headers.set('X-Edge-Cache', 'BYPASS');
   }
   return response;
 });
