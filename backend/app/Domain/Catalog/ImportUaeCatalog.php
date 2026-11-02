@@ -32,7 +32,7 @@ final class ImportUaeCatalog
         $path = database_path(self::FILE);
         // New or changed photos count as a change too.
         $files = [$path, ...glob(database_path(self::PHOTOS.'/*.jpg')) ?: []];
-        $hash = hash('sha256', implode(array_map(fn (string $file) => hash_file('sha256', $file), $files)));
+        $hash = hash('sha256', implode(array_map(fn (string $file) => basename($file).hash_file('sha256', $file), $files)));
         if (! $force && SiteSetting::where('key', self::DONE)->value('value') === $hash) {
             return null;
         }
