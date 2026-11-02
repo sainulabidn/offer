@@ -1,0 +1,51 @@
+---
+import { MapPin, Navigation } from 'lucide-react';
+import Base from '../../../layouts/Base.astro';
+import OfferGrid from '../../../components/OfferGrid.astro';
+import Pagination from '../../../components/Pagination.astro';
+import StoreLogo from '../../../components/StoreLogo.astro';
+import { api } from '../../../lib/api';
+import { searchOffers } from '../../../lib/search';
+import { cacheFor } from '../../../lib/format';
+
+const chain = await api.chain(Astro.params.slug ?? '');
+if (!chain) return Astro.rewrite('/404');
+
+const page = Math.max(1, Number(Astro.url.searchParams.get('page')) || 1);
+const offers = await searchOffers({ filters: [`chain_id:=${chain.id}`], sort: 'rank', page });
+
+cacheFor(Astro.response.headers);
+---
+
+<Base title={`${chain.name} offers this week · offer`} description={`All current ${chain.name} offers and branches in the UAE.`}>
+  <div class="mb-4 flex items-center gap-3" data-views={`chain:${chain.id}`}>
+    <StoreLogo name={chain.name} logo={chain.logo} class="size-14 text-base" />
+    <div>
+      <h1 class="text-2xl font-bold">{chain.name}</h1>
+      <p class="text-sm text-muted">{offers.found} offers · {chain.branches.length} {chain.branches.length === 1 ? 'branch' : 'branches'}</p>
+    </div>
+  </div>
+
+  <OfferGrid offers={offers.hits} />
+  <Pagination page={offers.page} pages={offers.pages} />
+
+  <section class="mt-8">
+    <h2 class="mb-3 text-xl font-bold">Branches</h2>
+    <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {chain.branches.map((branch) => (
+        <li class="card flex items-center gap-3 p-3">
+          <a href={`/stores/${chain.slug}/${branch.slug}`} class="flex min-w-0 flex-1 items-center gap-3">
+            <MapPin class="size-5 shrink-0 text-muted" aria-hidden="true" />
+            <span class="min-w-0">
+              <span class="block truncate font-semibold">{branch.name}</span>
+              {branch.area && <span class="block truncate text-sm text-muted">{branch.area}</span>}
+            </span>
+          </a>
+          <a class="grid size-11 shrink-0 place-items-center rounded-full text-link hover:bg-sunken" aria-label={`Directions to ${branch.name}`} data-directions={`branch:${branch.id} chain:${chain.id}`} href={`https://www.google.com/maps/dir/?api=1&destination=${branch.lat},${branch.lng}`} target="_blank" rel="noopener">
+            <Navigation class="size-5" aria-hidden="true" />
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Base>

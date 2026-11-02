@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Geo\PlaceName;
 use App\Domain\Settings\HomeSettings;
+use App\Domain\Shopper\Affinities;
 use App\Domain\Shopper\ShopperPlace;
 use App\Domain\Shopper\ShopperPreference;
 use App\Http\Controllers\Controller;
@@ -39,7 +40,7 @@ class ShopperController extends Controller
         return response()->json($preferences->toApi());
     }
 
-    public function savePreferences(Request $request): JsonResponse
+    public function savePreferences(Request $request, Affinities $affinities): JsonResponse
     {
         $radius = ['nullable', 'integer', 'between:1,'.HomeSettings::get('radius_max')];
         $data = $request->validate([
@@ -48,6 +49,8 @@ class ShopperController extends Controller
             'item_radius_off' => ['required', 'boolean'],
             'branch_ids' => ['present', 'array', 'max:4'],
             'branch_ids.*' => ['integer', 'min:1'],
+            'pinned_branch_ids' => ['sometimes', 'array', 'max:50'],
+            'pinned_branch_ids.*' => ['integer', 'min:1'],
             'personalize' => ['sometimes', 'boolean'],
             'updated_at' => ['required', 'date'],
         ]);
@@ -61,7 +64,55 @@ class ShopperController extends Controller
 
         $preferences->fill([...$data, 'branch_ids' => array_values($data['branch_ids']), 'client_updated_at' => $incoming])->save();
 
+        // Saying no takes back the agreement, so what was kept under it goes too.
+        if (($data['personalize'] ?? true) === false) {
+            $affinities->forget($request->user());
+        }
+
         return response()->json($preferences->toApi());
+    }
+
+    public function activity(Request $request, Affinities $affinities): JsonResponse
+    {
+        return response()->json($affinities->top($request->user()));
+    }
+
+    /** Only for shoppers who agreed; the browser keeps the same numbers either way. */
+    public function addActivity(Request $request, Affinities $affinities): JsonResponse
+    {
+        abort_unless(ShopperPreference::find($request->user()->id)?->personalize, 403, 'Activity is kept on this device only.');
+
+        $data = $request->validate([
+            'items' => ['required', 'array', 'max:'.Affinities::MAX_BATCH],
+            'items.*.kind' => ['required', Rule::in(Affinities::KINDS)],
+            'items.*.id' => ['required', 'integer', 'min:1'],
+            'items.*.score' => ['required', 'numeric', 'between:-100,1000'],
+            'items.*.at' => ['required', 'date'],
+        ]);
+        $affinities->add($request->user(), $data['items']);
+
+        return response()->json(['saved' => count($data['items'])]);
+    }
+
+    public function forgetActivity(Request $request, Affinities $affinities): JsonResponse
+    {
+        $affinities->forget($request->user());
+
+        return response()->json(['deleted' => true]);
+    }
+
+    /** Everything kept about this shopper's shopping, in a file they can read or take elsewhere. */
+    public function export(Request $request, Affinities $affinities): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'account' => $user->toProfile(),
+            'preferences' => ShopperPreference::find($user->id)?->toApi(),
+            'places' => ShopperPlace::where('user_id', $user->id)->get()->map->toApi(),
+            'activity' => $affinities->top($user),
+            'exported_at' => now()->toIso8601String(),
+        ])->header('Content-Disposition', 'attachment; filename="offer-my-data.json"');
     }
 
     public function places(Request $request): JsonResponse
@@ -82,6 +133,8 @@ class ShopperController extends Controller
             'area' => ['nullable', 'string', 'max:120'],
             'radius_km' => ['nullable', 'integer', 'between:1,'.HomeSettings::get('radius_max')],
             'is_default' => ['sometimes', 'boolean'],
+            'is_auto' => ['sometimes', 'boolean'],
+            'use_score' => ['sometimes', 'numeric', 'min:0'],
         ]);
         $user = $request->user();
 
@@ -105,7 +158,8 @@ class ShopperController extends Controller
                 'area_name' => $data['area'] ?? null,
                 'radius_km' => $data['radius_km'] ?? null,
                 'is_default' => $data['is_default'] ?? $place->is_default ?? false,
-                'is_auto' => ($data['is_default'] ?? false) ? false : ($place->is_auto ?? false),
+                'is_auto' => $data['is_auto'] ?? false,
+                'use_score' => $data['use_score'] ?? $place->use_score ?? 0,
             ])->save();
         });
 

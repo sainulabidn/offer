@@ -154,8 +154,9 @@ export function addToPlan(item: PlanItem) {
 interface Directory {
   branches: { id: number; chain_id: number; chain: string; name: string; lat: number; lng: number }[];
   brochures: { id: number; chain_id: number; valid_from: string; valid_to: string; branch_ids: number[] }[];
+  chains: { id: number; name: string; slug: string; grade: number; group_id: number | null; logo: string | null }[];
   areas: { slug: string; name: string; lat: number; lng: number }[];
-  settings: { radius_options: number[]; radius_default: number };
+  settings: { radius_options: number[]; radius_default: number; radius_max: number; walk_limit_m: number };
 }
 
 let directoryCache: Promise<Directory> | null = null;
@@ -195,6 +196,18 @@ export async function searchHits(params: Record<string, string>): Promise<Hit[]>
   return ((await response.json()) as { hits: { document: Hit }[] }).hits.map((h) => h.document);
 }
 
+/** AED per km on top of the shopper's own price for going to another store. */
+const TRIP_PER_KM = 0.5;
+
+/** A second store next door costs nothing to reach; one across town costs more the further it is. */
+export function tripCost(extraStoreCost: number, walkLimitM: number) {
+  return (from: Store, to: Store) => {
+    if (from.lat === undefined || from.lng === undefined || to.lat === undefined || to.lng === undefined) return extraStoreCost;
+    const km = distanceKm({ lat: from.lat, lng: from.lng }, { lat: to.lat, lng: to.lng });
+    return km * 1000 <= walkLimitM ? 0 : extraStoreCost + km * TRIP_PER_KM;
+  };
+}
+
 /** Stores (one per chain, its nearest branch) and the brochures live within the radius. */
 export function nearbyStores(dir: Directory, s: PlanSettings): { stores: Store[]; brochureIds: number[] } {
   const today = new Date().toISOString().slice(0, 10);
@@ -205,7 +218,7 @@ export function nearbyStores(dir: Directory, s: PlanSettings): { stores: Store[]
     if (s.lat !== null && d > s.radiusKm) continue;
     branchIds.add(b.id);
     if (!nearest.has(b.chain_id) || d < nearest.get(b.chain_id)!.distanceKm) {
-      nearest.set(b.chain_id, { chainId: b.chain_id, chainName: b.chain, distanceKm: d, branch: b.name });
+      nearest.set(b.chain_id, { chainId: b.chain_id, chainName: b.chain, distanceKm: d, branch: b.name, lat: b.lat, lng: b.lng });
     }
   }
   const brochureIds = dir.brochures

@@ -112,11 +112,16 @@ class DemoNearbySeeder extends DemoCatalogSeeder
             ]);
 
             foreach (self::BRANCHES[$slug] as [$branch, $label, $region, $lat, $lng]) {
-                $chains[$slug]->branches()->updateOrCreate(['slug' => $branch], [
+                $store = $chains[$slug]->branches()->updateOrCreate(['slug' => $branch], [
                     'name' => ['en' => $label],
                     'region_id' => Region::where('slug', $region)->value('id'),
                     'location' => Point::makeGeodetic($lat, $lng),
                 ]);
+
+                $store->hours()->delete();
+                foreach (range(0, 6) as $weekday) {
+                    $store->hours()->create(['weekday' => $weekday, 'opens_at' => '08:00', 'closes_at' => '23:00']);
+                }
             }
         }
 

@@ -40,14 +40,25 @@ export function startPlanBadge() {
   showCount(savedCount());
   window.addEventListener('offer:plan-changed', (e) => showCount((e as CustomEvent<number>).detail));
 
-  document.addEventListener('click', (e) => {
-    const button = (e.target as Element).closest<HTMLElement>('[data-add-plan]');
-    if (!button) return;
-    const { variant, label, product, group } = button.dataset;
+  const add = ({ variant, targets, label }: { variant?: string | number; targets?: string; label?: string }) => {
     const item: PlanItem = { key: `v:${variant}`, name: label ?? '', quantity: 1, match: { variantId: Number(variant) } };
     addToPlan(item);
-    count('plan', `product:${product} group:${group}`);
-    button.dataset.added = '';
-    toast(`Added to your plan: ${label}`);
+    count('plan', targets ?? '');
+  };
+
+  document.addEventListener('click', (e) => {
+    const target = e.target as Element;
+    const button = target.closest<HTMLElement>('[data-add-plan]');
+    if (button) {
+      add(button.dataset);
+      toast(`Added to your plan: ${button.dataset.label}`);
+    }
+
+    const all = target.closest<HTMLElement>('[data-add-plan-all]');
+    if (all) {
+      const items = JSON.parse(all.dataset.addPlanAll ?? '[]') as Parameters<typeof add>[0][];
+      items.forEach(add);
+      toast(`Added ${items.length} items to your plan`);
+    }
   });
 }

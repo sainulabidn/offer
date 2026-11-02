@@ -1,0 +1,26 @@
+---
+// One store's offers, each beside the nearest other store's price, so a shopper can plan a walk next door.
+import { Footprints } from 'lucide-react';
+import OfferGrid from './OfferGrid.astro';
+import { storeFocus } from '../lib/feed';
+import { aed } from '../lib/format';
+import type { Directory, StoreCard } from '../lib/near';
+
+interface Props {
+  dir: Directory;
+  store: StoreCard;
+}
+
+const { dir, store } = Astro.props;
+const { offers, found, bestWalk } = await storeFocus(dir, store);
+const nearby = new Map(offers.map(({ hit, nearby }) => [hit.id, nearby]));
+---
+
+{bestWalk && (
+  <p class="mb-3 flex items-center gap-2.5 rounded-2xl bg-primary-soft p-3 text-sm font-semibold text-link">
+    <Footprints class="size-5 shrink-0" aria-hidden="true" />
+    <span>{bestWalk.chain} is {bestWalk.far} away. Buy {bestWalk.items} {bestWalk.items === 1 ? 'item' : 'items'} there and save {aed(bestWalk.saving)}.</span>
+  </p>
+)}
+<OfferGrid offers={offers.map(({ hit }) => hit)} nearby={nearby} empty={`${store.chain} has no offers at this store right now.`} />
+{found > offers.length && <p class="mt-3 text-center text-sm text-muted">Showing {offers.length} of {found} offers.</p>}

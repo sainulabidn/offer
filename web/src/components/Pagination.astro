@@ -10,8 +10,8 @@ const link = (p: number) => {
 
 {pages > 1 && (
   <nav class="mt-6 flex items-center justify-center gap-3 text-sm" aria-label="Pages">
-    {page > 1 && <a href={link(page - 1)} class="rounded-lg border px-3 py-1.5" rel="prev">Previous</a>}
-    <span class="text-zinc-500">Page {page} of {pages}</span>
-    {page < pages && <a href={link(page + 1)} class="rounded-lg border px-3 py-1.5" rel="next">Next</a>}
+    {page > 1 && <a href={link(page - 1)} class="btn btn-quiet" rel="prev">Previous</a>}
+    <span class="text-muted">Page {page} of {pages}</span>
+    {page < pages && <a href={link(page + 1)} class="btn btn-quiet" rel="next">Next</a>}
   </nav>
 )}

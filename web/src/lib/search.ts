@@ -11,6 +11,8 @@ export interface OfferHit {
   variant_slug: string;
   variant_label: string;
   brand?: string;
+  brand_id?: number;
+  category_ids?: number[];
   product_group: string;
   product_group_id: number;
   chain_id: number;
@@ -18,6 +20,7 @@ export interface OfferHit {
   chain_slug: string;
   chain_grade: number;
   item_grade: number;
+  product_rank: number;
   brochure_id: number;
   price: number;
   regular_price?: number;

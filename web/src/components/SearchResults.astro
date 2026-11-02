@@ -1,5 +1,6 @@
 ---
 // Shared by /search and /c/[slug]: filter sidebar (a plain GET form, works without JavaScript), sort and results.
+import { SlidersHorizontal } from 'lucide-react';
 import OfferGrid from './OfferGrid.astro';
 import Pagination from './Pagination.astro';
 import { SORTS, filterValue, searchOffers, type SortKey } from '../lib/search';
@@ -20,6 +21,8 @@ const brands = params.getAll('brand');
 const cardOnly = params.get('card') === '1';
 const minDiscount = Number(params.get('min_discount')) || 0;
 
+const activeFilters = chains.length + brands.length + (cardOnly ? 1 : 0) + (minDiscount ? 1 : 0);
+
 const filters = [...baseFilters];
 if (chains.length) filters.push(`chain_name:[${chains.map(filterValue).join(',')}]`);
 if (brands.length) filters.push(`brand:[${brands.map(filterValue).join(',')}]`);
@@ -39,56 +42,69 @@ const facet = (field: string) => result.facets.find((f) => f.field === field)?.v
 ---
 
 <h1 class="mb-1 text-2xl font-bold">{title}</h1>
-<p class="mb-4 text-sm text-zinc-500">
+<p class="mb-4 text-sm text-muted">
   {result.found} {result.found === 1 ? 'offer' : 'offers'}{radiusKm && place.name && ` within ${radiusKm} km of ${place.name}`}
 </p>
 
-<div class="grid gap-6 lg:grid-cols-[14rem_1fr]">
-  <div class="space-y-5 text-sm">
-  <form method="get" class="space-y-5" aria-label="Filters">
-    {q && <input type="hidden" name="q" value={q} />}
-    {['near', 'r', 'items'].map((k) => params.get(k) && <input type="hidden" name={k} value={params.get(k)!} />)}
-    <details open class="lg:open">
-      <summary class="cursor-pointer font-semibold">Sort</summary>
-      <select name="sort" class="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-2 py-1.5">
-        {Object.entries(SORTS).map(([key, option]) => <option value={key} selected={key === sort}>{option.label}</option>)}
-      </select>
-    </details>
-    {facet('chain_name').length > 0 && (
-      <fieldset>
-        <legend class="font-semibold">Store</legend>
-        {facet('chain_name').map((v) => (
-          <label class="mt-1.5 flex items-center gap-2">
-            <input type="checkbox" name="store" value={v.value} checked={chains.includes(v.value)} />
-            {v.value} <span class="text-zinc-400">({v.count})</span>
-          </label>
-        ))}
-      </fieldset>
-    )}
-    {facet('brand').length > 0 && (
-      <fieldset>
-        <legend class="font-semibold">Brand</legend>
-        {facet('brand').map((v) => (
-          <label class="mt-1.5 flex items-center gap-2">
-            <input type="checkbox" name="brand" value={v.value} checked={brands.includes(v.value)} />
-            {v.value} <span class="text-zinc-400">({v.count})</span>
-          </label>
-        ))}
-      </fieldset>
-    )}
-    <fieldset>
-      <legend class="font-semibold">Discount</legend>
-      <select name="min_discount" class="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-2 py-1.5">
-        {[0, 10, 20, 30, 50].map((d) => <option value={d} selected={d === minDiscount}>{d ? `${d}% or more` : 'Any'}</option>)}
-      </select>
-    </fieldset>
-    <label class="flex items-center gap-2"><input type="checkbox" name="card" value="1" checked={cardOnly} /> Loyalty card prices only</label>
-    <button class="w-full rounded-lg bg-brand-600 py-2 font-medium text-white">Apply filters</button>
-  </form>
-  </div>
+<button type="button" id="filters-open" class="btn btn-quiet mb-4 lg:hidden">
+  <SlidersHorizontal class="size-4" aria-hidden="true" /> Filters{activeFilters > 0 && ` (${activeFilters})`}
+</button>
 
-  <div>
+<div class="grid gap-6 lg:grid-cols-[14rem_1fr]">
+  <dialog id="filters" class="sheet filters" aria-label="Filters">
+    <form method="get" class="space-y-5 p-5 text-sm lg:p-0">
+      {q && <input type="hidden" name="q" value={q} />}
+      {['near', 'r', 'items'].map((k) => params.get(k) && <input type="hidden" name={k} value={params.get(k)!} />)}
+      <label class="block">
+        <span class="font-semibold">Sort</span>
+        <select name="sort" class="input mt-2">
+          {Object.entries(SORTS).map(([key, option]) => <option value={key} selected={key === sort}>{option.label}</option>)}
+        </select>
+      </label>
+      {facet('chain_name').length > 0 && (
+        <fieldset>
+          <legend class="font-semibold">Store</legend>
+          {facet('chain_name').map((v) => (
+            <label class="flex min-h-9 items-center gap-2">
+              <input type="checkbox" name="store" value={v.value} checked={chains.includes(v.value)} class="size-4 accent-[var(--color-primary)]" />
+              {v.value} <span class="text-muted">({v.count})</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
+      {facet('brand').length > 0 && (
+        <fieldset>
+          <legend class="font-semibold">Brand</legend>
+          {facet('brand').map((v) => (
+            <label class="flex min-h-9 items-center gap-2">
+              <input type="checkbox" name="brand" value={v.value} checked={brands.includes(v.value)} class="size-4 accent-[var(--color-primary)]" />
+              {v.value} <span class="text-muted">({v.count})</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
+      <label class="block">
+        <span class="font-semibold">Discount</span>
+        <select name="min_discount" class="input mt-2">
+          {[0, 10, 20, 30, 50].map((d) => <option value={d} selected={d === minDiscount}>{d ? `${d}% or more` : 'Any'}</option>)}
+        </select>
+      </label>
+      <label class="flex min-h-9 items-center gap-2"><input type="checkbox" name="card" value="1" checked={cardOnly} class="size-4 accent-[var(--color-primary)]" /> Loyalty card prices only</label>
+      <button class="btn btn-primary w-full">Apply filters</button>
+      <button type="button" id="filters-close" class="btn btn-quiet w-full lg:hidden">Close</button>
+    </form>
+  </dialog>
+
+  <div class="min-w-0">
     <OfferGrid offers={result.hits} distances={nearby} empty={radiusKm ? `No offers within ${radiusKm} km. Try a bigger radius.` : 'No offers match these filters.'} />
     <Pagination page={result.page} pages={result.pages} />
   </div>
 </div>
+
+<noscript><style>.filters { display: block; position: static; transform: none; opacity: 1; }</style></noscript>
+
+<script>
+  const filters = document.querySelector<HTMLDialogElement>('#filters');
+  document.querySelector('#filters-open')?.addEventListener('click', () => filters?.showModal());
+  document.querySelector('#filters-close')?.addEventListener('click', () => filters?.close());
+</script>

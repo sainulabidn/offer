@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { distanceKm, fade, nearest, rankStores, walkMinutes, type StoreInput } from './index';
+import { distanceKm, fade, isOpen, nearest, neighbours, rankStores, walkMinutes, type StoreInput } from './index';
 
 describe('distanceKm', () => {
   it('measures a known distance', () => {
@@ -102,6 +102,41 @@ describe('rankStores', () => {
     const ranked = rankStores([store(1, 1, 1), store(2, 2, 2)], { at, radiusKm: 10, weights, activity: { 1: -8, 2: -1 } });
 
     expect(ids(ranked)).toEqual([1, 2]);
+  });
+});
+
+describe('neighbours', () => {
+  const near = (id: number, chainId: number, north: number, more = {}) => ({ id, chainId, lat: 25 + north / 111.2, lng: 55, offers: 5, ...more });
+
+  it('finds the nearest other companies from the store, one per chain', () => {
+    const from = near(1, 1, 0, { groupId: 7 });
+    const found = neighbours(from, [from, near(2, 1, 0.1), near(3, 2, 0.3), near(4, 2, 0.1), near(5, 3, 0.2), near(6, 4, 0.05, { groupId: 7 })]);
+
+    expect(found.map(({ store }) => store.id)).toEqual([4, 5]);
+    expect(found[0].km).toBeCloseTo(0.1, 2);
+  });
+
+  it('skips stores with no offers and stores too far away', () => {
+    expect(neighbours(near(1, 1, 0), [near(2, 2, 0.1, { offers: 0 }), near(3, 3, 40)])).toEqual([]);
+  });
+});
+
+describe('isOpen', () => {
+  const hours = [{ weekday: 1, opens: '08:00', closes: '22:00' }, { weekday: 2, opens: '20:00', closes: '02:00' }];
+
+  it('reads a normal day', () => {
+    expect(isOpen(hours, { weekday: 1, time: '09:00' })).toBe(true);
+    expect(isOpen(hours, { weekday: 1, time: '22:00' })).toBe(false);
+  });
+
+  it('runs a shift past midnight into the next day', () => {
+    expect(isOpen(hours, { weekday: 2, time: '23:30' })).toBe(true);
+    expect(isOpen(hours, { weekday: 3, time: '01:00' })).toBe(true);
+    expect(isOpen(hours, { weekday: 3, time: '03:00' })).toBe(false);
+  });
+
+  it('says so when hours are unknown', () => {
+    expect(isOpen([], { weekday: 1, time: '09:00' })).toBeNull();
   });
 });
 

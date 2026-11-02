@@ -6,18 +6,20 @@ import LikeButton from '../islands/LikeButton';
 import Price from './Price.astro';
 import ResponsiveImage from './ResponsiveImage.astro';
 import StoreLogo from './StoreLogo.astro';
-import type { ComparePrice } from '../lib/feed';
+import type { ComparePrice, NearbyPrice } from '../lib/feed';
 import type { OfferHit } from '../lib/search';
-import { aed, distanceLabel, endsIn, shortDate, tintFor } from '../lib/format';
+import { aed, distanceLabel, endsIn, offerTargets, shortDate, tintFor } from '../lib/format';
 
 interface Props {
   offer: OfferHit;
   nearest?: { km: number; branch: string };
   /** Other stores' prices for the same pack. */
   compare?: ComparePrice[];
+  /** With one store selected: the nearest other store's price for the same pack. */
+  nearby?: NearbyPrice;
 }
 
-const { offer, nearest, compare = [] } = Astro.props;
+const { offer, nearest, compare = [], nearby } = Astro.props;
 const href = `/products/${offer.product_slug}?variant=${encodeURIComponent(offer.variant_slug)}`;
 const saving = offer.regular_price && offer.regular_price > offer.price ? offer.regular_price - offer.price : 0;
 ---
@@ -33,7 +35,7 @@ const saving = offer.regular_price && offer.regular_price > offer.price ? offer.
       <span class="badge badge-save absolute start-2 top-2">-{Math.round(offer.discount_pct)}%</span>
     )}
     <div class="absolute end-2 top-2 z-10">
-      <LikeButton client:visible target={`offer:${offer.id}`} />
+      <LikeButton client:visible target={`offer:${offer.id}`} activity={offerTargets(offer)} />
     </div>
   </div>
 
@@ -61,8 +63,7 @@ const saving = offer.regular_price && offer.regular_price > offer.price ? offer.
           type="button"
           data-add-plan
           data-variant={offer.variant_id}
-          data-product={offer.product_id}
-          data-group={offer.product_group_id}
+          data-targets={offerTargets(offer)}
           data-label={`${offer.product_name} · ${offer.variant_label}`}
           aria-label={`Add ${offer.product_name} to my plan`}
           class="relative z-10 -mb-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-primary text-on-primary transition hover:bg-primary-strong active:scale-95"
@@ -87,6 +88,16 @@ const saving = offer.regular_price && offer.regular_price > offer.price ? offer.
             </li>
           ))}
         </ul>
+      )}
+      {nearby && (
+        <div class="mt-2 border-t border-line/70 pt-2 text-xs text-muted">
+          <p class="flex items-baseline justify-between gap-2">
+            <span class="truncate">{nearby.chain}</span>
+            <span class="shrink-0 font-semibold tabular-nums">{nearby.price.toFixed(2)}</span>
+          </p>
+          <p>{nearby.far}{nearby.usualOn && ` · usual, ${shortDate(nearby.usualOn)}`}</p>
+          {nearby.cheaperBy > 0 && !nearby.usualOn && <p class="mt-0.5 font-semibold text-save">{aed(nearby.cheaperBy)} cheaper there</p>}
+        </div>
       )}
     </div>
 

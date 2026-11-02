@@ -16,13 +16,14 @@ class ShopperPreference extends Model
 
     protected $guarded = [];
 
-    protected $attributes = ['branch_ids' => '[]', 'item_radius_off' => false, 'personalize' => false];
+    protected $attributes = ['branch_ids' => '[]', 'pinned_branch_ids' => '[]', 'item_radius_off' => false, 'personalize' => false];
 
     protected function casts(): array
     {
         return [
             'item_radius_off' => 'boolean',
             'branch_ids' => 'array',
+            'pinned_branch_ids' => 'array',
             'personalize' => 'boolean',
             'client_updated_at' => 'datetime',
         ];
@@ -35,6 +36,7 @@ class ShopperPreference extends Model
             'item_radius_km' => $this->item_radius_km,
             'item_radius_off' => $this->item_radius_off,
             'branch_ids' => $this->branch_ids ?? [],
+            'pinned_branch_ids' => $this->pinned_branch_ids ?? [],
             'personalize' => $this->personalize,
             'updated_at' => $this->client_updated_at?->toIso8601String(),
         ];

@@ -6,7 +6,8 @@ interface Series {
 }
 
 const { series, title } = Astro.props as { series: Series[]; title: string };
-const COLORS = ['#15803d', '#2563eb', '#c2410c', '#7c3aed', '#0e7490', '#be185d'];
+// Middle tones, so each line reads on both the light and the dark background.
+const COLORS = ['#2f9e6e', '#3b82c4', '#e8593c', '#8b5fbf', '#1f9aa6', '#d14f8a'];
 const W = 640, H = 200, PAD = { l: 44, r: 12, t: 12, b: 26 };
 
 const all = series.flatMap((s) => s.points);
@@ -23,24 +24,24 @@ const month = (t: number) => new Date(t).toLocaleDateString('en-GB', { day: 'num
 ---
 
 {all.length > 0 && (
-  <figure class="rounded-xl border border-zinc-200 bg-white p-3">
+  <figure class="card p-3">
     <figcaption class="mb-1 text-sm font-semibold">{title}</figcaption>
     <svg viewBox={`0 0 ${W} ${H}`} class="h-auto w-full" role="img" aria-label={`${title}: prices from AED ${Math.min(...prices).toFixed(2)} to AED ${Math.max(...prices).toFixed(2)}`}>
       {ticks.map((t) => (
         <g>
-          <line x1={PAD.l} x2={W - PAD.r} y1={sy(t)} y2={sy(t)} stroke="#e4e4e7" />
-          <text x={PAD.l - 6} y={sy(t) + 4} text-anchor="end" font-size="11" fill="#71717a">{t.toFixed(0)}</text>
+          <line x1={PAD.l} x2={W - PAD.r} y1={sy(t)} y2={sy(t)} class="stroke-line" />
+          <text x={PAD.l - 6} y={sy(t) + 4} text-anchor="end" font-size="11" class="fill-muted">{t.toFixed(0)}</text>
         </g>
       ))}
-      <text x={PAD.l} y={H - 6} font-size="11" fill="#71717a">{month(x0)}</text>
-      <text x={W - PAD.r} y={H - 6} font-size="11" fill="#71717a" text-anchor="end">{month(x1)}</text>
+      <text x={PAD.l} y={H - 6} font-size="11" class="fill-muted">{month(x0)}</text>
+      <text x={W - PAD.r} y={H - 6} font-size="11" class="fill-muted" text-anchor="end">{month(x1)}</text>
       {series.map((s, i) => (
         <g stroke={COLORS[i % COLORS.length]} stroke-width="2.5" stroke-linecap="round">
           {s.points.map((p) => <line x1={sx(day(p.from))} x2={sx(day(p.to) + 86_400_000)} y1={sy(p.price)} y2={sy(p.price)} />)}
         </g>
       ))}
     </svg>
-    <ul class="mt-1 flex flex-wrap gap-3 text-xs text-zinc-600">
+    <ul class="mt-1 flex flex-wrap gap-3 text-xs text-muted">
       {series.map((s, i) => <li><span class="me-1 inline-block size-2 rounded-full" style={`background:${COLORS[i % COLORS.length]}`} />{s.chain}</li>)}
     </ul>
   </figure>

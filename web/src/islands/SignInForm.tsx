@@ -27,10 +27,8 @@ export default function SignInForm({ next = '/' }: { next?: string }) {
     // Saved passkeys appear in the email field's suggestions; picking one signs straight in.
     passkeyAutofillSupported().then((supported) => {
       if (!supported) return;
-      signInWithPasskey({ autofill: true }).then(done, (e) => {
-        const message = passkeyError(e);
-        if (message) setError(message);
-      });
+      // Runs quietly in the background, so a failure here is no reason to show an error.
+      signInWithPasskey({ autofill: true }).then(done, () => {});
     });
   }, []);
 
@@ -69,14 +67,14 @@ export default function SignInForm({ next = '/' }: { next?: string }) {
     return (
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">Sign in faster next time</h2>
-        <p className="text-sm text-zinc-600">
+        <p className="text-sm text-muted">
           Create a passkey and use your fingerprint, face or screen lock instead of waiting for an email code.
         </p>
-        {error && <p className="text-sm text-deal">{error}</p>}
-        <button type="button" disabled={busy} onClick={() => run(async () => { await addPasskey(); done(); })} className="w-full rounded-lg bg-brand-600 py-2 font-medium text-white disabled:opacity-60">
+        {error && <p className="text-sm text-save">{error}</p>}
+        <button type="button" disabled={busy} onClick={() => run(async () => { await addPasskey(); done(); })} className="btn btn-primary w-full">
           {busy ? 'Waiting for your device…' : 'Create a passkey'}
         </button>
-        <button type="button" onClick={() => { remember(OFFER_DISMISSED, String(Date.now())); done(); }} className="w-full text-sm text-zinc-500">
+        <button type="button" onClick={() => { remember(OFFER_DISMISSED, String(Date.now())); done(); }} className="w-full text-sm text-muted">
           Not now
         </button>
       </div>
@@ -87,32 +85,32 @@ export default function SignInForm({ next = '/' }: { next?: string }) {
     <div className="space-y-4">
       {canPasskey && (
         <>
-          <button type="button" disabled={busy} onClick={() => run(async () => { await signInWithPasskey(); done(); })} className="flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white py-2 font-medium disabled:opacity-60">
+          <button type="button" disabled={busy} onClick={() => run(async () => { await signInWithPasskey(); done(); })} className="btn btn-quiet w-full">
             <KeyIcon /> {busy ? 'Waiting for your device…' : 'Sign in with a passkey'}
           </button>
-          <p className="flex items-center gap-3 text-xs text-zinc-400 before:h-px before:flex-1 before:bg-zinc-200 after:h-px after:flex-1 after:bg-zinc-200">or</p>
+          <p className="flex items-center gap-3 text-xs text-muted before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line">or</p>
         </>
       )}
       <form onSubmit={sendCode} className="space-y-3">
         <label className="block text-sm font-medium" htmlFor="email">Email</label>
         {/* "webauthn" lets the browser list saved passkeys under this field. */}
-        <input id="email" type="email" required autoComplete="email webauthn" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-lg border border-zinc-300 px-3 py-2" />
-        {error && <p className="text-sm text-deal">{error}</p>}
-        <button disabled={busy} className="w-full rounded-lg bg-brand-600 py-2 font-medium text-white disabled:opacity-60">
+        <input id="email" type="email" required autoComplete="email webauthn" value={email} onChange={(e) => setEmail(e.target.value)} className="input" />
+        {error && <p className="text-sm text-save">{error}</p>}
+        <button disabled={busy} className="btn btn-primary w-full">
           {busy ? 'Sending…' : 'Email me a sign-in code'}
         </button>
       </form>
     </div>
   ) : (
     <form onSubmit={verify} className="space-y-3">
-      <p className="text-sm text-zinc-600">We sent a 6-digit code to <strong>{email}</strong>. It expires in 10 minutes.</p>
+      <p className="text-sm text-muted">We sent a 6-digit code to <strong>{email}</strong>. It expires in 10 minutes.</p>
       <label className="block text-sm font-medium" htmlFor="code">Code</label>
-      <input id="code" name="code" inputMode="numeric" pattern="\d{6}" maxLength={6} required autoComplete="one-time-code" className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-center text-xl tracking-[0.5em]" />
-      {error && <p className="text-sm text-deal">{error}</p>}
-      <button disabled={busy} className="w-full rounded-lg bg-brand-600 py-2 font-medium text-white disabled:opacity-60">
+      <input id="code" name="code" inputMode="numeric" pattern="\d{6}" maxLength={6} required autoComplete="one-time-code" className="input text-center text-xl tracking-[0.5em]" />
+      {error && <p className="text-sm text-save">{error}</p>}
+      <button disabled={busy} className="btn btn-primary w-full">
         {busy ? 'Checking…' : 'Sign in'}
       </button>
-      <button type="button" onClick={() => setStep('email')} className="w-full text-sm text-zinc-500">Use another email</button>
+      <button type="button" onClick={() => setStep('email')} className="w-full text-sm text-muted">Use another email</button>
     </form>
   );
 }

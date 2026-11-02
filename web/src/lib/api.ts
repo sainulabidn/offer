@@ -18,6 +18,7 @@ export interface Category {
 
 export interface StoreOffer {
   id: number;
+  brochure_id: number;
   chain: { id: number; name: string; slug: string };
   price: number;
   regular_price: number | null;
@@ -37,9 +38,10 @@ export interface Product {
   slug: string;
   name: string;
   description: string | null;
-  brand: { name: string; slug: string } | null;
+  brand: { id: number; name: string; slug: string } | null;
   category: { id: number; name: string; slug: string };
   product_group: { id: number; name: string; slug: string; unit_label: string };
+  icon: string | null;
   like_count: number;
   images: { base: string; alt: string | null; width: number; height: number }[];
   variants: { id: number; slug: string; label: string; is_default: boolean; offers: StoreOffer[] }[];
@@ -50,8 +52,9 @@ export interface Chain {
   name: string;
   slug: string;
   format: string;
+  logo: string | null;
   website: string | null;
-  branches: { id: number; name: string; slug: string; area: string | null; lat: number; lng: number; phone: string | null }[];
+  branches: { id: number; name: string; slug: string; area: string | null; address: string | null; lat: number; lng: number; phone: string | null; hours: { weekday: number; opens: string; closes: string }[] }[];
 }
 
 export const api = {
@@ -61,6 +64,8 @@ export const api = {
   sitemap: () => get<{ products: { slug: string; updated: string }[]; chains: string[]; categories: string[] }>('sitemap'),
   /** variant id → per-store series of offers in the last 120 days */
   history: (slug: string) => get<Record<string, { chain: string; points: { from: string; to: string; price: number; regular_price: number | null }[] }[]>>(`products/${encodeURIComponent(slug)}/history`).then((h) => h ?? {}),
+  /** Product ids rising in this area, fastest first. */
+  trending: (region: number | null) => get<number[]>(`trending${region ? `?region=${region}` : ''}`).then((ids) => ids ?? []),
   searchConfig: () => get<{ url: string; collection: string; key: string }>('search-config'),
 };
 

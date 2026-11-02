@@ -35,20 +35,20 @@ export default function SharedPlan({ token }: { token: string }) {
     }
   }
 
-  if (error) return <p className="text-deal">{error}</p>;
-  if (!shared) return <p className="text-zinc-500">Loading…</p>;
+  if (error) return <p className="text-save">{error}</p>;
+  if (!shared) return <p className="text-muted">Loading…</p>;
 
   return (
     <div className="max-w-xl space-y-4">
       <p><strong>{shared.owner}</strong> shared “{shared.name}” with you.</p>
-      <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white text-sm">
+      <ul className="divide-y divide-line/70 card text-sm">
         {shared.items.map((item) => (
-          <li key={item.key} className="flex justify-between p-3"><span>{item.name}</span><span className="text-zinc-500">× {item.quantity}</span></li>
+          <li key={item.key} className="flex justify-between p-3"><span>{item.name}</span><span className="text-muted">× {item.quantity}</span></li>
         ))}
       </ul>
       <div className="flex flex-wrap gap-2 text-sm">
-        <button type="button" onClick={join} className="rounded-lg bg-brand-600 px-4 py-2 font-medium text-white">Join and edit together</button>
-        <button type="button" onClick={copy} className="rounded-lg border border-zinc-300 bg-white px-4 py-2">Copy to my plan</button>
+        <button type="button" onClick={join} className="btn btn-primary">Join and edit together</button>
+        <button type="button" onClick={copy} className="btn btn-quiet">Copy to my plan</button>
       </div>
     </div>
   );

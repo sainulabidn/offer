@@ -1,0 +1,39 @@
+---
+import { Navigation, Phone } from 'lucide-react';
+import Base from '../../../layouts/Base.astro';
+import StoreFocus from '../../../components/StoreFocus.astro';
+import StoreLogo from '../../../components/StoreLogo.astro';
+import OpenNow from '../../../islands/OpenNow';
+import { api } from '../../../lib/api';
+import { directory, storeCards } from '../../../lib/near';
+import { cacheFor } from '../../../lib/format';
+
+const chain = await api.chain(Astro.params.slug ?? '');
+const branch = chain?.branches.find((candidate) => candidate.slug === Astro.params.branch);
+if (!chain || !branch) return Astro.rewrite('/404');
+
+const dir = await directory();
+const store = storeCards(dir).find((card) => card.id === branch.id);
+if (!store) return Astro.rewrite('/404');
+
+cacheFor(Astro.response.headers);
+---
+
+<Base title={`${chain.name} ${branch.name}: offers and nearby prices · offer`} description={`This week's offers at ${chain.name} ${branch.name}, beside the nearest other stores' prices.`}>
+  <div class="card mb-5 flex flex-wrap items-center gap-3 p-4" data-views={`branch:${branch.id} chain:${chain.id}`}>
+    <StoreLogo name={chain.name} logo={chain.logo} class="size-14 text-base" />
+    <div class="min-w-0 flex-1">
+      <h1 class="text-xl font-bold"><a href={`/stores/${chain.slug}`} class="hover:underline">{chain.name}</a>, {branch.name}</h1>
+      <p class="text-sm text-muted">{branch.address ?? branch.area}</p>
+      <OpenNow client:idle hours={store.hours} closedToday={store.closed_today} />
+    </div>
+    <div class="flex w-full gap-2 sm:w-auto">
+      <a class="btn btn-primary flex-1" data-directions={`branch:${branch.id} chain:${chain.id}`} href={`https://www.google.com/maps/dir/?api=1&destination=${branch.lat},${branch.lng}`} target="_blank" rel="noopener">
+        <Navigation class="size-5" aria-hidden="true" /> Directions
+      </a>
+      {branch.phone && <a class="btn btn-quiet" href={`tel:${branch.phone}`}><Phone class="size-5" aria-hidden="true" /> Call</a>}
+    </div>
+  </div>
+
+  <StoreFocus dir={dir} store={store} />
+</Base>

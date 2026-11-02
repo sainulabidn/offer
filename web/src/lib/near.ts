@@ -1,10 +1,10 @@
 import { API_URL } from 'astro:env/server';
-import { distanceKm, nearest, rankStores, type Point, type Prefs, type RankedStore } from '@offer/rank';
+import { distanceKm, nearest, rankStores, type OpeningHours, type Point, type Prefs, type RankedStore } from '@offer/rank';
 
 /** "Near me": what the shopper's location means, worked out in the Worker from the store directory. */
 export interface Directory {
   chains: { id: number; name: string; slug: string; grade: number; group_id: number | null; logo: string | null }[];
-  branches: { id: number; chain_id: number; chain: string; name: string; slug: string; area: string | null; emirate: string | null; lat: number; lng: number }[];
+  branches: { id: number; chain_id: number; chain: string; name: string; slug: string; area: string | null; emirate: string | null; lat: number; lng: number; hours: OpeningHours[]; closed_today: boolean }[];
   brochures: { id: number; chain_id: number; valid_from: string; valid_to: string; branch_ids: number[]; offers: number }[];
   areas: { id: number; slug: string; name: string; lat: number; lng: number }[];
   settings: Settings;
@@ -25,6 +25,7 @@ export type DirectoryBranch = Directory['branches'][number];
 export interface StoreCard extends DirectoryBranch {
   chainId: number;
   chainSlug: string;
+  groupId: number | null;
   grade: number;
   logo: string | null;
   offers: number;
@@ -49,6 +50,9 @@ export function placeOf(dir: Directory, prefs: Prefs): { at: Point | null; name:
   const emirate = dir.areas.find((area) => area.slug === prefs.emirate);
   return emirate ? { at: emirate, name: emirate.name, rough: true } : { at: null, name: null, rough: false };
 }
+
+/** The nearest listed area, for counts by area. */
+export const regionId = (dir: Directory, prefs: Prefs) => (prefs.at ? (nearest(dir.areas, prefs.at)?.id ?? null) : null);
 
 const clampRadius = (km: number, dir: Directory) => Math.min(km, dir.settings.radius_max);
 
@@ -76,9 +80,18 @@ export function itemFilters(dir: Directory, prefs: Prefs): string[] {
   return at && km ? [radiusFilter(at, km)] : [];
 }
 
+/** Today in the market's timezone; the UAE has one offset all year. */
+export const marketToday = () => new Date(Date.now() + 4 * 3_600_000).toISOString().slice(0, 10);
+
+/** Brochures running today at a branch. */
+export function liveBrochures(dir: Directory, branchId: number): number[] {
+  const today = marketToday();
+  return dir.brochures.filter((brochure) => brochure.valid_from <= today && brochure.branch_ids.includes(branchId)).map((brochure) => brochure.id);
+}
+
 /** Live offers per branch, from the brochures that cover it. */
 function offersByBranch(dir: Directory): Map<number, number> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = marketToday();
   const counts = new Map<number, number>();
   for (const brochure of dir.brochures) {
     if (brochure.valid_from > today) continue;
@@ -93,7 +106,7 @@ export function storeCards(dir: Directory): StoreCard[] {
   const offers = offersByBranch(dir);
   return dir.branches.map((branch) => {
     const chain = chains.get(branch.chain_id);
-    return { ...branch, chainId: branch.chain_id, chainSlug: chain?.slug ?? '', grade: chain?.grade ?? 3, logo: chain?.logo ?? null, offers: offers.get(branch.id) ?? 0 };
+    return { ...branch, chainId: branch.chain_id, chainSlug: chain?.slug ?? '', groupId: chain?.group_id ?? null, grade: chain?.grade ?? 3, logo: chain?.logo ?? null, offers: offers.get(branch.id) ?? 0 };
   });
 }
 

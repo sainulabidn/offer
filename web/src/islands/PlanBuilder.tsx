@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { compare, type PlanItem } from '@offer/basket';
 import { isSignedIn, signInUrl } from '../lib/account';
-import { loadDirectory, loadPlan, nearbyStores, savePlan, searchHits, sharePlan, startNewPlan, switchPlan, syncPlan, toCandidate, type Hit, type Plan, type ServerPlan } from '../lib/plan';
+import { loadDirectory, loadPlan, nearbyStores, savePlan, searchHits, sharePlan, startNewPlan, switchPlan, syncPlan, toCandidate, tripCost, type Hit, type Plan, type ServerPlan } from '../lib/plan';
 import { loadPlaces, type Place } from '../lib/places';
 import { readPrefs } from '../lib/prefs';
 import RadiusPicker from './RadiusPicker';
@@ -16,7 +16,7 @@ export default function PlanBuilder() {
   const [hits, setHits] = useState<Hit[] | null>(null);
   const [scope, setScope] = useState<ReturnType<typeof nearbyStores> | null>(null);
   const [places, setPlaces] = useState<Place[]>([]);
-  const [radii, setRadii] = useState({ options: [5, 10, 25, 50], max: 100 });
+  const [radii, setRadii] = useState({ options: [5, 10, 25, 50], max: 100, walkLimitM: 600 });
   const [error, setError] = useState('');
   const [plans, setPlans] = useState<ServerPlan[]>([]);
   const [shareUrl, setShareUrl] = useState('');
@@ -79,7 +79,7 @@ export default function PlanBuilder() {
 
   useEffect(() => {
     setPlaces(loadPlaces());
-    loadDirectory().then((d) => setRadii({ options: d.settings.radius_options, max: d.settings.radius_max })).catch(() => {});
+    loadDirectory().then((d) => setRadii({ options: d.settings.radius_options, max: d.settings.radius_max, walkLimitM: d.settings.walk_limit_m })).catch(() => {});
   }, []);
 
   /** Planning for Home from the office: a plan keeps its own place, whatever the rest of the site shows. */
@@ -97,8 +97,8 @@ export default function PlanBuilder() {
 
   const result = useMemo(() => {
     if (!hits || !scope) return null;
-    return compare(plan.items, hits.map(toCandidate), scope.stores, { maxStores: plan.settings.maxStores, extraStoreCost: plan.settings.extraStoreCost });
-  }, [hits, scope, plan]);
+    return compare(plan.items, hits.map(toCandidate), scope.stores, { maxStores: plan.settings.maxStores, tripCost: tripCost(plan.settings.extraStoreCost, radii.walkLimitM) });
+  }, [hits, scope, plan, radii]);
 
   function add(item: PlanItem) {
     const items = [...plan.items];
@@ -121,42 +121,42 @@ export default function PlanBuilder() {
       <section className="space-y-4">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           {plans.length > 1 ? (
-            <select aria-label="Choose a plan" className="rounded-lg border border-zinc-300 bg-white px-2 py-1.5" value={plan.id} onChange={(e) => switchPlan(e.target.value, plan).then(setPlan)}>
+            <select aria-label="Choose a plan" className="btn btn-quiet" value={plan.id} onChange={(e) => switchPlan(e.target.value, plan).then(setPlan)}>
               {plans.map((p) => <option key={p.id} value={p.id}>{p.name}{p.is_owner ? '' : ' (shared with me)'}</option>)}
             </select>
           ) : (
             <span className="font-medium">{plan.name}</span>
           )}
-          <button type="button" onClick={share} className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5">Share plan</button>
-          <button type="button" onClick={() => setPlan(startNewPlan())} className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5">New plan</button>
-          {!isSignedIn() && <a href={signInUrl()} className="text-brand-700 underline">Sign in to use it on all your devices</a>}
+          <button type="button" onClick={share} className="btn btn-quiet">Share plan</button>
+          <button type="button" onClick={() => setPlan(startNewPlan())} className="btn btn-quiet">New plan</button>
+          {!isSignedIn() && <a href={signInUrl()} className="text-link underline">Sign in to use it on all your devices</a>}
         </div>
         {shareUrl && (
-          <div className="rounded-lg border border-brand-600 bg-brand-50 p-3 text-sm">
+          <div className="rounded-lg border border-primary bg-primary-soft p-3 text-sm">
             <p className="mb-1">Anyone with this link can see the list; signed-in family members can join and edit it.</p>
-            <input readOnly value={shareUrl} onFocus={(e) => e.target.select()} className="w-full rounded border px-2 py-1" />
+            <input readOnly value={shareUrl} onFocus={(e) => e.target.select()} className="input" />
             <div className="mt-2 flex gap-3">
-              <a href={`https://wa.me/?text=${encodeURIComponent(`Our shopping plan: ${shareUrl}`)}`} target="_blank" rel="noopener" className="text-brand-700 underline">Send on WhatsApp</a>
-              <button type="button" onClick={() => navigator.clipboard.writeText(shareUrl)} className="text-brand-700 underline">Copy link</button>
+              <a href={`https://wa.me/?text=${encodeURIComponent(`Our shopping plan: ${shareUrl}`)}`} target="_blank" rel="noopener" className="text-link underline">Send on WhatsApp</a>
+              <button type="button" onClick={() => navigator.clipboard.writeText(shareUrl)} className="text-link underline">Copy link</button>
             </div>
           </div>
         )}
         <div className="relative">
           <label htmlFor="plan-add" className="mb-1 block font-semibold">Add to your list</label>
-          <input id="plan-add" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="rice, milk 2L, Almarai…" className="w-full rounded-lg border border-zinc-300 px-3 py-2" autoComplete="off" />
+          <input id="plan-add" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="rice, milk 2L, Almarai…" className="input" autoComplete="off" />
           {suggestions.length > 0 && (
-            <ul className="absolute z-20 mt-1 max-h-80 w-full overflow-auto rounded-lg border border-zinc-200 bg-white text-sm shadow-lg">
+            <ul className="absolute z-20 mt-1 max-h-80 w-full overflow-auto rounded-xl border border-line bg-surface text-sm shadow-lg">
               {uniqueGroups.slice(0, 4).map((h) => (
                 <li key={`g${h.product_group_id}`}>
-                  <button type="button" className="w-full px-3 py-2 text-start hover:bg-zinc-100" onClick={() => add({ key: `g:${h.product_group_id}`, name: `Any ${h.product_group}`, quantity: 1, match: { productGroupId: h.product_group_id } })}>
-                    <strong>Any {h.product_group}</strong> <span className="text-zinc-500">cheapest per unit</span>
+                  <button type="button" className="w-full px-3 py-2 text-start hover:bg-sunken" onClick={() => add({ key: `g:${h.product_group_id}`, name: `Any ${h.product_group}`, quantity: 1, match: { productGroupId: h.product_group_id } })}>
+                    <strong>Any {h.product_group}</strong> <span className="text-muted">cheapest per unit</span>
                   </button>
                 </li>
               ))}
               {uniqueVariants.slice(0, 8).map((h) => (
                 <li key={`v${h.variant_id}`}>
-                  <button type="button" className="w-full px-3 py-2 text-start hover:bg-zinc-100" onClick={() => add({ key: `v:${h.variant_id}`, name: `${h.product_name} · ${h.variant_label}`, quantity: 1, match: { variantId: h.variant_id } })}>
-                    {h.product_name} <span className="text-zinc-500">· {h.variant_label}</span>
+                  <button type="button" className="w-full px-3 py-2 text-start hover:bg-sunken" onClick={() => add({ key: `v:${h.variant_id}`, name: `${h.product_name} · ${h.variant_label}`, quantity: 1, match: { variantId: h.variant_id } })}>
+                    {h.product_name} <span className="text-muted">· {h.variant_label}</span>
                   </button>
                 </li>
               ))}
@@ -165,9 +165,9 @@ export default function PlanBuilder() {
         </div>
 
         {plan.items.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-zinc-300 p-4 text-sm text-zinc-500">Your list is empty. Add items above or tap “Add to plan” on any product.</p>
+          <p className="rounded-xl border border-dashed border-line p-4 text-sm text-muted">Your list is empty. Add items above or tap “Add to plan” on any product.</p>
         ) : (
-          <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white text-sm">
+          <ul className="divide-y divide-line/70 card text-sm">
             {plan.items.map((item) => (
               <li key={item.key} className="flex items-center gap-2 p-3">
                 <span className="flex-1">{item.name}</span>
@@ -179,7 +179,7 @@ export default function PlanBuilder() {
           </ul>
         )}
 
-        <fieldset className="space-y-2 rounded-xl border border-zinc-200 bg-white p-3 text-sm">
+        <fieldset className="space-y-2 card p-3 text-sm">
           <legend className="px-1 font-semibold">Where and how</legend>
           <label className="block">Plan for
             <select aria-label="Plan for" className="input mt-1" value={chosenPlace} onChange={(e) => planFor(e.target.value)}>
@@ -204,12 +204,12 @@ export default function PlanBuilder() {
       </section>
 
       <section aria-live="polite">
-        {error && <p className="text-deal">{error}</p>}
-        {plan.items.length > 0 && !result && !error && <p className="text-zinc-500">Comparing prices…</p>}
-        {result && result.stores.length === 0 && <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-zinc-500">No nearby store has these items on offer right now. Try a bigger radius.</p>}
+        {error && <p className="text-save">{error}</p>}
+        {plan.items.length > 0 && !result && !error && <p className="text-muted">Comparing prices…</p>}
+        {result && result.stores.length === 0 && <p className="rounded-xl border border-dashed border-line p-6 text-muted">No nearby store has these items on offer right now. Try a bigger radius.</p>}
 
         {result?.split && (
-          <div className="mb-4 rounded-xl border-2 border-brand-600 bg-brand-50 p-4">
+          <div className="mb-4 rounded-xl border-2 border-primary bg-primary-soft p-4">
             <p className="font-semibold">
               Best: split between {result.split.stores.map((s) => s.chainName).join(' + ')} for {aed(result.split.total)}
             </p>
@@ -221,18 +221,18 @@ export default function PlanBuilder() {
 
         <ol className="space-y-3">
           {result?.stores.map((r, i) => (
-            <li key={r.store.chainId} className="rounded-xl border border-zinc-200 bg-white p-4">
+            <li key={r.store.chainId} className="card p-4">
               <div className="flex items-baseline justify-between gap-2">
                 <p className="font-semibold">
-                  {i === 0 && r.missing.length === 0 && <span className="me-2 rounded bg-brand-50 px-1.5 text-xs text-brand-700">Cheapest complete basket</span>}
-                  {r.store.chainName} <span className="text-sm font-normal text-zinc-500">· {r.store.branch}{plan.settings.lat !== null && `, ${r.store.distanceKm.toFixed(1)} km`}</span>
+                  {i === 0 && r.missing.length === 0 && <span className="me-2 rounded bg-primary-soft px-1.5 text-xs text-link">Cheapest complete basket</span>}
+                  {r.store.chainName} <span className="text-sm font-normal text-muted">· {r.store.branch}{plan.settings.lat !== null && `, ${r.store.distanceKm.toFixed(1)} km`}</span>
                 </p>
                 <p className="text-lg font-bold">{aed(r.total)}</p>
               </div>
-              <p className="text-sm text-zinc-600">
+              <p className="text-sm text-muted">
                 {plan.items.length - r.missing.length} of {plan.items.length} items{r.saving > 0 && ` · you save ${aed(r.saving)}`}
               </p>
-              {r.missing.length > 0 && <p className="text-xs text-zinc-500">Not on offer here: {r.missing.map((m) => m.name).join(', ')}</p>}
+              {r.missing.length > 0 && <p className="text-xs text-muted">Not on offer here: {r.missing.map((m) => m.name).join(', ')}</p>}
             </li>
           ))}
         </ol>

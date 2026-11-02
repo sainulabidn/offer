@@ -21,12 +21,13 @@ class DirectoryController extends Controller
     public function __invoke(): JsonResponse
     {
         $today = now(config('app.market_timezone'))->toDateString();
+        $weekday = now(config('app.market_timezone'))->dayOfWeek;
 
         $chains = Chain::query()->where('is_active', true)->get();
 
         $branches = Branch::query()->where('is_active', true)
             ->whereIn('chain_id', $chains->modelKeys())
-            ->with(['chain', 'region.parent'])
+            ->with(['chain', 'region.parent', 'hours', 'hourExceptions' => fn ($query) => $query->whereRaw('period @> ?::date', [$today])])
             ->get();
 
         $brochures = Brochure::query()
@@ -58,6 +59,7 @@ class DirectoryController extends Controller
                 'emirate' => ($b->region?->parent ?? $b->region)?->slug,
                 'lat' => round($b->location->getLatitude(), 5),
                 'lng' => round($b->location->getLongitude(), 5),
+                ...$this->hours($b, $weekday),
             ]),
             'brochures' => $brochures->map(fn (Brochure $b) => [
                 'id' => $b->id,
@@ -76,5 +78,21 @@ class DirectoryController extends Controller
             ]),
             'settings' => HomeSettings::all(),
         ])->setCache(['public' => true, 'max_age' => 300, 's_maxage' => 600, 'stale_while_revalidate' => 3600]);
+    }
+
+    /** The weekly hours for "open now", with today's holiday or Ramadan timing in place of today's. */
+    private function hours(Branch $branch, int $weekday): array
+    {
+        $exception = $branch->hourExceptions->first();
+        $hours = $branch->hours
+            ->reject(fn ($h) => $exception && $h->weekday === $weekday)
+            ->map(fn ($h) => ['weekday' => $h->weekday, 'opens' => substr($h->opens_at, 0, 5), 'closes' => substr($h->closes_at, 0, 5)])
+            ->values();
+
+        if ($exception && ! $exception->is_closed && $exception->opens_at && $exception->closes_at) {
+            $hours->push(['weekday' => $weekday, 'opens' => substr($exception->opens_at, 0, 5), 'closes' => substr($exception->closes_at, 0, 5)]);
+        }
+
+        return ['hours' => $hours->all(), 'closed_today' => (bool) $exception?->is_closed];
     }
 }

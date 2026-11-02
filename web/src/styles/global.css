@@ -33,11 +33,6 @@
 
   --radius-card: 1.25rem;
 
-  /* Older names, used by pages not yet moved to the new design. */
-  --color-brand-50: var(--color-primary-soft);
-  --color-brand-600: var(--color-primary);
-  --color-brand-700: var(--color-link);
-  --color-deal: var(--color-save);
 }
 
 /* Follows the phone's setting with CSS only, so edge-cached pages are right for everyone. */
@@ -255,6 +250,24 @@
         transform: translateY(1rem);
         opacity: 0;
       }
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .filters {
+      position: static;
+      display: block;
+      margin: 0;
+      height: auto;
+      width: auto;
+      max-height: none;
+      overflow: visible;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      opacity: 1;
+      transform: none;
+      transition: none;
     }
   }
 

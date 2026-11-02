@@ -47,6 +47,7 @@ final class OfferDocument
                 ['name' => 'variant_slug', 'type' => 'string', 'index' => false, 'optional' => true],
                 ['name' => 'variant_label', 'type' => 'string'],
                 ['name' => 'brand', 'type' => 'string', 'facet' => true, 'optional' => true],
+                ['name' => 'brand_id', 'type' => 'int32', 'facet' => true, 'optional' => true],
                 ['name' => 'product_group', 'type' => 'string', 'facet' => true],
                 ['name' => 'product_group_id', 'type' => 'int32', 'facet' => true],
                 ['name' => 'category_ids', 'type' => 'int32[]', 'facet' => true],
@@ -117,6 +118,7 @@ final class OfferDocument
             'variant_slug' => $variant->slug,
             'variant_label' => $variant->optionValues->pluck('label')->implode(', ') ?: $variant->slug,
             'brand' => $product->brand?->getTranslation('name', 'en'),
+            'brand_id' => $product->brand_id,
             'product_group' => $group->getTranslation('name', 'en'),
             'product_group_id' => $group->id,
             // The category and all its ancestors, so filtering on a parent finds its children's offers.

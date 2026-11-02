@@ -54,6 +54,38 @@ describe('lineCost', () => {
   });
 });
 
+describe('tripCost', () => {
+  const near: Store[] = [
+    { chainId: 1, chainName: 'A', distanceKm: 1, branch: 'a' },
+    { chainId: 2, chainName: 'B', distanceKm: 1, branch: 'b' },
+  ];
+  const items: PlanItem[] = [
+    { key: 'x', name: 'X', quantity: 1, match: { variantId: 1 } },
+    { key: 'y', name: 'Y', quantity: 1, match: { variantId: 2 } },
+  ];
+  // Each store has one item 3 cheaper than the other store.
+  const prices = [
+    offer({ id: '1', chainId: 1, variantId: 1, price: 10 }),
+    offer({ id: '2', chainId: 2, variantId: 1, price: 13 }),
+    offer({ id: '3', chainId: 1, variantId: 2, price: 13 }),
+    offer({ id: '4', chainId: 2, variantId: 2, price: 10 }),
+  ];
+
+  it('suggests a split when the second store is a short walk away', () => {
+    const { split } = compare(items, prices, near, { maxStores: 2, extraStoreCost: 10, tripCost: () => 0 });
+
+    expect(split).toMatchObject({ total: 20, effectiveTotal: 20 });
+  });
+
+  it('drops the split when the trip costs more than it saves', () => {
+    expect(compare(items, prices, near, { maxStores: 2, tripCost: () => 7 }).split).toBeNull();
+  });
+
+  it('still uses the flat cost when no trip cost is given', () => {
+    expect(compare(items, prices, near, { maxStores: 2, extraStoreCost: 10 }).split).toBeNull();
+  });
+});
+
 describe('compare', () => {
   const stores: Store[] = [
     { chainId: 1, chainName: 'Lulu', distanceKm: 2, branch: 'Al Barsha' },

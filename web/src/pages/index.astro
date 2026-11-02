@@ -2,11 +2,14 @@
 import { ArrowRight, LocateFixed, X } from 'lucide-react';
 import Base from '../layouts/Base.astro';
 import CategoryNav from '../components/CategoryNav.astro';
+import CompareTable from '../components/CompareTable.astro';
 import OfferGrid from '../components/OfferGrid.astro';
+import StoreFocus from '../components/StoreFocus.astro';
 import StoreRail from '../components/StoreRail.astro';
 import { api } from '../lib/api';
+import ForYouRail from '../islands/ForYouRail';
 import { cheapestNearby, comparePrices } from '../lib/feed';
-import { itemRadius, nearestBranches, placeOf, storeRadius, storesFor, directory } from '../lib/near';
+import { itemFilters, itemRadius, nearestBranches, placeOf, regionId, storeCards, storeRadius, storesFor, directory } from '../lib/near';
 import { cacheFor } from '../lib/format';
 import { searchOffers } from '../lib/search';
 
@@ -16,12 +19,17 @@ const place = placeOf(dir, prefs);
 const radius = storeRadius(dir, prefs);
 const itemKm = itemRadius(dir, prefs);
 const stores = storesFor(dir, prefs);
+// A saved id can outlive its store; the page then treats it as not selected.
+const selected = storeCards(dir).filter((store) => prefs.stores.includes(store.id));
 
-const [categories, cheapest, ending] = await Promise.all([
+const [categories, cheapest, ending, trendingIds] = await Promise.all([
   api.categories(),
   cheapestNearby(dir, prefs, { perPage: 20 }),
   searchOffers({ sort: 'ending', perPage: 5 }),
+  api.trending(regionId(dir, prefs) ?? null),
 ]);
+// Needs a real rise in the area; a rail of one or two looks broken.
+const trending = trendingIds.length >= 4 ? await cheapestNearby(dir, prefs, { perPage: 5, filters: [`product_id:[${trendingIds.join(',')}]`] }) : null;
 const compare = await comparePrices(cheapest.hits, dir, prefs);
 const distances = place.at && !place.rough ? nearestBranches(dir, place.at, itemKm) : undefined;
 const topSaving = Math.max(0, ...cheapest.hits.map((hit) => Math.round(hit.discount_pct ?? 0)));
@@ -29,7 +37,7 @@ const topSaving = Math.max(0, ...cheapest.hits.map((hit) => Math.round(hit.disco
 cacheFor(Astro.response.headers);
 ---
 
-<Base title="offer · Supermarket deals near you">
+<Base title="offer · Supermarket deals near you" region={regionId(dir, prefs)}>
   {place.at && !place.rough ? (
     <p class="mb-4 text-sm text-muted">
       <strong class="font-semibold text-ink">{cheapest.found} products on offer</strong> near {place.name}
@@ -59,7 +67,19 @@ cacheFor(Astro.response.headers);
     <StoreRail stores={stores} selected={prefs.stores} radiusKm={radius} showDistance={Boolean(place.at && !place.rough)} />
   </section>
 
-  <section class="mt-5" aria-labelledby="cheapest-title">
+  <ForYouRail client:only="react" radiusFilter={itemFilters(dir, prefs)[0]} />
+
+  {selected.length > 0 && (
+    <section class="mt-5" aria-labelledby="selected-title">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 id="selected-title" class="text-xl font-bold">{selected.length === 1 ? `Prices at ${selected[0].chain}, ${selected[0].name}` : `Comparing ${selected.length} stores`}</h2>
+        <a href="/?stores=" rel="nofollow" class="chip">Clear <X class="size-4" aria-hidden="true" /></a>
+      </div>
+      {selected.length === 1 ? <StoreFocus dir={dir} store={selected[0]} /> : <CompareTable dir={dir} stores={selected} />}
+    </section>
+  )}
+
+  <section class:list={['mt-5', selected.length > 0 && 'hidden']} aria-labelledby="cheapest-title">
     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
       <h2 id="cheapest-title" class="text-xl font-bold">{itemKm ? 'Cheapest near you' : 'Cheapest in the UAE'}</h2>
       {itemKm ? (
@@ -75,6 +95,13 @@ cacheFor(Astro.response.headers);
       <a href="/search?sort=rank" class="btn btn-quiet">See all offers <ArrowRight class="size-4" aria-hidden="true" /></a>
     </div>
   </section>
+
+  {trending && trending.hits.length >= 4 && (
+    <section class="mt-8" aria-labelledby="trending-title">
+      <h2 id="trending-title" class="mb-3 text-xl font-bold">Trending near you</h2>
+      <OfferGrid offers={trending.hits} distances={distances} />
+    </section>
+  )}
 
   {ending.hits.length > 0 && (
     <section class="mt-8" aria-labelledby="ending-title">

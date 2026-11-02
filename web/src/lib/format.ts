@@ -11,6 +11,16 @@ export function tintFor(name: string): string {
   return `tint-${hash % 6}`;
 }
 
+/** What an offer is about, for counting and for the shopper's activity: "product:1 group:2 category:3". */
+export const offerTargets = (offer: { product_id: number; product_group_id: number; brand_id?: number; category_ids?: number[] }) =>
+  [`product:${offer.product_id}`, `group:${offer.product_group_id}`, ...(offer.brand_id ? [`brand:${offer.brand_id}`] : []), ...(offer.category_ids ?? []).map((id) => `category:${id}`)].join(' ');
+
+/** The day and time in the UAE, which has one offset all year, wherever the shopper's device is set. */
+export function marketNow() {
+  const uae = new Date(Date.now() + 4 * 3_600_000);
+  return { weekday: uae.getUTCDay(), time: uae.toISOString().slice(11, 16) };
+}
+
 /** "12 Oct" from "2026-10-12". */
 export const shortDate = (day: string) => new Date(`${day}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 

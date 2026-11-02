@@ -1,0 +1,78 @@
+---
+// Two or more stores side by side: the same packs, cheapest highlighted, totals over packs every store has.
+import { ListPlus } from 'lucide-react';
+import { compareStores } from '../lib/feed';
+import { aed, offerTargets, shortDate } from '../lib/format';
+import type { Directory, StoreCard } from '../lib/near';
+
+interface Props {
+  dir: Directory;
+  stores: StoreCard[];
+}
+
+const { dir, stores } = Astro.props;
+const { rows, items, totals } = await compareStores(dir, stores);
+
+const cheapestTotal = items > 0 ? Math.min(...totals) : null;
+const planItems = rows.map(({ offer: { hit } }) => ({ variant: hit.variant_id, targets: offerTargets(hit), label: `${hit.product_name} · ${hit.variant_label}` }));
+---
+
+{rows.length ? (
+  <div>
+    <div class="card overflow-x-auto">
+      <table class="w-full border-collapse text-sm">
+        <thead>
+          <tr class="border-b border-line">
+            <th scope="col" class="sticky start-0 z-10 min-w-36 bg-surface p-3 text-start font-semibold">Item</th>
+            {stores.map((store) => (
+              <th scope="col" class="min-w-24 p-3 text-end font-semibold">
+                <span class="block">{store.chain}</span>
+                <span class="block text-xs font-normal text-muted">{store.name}</span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ offer: { hit }, cells, cheapest }) => (
+            <tr class="border-b border-line/60 last:border-0">
+              <th scope="row" class="sticky start-0 z-10 bg-surface p-3 text-start font-medium">
+                <a href={`/products/${hit.product_slug}?variant=${encodeURIComponent(hit.variant_slug)}`} data-click={`product:${hit.product_id} group:${hit.product_group_id}`} class="hover:underline">{hit.product_name}</a>
+                <span class="block text-xs font-normal text-muted">{hit.variant_label}</span>
+              </th>
+              {cells.map((cell, index) => (
+                <td class:list={['p-3 text-end tabular-nums', index === cheapest && 'bg-primary-soft font-bold text-link']}>
+                  {cell ? (
+                    <>
+                      {cell.price.toFixed(2)}
+                      {cell.card && <span class="block text-xs font-normal">with card</span>}
+                      {cell.usualOn && <span class="block text-xs font-normal text-muted">usual, {shortDate(cell.usualOn)}</span>}
+                    </>
+                  ) : (
+                    <span class="text-muted"><span aria-hidden="true">–</span><span class="sr-only">No price</span></span>
+                  )}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+        {items > 0 && (
+          <tfoot>
+            <tr class="border-t-2 border-line">
+              <th scope="row" class="sticky start-0 z-10 bg-surface p-3 text-start font-semibold">
+                Total
+                <span class="block text-xs font-normal text-muted">{items} {items === 1 ? 'item' : 'items'} at every store</span>
+              </th>
+              {totals.map((total) => <td class:list={['p-3 text-end font-bold tabular-nums', total === cheapestTotal && 'bg-primary-soft text-link']}>{aed(total)}</td>)}
+            </tr>
+          </tfoot>
+        )}
+      </table>
+    </div>
+    <p class="mt-2 text-xs text-muted">Prices are per pack. "2 for" deals show what one pack costs when you buy them all.</p>
+    <button type="button" data-add-plan-all={JSON.stringify(planItems)} class="btn btn-primary mt-3 w-full sm:w-auto">
+      <ListPlus class="size-5" aria-hidden="true" /> Add all to my plan
+    </button>
+  </div>
+) : (
+  <p class="rounded-(--radius-card) border border-dashed border-line p-8 text-center text-muted">These stores have no offers right now.</p>
+)}

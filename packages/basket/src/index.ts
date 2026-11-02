@@ -34,6 +34,8 @@ export interface Store {
   chainName: string;
   distanceKm: number;
   branch: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface Line {
@@ -64,6 +66,8 @@ export interface Options {
   maxStores?: 1 | 2 | 3;
   /** AED added per extra store visited, so a split must save more than the trip costs. */
   extraStoreCost?: number;
+  /** What getting from one store to the next costs, when it depends on the two stores. Replaces extraStoreCost. */
+  tripCost?: (from: Store, to: Store) => number;
 }
 
 const money = (n: number) => Math.round(n * 100) / 100;
@@ -143,7 +147,9 @@ function* combinations<T>(list: T[], size: number, start = 0, prefix: T[] = []):
  * the cheapest split across up to 3 stores that beats every single store after travel cost.
  */
 export function compare(items: PlanItem[], offers: CandidateOffer[], stores: Store[], options: Options = {}) {
-  const { maxStores = 1, extraStoreCost = 10 } = options;
+  const { maxStores = 1, extraStoreCost = 10, tripCost = () => extraStoreCost } = options;
+  // Each store after the first is reached from the closest one already on the trip.
+  const tripTotal = (combo: Store[]) => combo.slice(1).reduce((sum, store, i) => sum + Math.min(...combo.slice(0, i + 1).map((from) => tripCost(from, store))), 0);
   const byChain = new Map<number, CandidateOffer[]>();
   for (const offer of offers) byChain.set(offer.chainId, [...(byChain.get(offer.chainId) ?? []), offer]);
 
@@ -191,7 +197,7 @@ export function compare(items: PlanItem[], offers: CandidateOffer[], stores: Sto
         const used = combo.filter((s) => lines.some((l) => l.store.chainId === s.chainId));
         if (used.length < combo.length) continue; // a store adds nothing; the smaller combo covers it
         const total = money(lines.reduce((sum, l) => sum + l.cost, 0));
-        const candidate = { stores: combo, lines, missing, total, effectiveTotal: money(total + (combo.length - 1) * extraStoreCost) };
+        const candidate = { stores: combo, lines, missing, total, effectiveTotal: money(total + tripTotal(combo)) };
         if (!split || candidate.missing.length < split.missing.length || (candidate.missing.length === split.missing.length && candidate.effectiveTotal < split.effectiveTotal)) {
           split = candidate;
         }

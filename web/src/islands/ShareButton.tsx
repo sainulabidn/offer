@@ -42,17 +42,17 @@ export default function ShareButton({ title, path }: { title: string; path: stri
 
   return (
     <div className="relative inline-block">
-      <button type="button" onClick={share} className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm">
+      <button type="button" onClick={share} className="btn btn-quiet">
         Share
       </button>
       {open && (
-        <div className="absolute start-0 top-full z-30 mt-1 w-44 rounded-lg border border-zinc-200 bg-white p-1 text-sm shadow-lg">
+        <div className="absolute start-0 top-full z-30 mt-1 w-44 rounded-xl border border-line bg-surface p-1 text-sm shadow-lg">
           {links().map(([name, href]) => (
-            <a key={name} href={href} target="_blank" rel="noopener" className="block rounded px-3 py-1.5 hover:bg-zinc-100">
+            <a key={name} href={href} target="_blank" rel="noopener" className="block rounded px-3 py-1.5 hover:bg-sunken">
               {name}
             </a>
           ))}
-          <button type="button" onClick={copy} className="block w-full rounded px-3 py-1.5 text-start hover:bg-zinc-100">
+          <button type="button" onClick={copy} className="block w-full rounded px-3 py-1.5 text-start hover:bg-sunken">
             {copied ? 'Link copied' : 'Copy link'}
           </button>
         </div>

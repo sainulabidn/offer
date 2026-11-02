@@ -24,8 +24,8 @@ const toggled = (id: number) => {
 
 {stores.length ? (
   <ul class="rail" aria-label="Stores">
-    {stores.map(({ store, km, selected: on }) => (
-      <li class="w-[11.5rem]">
+    {stores.map(({ store, km, score, selected: on }) => (
+      <li class="w-[11.5rem]" data-store-card data-branch={store.id} data-chain={store.chainId} data-score={score.toFixed(3)} data-selected={on ? '1' : undefined}>
         <a
           href={toggled(store.id)}
           aria-pressed={on}
@@ -43,7 +43,7 @@ const toggled = (id: number) => {
         </a>
       </li>
     ))}
-    <li class="w-[8rem] md:hidden">
+    <li class="w-[8rem] md:hidden" style="order: 999">
       <a href="/stores" class="flex h-full items-center justify-center gap-2 rounded-(--radius-card) border border-dashed border-line p-2.5 text-sm font-semibold text-link hover:border-primary">
         <Store class="size-5" aria-hidden="true" /> All stores
       </a>
@@ -56,3 +56,9 @@ const toggled = (id: number) => {
     <button type="button" data-open-location class="btn btn-quiet mt-3">Change area or distance</button>
   </div>
 )}
+
+<script>
+  import { orderStoreCards } from '../lib/personal';
+
+  orderStoreCards();
+</script>

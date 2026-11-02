@@ -36,14 +36,14 @@ export default function ReportButton({ type, id, label = 'Report' }: { type: 'of
 
   return (
     <>
-      <button type="button" onClick={() => dialog.current?.showModal()} className="text-xs text-zinc-500 underline-offset-2 hover:underline">
+      <button type="button" onClick={() => dialog.current?.showModal()} className="text-xs text-muted underline-offset-2 hover:underline">
         {label}
       </button>
-      <dialog ref={dialog} className="m-auto w-[min(26rem,90vw)] rounded-xl p-0 backdrop:bg-black/40">
+      <dialog ref={dialog} className="sheet">
         {state === 'done' ? (
           <div className="p-5 text-sm">
             <p>{message}</p>
-            <button type="button" onClick={() => dialog.current?.close()} className="mt-4 rounded-lg bg-brand-600 px-4 py-2 text-white">
+            <button type="button" onClick={() => dialog.current?.close()} className="mt-4 btn btn-primary">
               Close
             </button>
           </div>
@@ -55,13 +55,13 @@ export default function ReportButton({ type, id, label = 'Report' }: { type: 'of
                 <input type="radio" name="reason" value={value} defaultChecked={i === 0} required /> {text}
               </label>
             ))}
-            <textarea name="comment" maxLength={1000} placeholder="Details (optional), e.g. shelf price 49.95" className="w-full rounded-lg border border-zinc-300 p-2" rows={3} />
-            {state === 'error' && <p className="text-deal">{message}</p>}
+            <textarea name="comment" maxLength={1000} placeholder="Details (optional), e.g. shelf price 49.95" className="input" rows={3} />
+            {state === 'error' && <p className="text-save">{message}</p>}
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => dialog.current?.close()} className="rounded-lg border px-4 py-2">
+              <button type="button" onClick={() => dialog.current?.close()} className="btn btn-quiet">
                 Cancel
               </button>
-              <button disabled={state === 'sending'} className="rounded-lg bg-brand-600 px-4 py-2 text-white disabled:opacity-60">
+              <button disabled={state === 'sending'} className="btn btn-primary">
                 {state === 'sending' ? 'Sending…' : 'Send report'}
               </button>
             </div>

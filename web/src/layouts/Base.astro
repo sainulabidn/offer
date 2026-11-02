@@ -5,13 +5,16 @@ import fontUrl from '@fontsource-variable/figtree/files/figtree-latin-wght-norma
 import Logo from '../components/Logo.astro';
 import LocationSheet from '../islands/LocationSheet';
 import SearchBox from '../islands/SearchBox';
+import WelcomeBar from '../islands/WelcomeBar';
 
 interface Props {
   title: string;
   description?: string;
+  /** The shopper's area, for counts by area ("trending near you"). */
+  region?: number | null;
 }
 
-const { title, description = 'Compare supermarket offers across the UAE by true unit price.' } = Astro.props;
+const { title, description = 'Compare supermarket offers across the UAE by true unit price.', region } = Astro.props;
 const q = Astro.url.searchParams.get('q') ?? '';
 const path = Astro.url.pathname;
 
@@ -40,7 +43,7 @@ const tabs = [
     <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
     <title>{title}</title>
   </head>
-  <body class="min-h-dvh">
+  <body class="min-h-dvh" data-region={region ?? undefined}>
     <header class="app-bar sticky top-0 z-30 border-b border-line/70 bg-canvas/90 backdrop-blur-md">
       <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2.5 px-4 py-2.5 md:flex-nowrap md:gap-x-5 md:py-3">
         <a href="/" aria-label="offer home" class="rounded-lg"><Logo /></a>
@@ -97,6 +100,7 @@ const tabs = [
     <div id="toast" role="status" aria-live="polite" class="pointer-events-none fixed inset-x-0 bottom-24 z-40 flex justify-center px-4 md:bottom-8"></div>
 
     <LocationSheet client:load />
+    <WelcomeBar client:idle />
 
     <script>
       import { startCounting } from '../lib/track';

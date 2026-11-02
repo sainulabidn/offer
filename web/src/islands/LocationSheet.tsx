@@ -3,7 +3,7 @@ import { Briefcase, Globe, Home as HomeIcon, LocateFixed, Map as MapIcon, MapPin
 import { nearest, searchPlaces, type PlaceName, type Point } from '@offer/rank';
 import { isSignedIn } from '../lib/account';
 import { loadDirectory } from '../lib/plan';
-import { MAX_GUEST_PLACES, keepUrlChoices, loadPlaceNames, loadPlaces, newPlaceId, removePlace, savePlace, savePrefs, syncAccount, usePlace, type Place } from '../lib/places';
+import { MAX_GUEST_PLACES, applyAutoDefault, keepUrlChoices, loadPlaceNames, loadPlaces, newPlaceId, noteSpotUse, removePlace, savePlace, savePrefs, syncAccount, usePlace, type Place } from '../lib/places';
 import { readPrefs, reloadWithPrefs } from '../lib/prefs';
 import type { PickedSpot } from './MapPicker';
 import RadiusPicker from './RadiusPicker';
@@ -31,7 +31,7 @@ export default function LocationSheet() {
 
   useEffect(() => {
     keepUrlChoices();
-    syncAccount();
+    syncAccount().then(applyAutoDefault).catch(() => {});
 
     const open = (e: MouseEvent) => {
       if (!(e.target as Element).closest('[data-open-location]')) return;
@@ -58,6 +58,7 @@ export default function LocationSheet() {
 
   function goTo(at: Point, label: string, radiusKm = radius) {
     savePrefs({ at, label, place: null, radiusKm });
+    noteSpotUse(at, label);
     reloadWithPrefs();
   }
 

@@ -3,8 +3,10 @@
  * Cloudflare Worker, and can serve the Flutter app later.
  */
 
+export * from './compare';
 export * from './places';
 export * from './prefs';
+export * from './profile';
 
 export interface Point {
   lat: number;
@@ -96,6 +98,42 @@ export function rankStores<T extends StoreInput>(stores: T[], options: RankStore
     if (seen.has(item.store.chainId)) return false;
     seen.add(item.store.chainId);
     return true;
+  });
+}
+
+/** The nearest stores of other companies, measured from a store, not from the shopper. */
+export function neighbours<T extends Point & { id: number; chainId: number; groupId?: number | null; offers: number }>(from: T, stores: T[], { maxKm = 10, limit = 3 } = {}): { store: T; km: number }[] {
+  const sameCompany = (store: T) => store.chainId === from.chainId || (from.groupId != null && store.groupId === from.groupId);
+  const seenChains = new Set<number>();
+
+  return stores
+    .filter((store) => !sameCompany(store) && store.offers > 0)
+    .map((store) => ({ store, km: distanceKm(from, store) }))
+    .filter(({ km }) => km <= maxKm)
+    .sort((a, b) => a.km - b.km)
+    .filter(({ store }) => {
+      if (seenChains.has(store.chainId)) return false;
+      seenChains.add(store.chainId);
+      return true;
+    })
+    .slice(0, limit);
+}
+
+export interface OpeningHours {
+  /** 0 = Sunday. closes earlier than opens means the shift ends after midnight. */
+  weekday: number;
+  opens: string;
+  closes: string;
+}
+
+/** Is a store open at this moment? `now` is the weekday and "HH:MM" in the market's timezone. Unknown hours give null. */
+export function isOpen(hours: OpeningHours[], now: { weekday: number; time: string }): boolean | null {
+  if (!hours.length) return null;
+  const yesterday = (now.weekday + 6) % 7;
+  return hours.some(({ weekday, opens, closes }) => {
+    const overnight = closes < opens;
+    if (weekday === now.weekday) return overnight ? now.time >= opens : now.time >= opens && now.time < closes;
+    return weekday === yesterday && overnight && now.time < closes;
   });
 }
 

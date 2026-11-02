@@ -50,6 +50,7 @@ class ShopperPlace extends Model
             'radius_km' => $this->radius_km,
             'is_default' => $this->is_default,
             'is_auto' => $this->is_auto,
+            'use_score' => $this->use_score,
             'updated_at' => $this->updated_at->toIso8601String(),
         ];
     }

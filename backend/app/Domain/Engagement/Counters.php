@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\DB;
 /** Public daily counts of what shoppers look at, for "most viewed". Knows nothing about who looked. */
 final class Counters
 {
-    public const array KINDS = ['product', 'group', 'chain', 'branch'];
+    /** cohort: 1 = personal order, 2 = the group kept on the shared order, to show whether personal ranking helps. */
+    public const array KINDS = ['product', 'group', 'chain', 'branch', 'cohort'];
 
     /** Event type => column. */
     public const array TYPES = ['view' => 'views', 'click' => 'clicks', 'plan' => 'plans', 'directions' => 'directions'];

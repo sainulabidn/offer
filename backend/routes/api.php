@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\PasskeyController;
 use App\Http\Controllers\Api\V1\PlanController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ShopperController;
+use App\Http\Controllers\Api\V1\TrendingController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passkeys\Http\Controllers\PasskeyLoginController;
 use Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController;
@@ -27,6 +28,7 @@ Route::prefix('v1')->group(function () {
         Route::get('products/{slug}/history', [ProductController::class, 'history']);
         Route::get('directory', DirectoryController::class);
         Route::get('places', [ShopperController::class, 'placeNames']);
+        Route::get('trending', TrendingController::class);
         Route::get('sitemap', [CatalogController::class, 'sitemap']);
     });
 
@@ -73,6 +75,10 @@ Route::prefix('v1')->group(function () {
         Route::post('shared-plans/{token}/join', [PlanController::class, 'join']);
         Route::get('me/preferences', [ShopperController::class, 'preferences']);
         Route::put('me/preferences', [ShopperController::class, 'savePreferences']);
+        Route::get('me/activity', [ShopperController::class, 'activity']);
+        Route::post('me/activity', [ShopperController::class, 'addActivity']);
+        Route::delete('me/activity', [ShopperController::class, 'forgetActivity']);
+        Route::get('me/export', [ShopperController::class, 'export']);
         Route::get('me/places', [ShopperController::class, 'places']);
         Route::delete('me/places', [ShopperController::class, 'deletePlaces']);
         Route::put('me/places/{id}', [ShopperController::class, 'savePlace']);

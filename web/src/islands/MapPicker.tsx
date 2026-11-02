@@ -1,15 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Briefcase, Home as HomeIcon, LocateFixed, MapPin, Search } from 'lucide-react';
-import { Map as MapLibreMap, setWorkerUrl, type GeoJSONSource } from 'maplibre-gl';
-import mapStylesUrl from 'maplibre-gl/dist/maplibre-gl.css?url';
-import mapWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
-import { PUBLIC_MAP_STYLE_URL } from 'astro:env/client';
+import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
+/** Whatever a map source takes; maplibre's own type, so this needs no extra package. */
+type Shape = Parameters<GeoJSONSource['setData']>[0];
 import { distanceKm, nearest, searchPlaces, type PlaceName, type Point } from '@offer/rank';
+import { createMap, prefersDark, restyle } from '../lib/map';
 import type { Place } from '../lib/places';
 import RadiusPicker from './RadiusPicker';
-
-// The library finds its worker by a path the bundler rewrites, so it has to be told the real one.
-setWorkerUrl(mapWorkerUrl);
 
 /** A map that hasn't appeared by now isn't coming; say so and leave the search to work without it. */
 const LOAD_TIMEOUT_MS = 12_000;
@@ -34,14 +31,8 @@ interface Props {
   onDone: (spot: PickedSpot) => void;
 }
 
-/** A plain import would link this stylesheet on every page; only the map needs it. */
-function loadMapStyles() {
-  if (document.querySelector(`link[href="${mapStylesUrl}"]`)) return;
-  document.head.append(Object.assign(document.createElement('link'), { rel: 'stylesheet', href: mapStylesUrl }));
-}
-
 /** A circle as a map shape; precise enough for the distances people choose here. */
-function circle({ lat, lng }: Point, km: number): GeoJSON.Polygon {
+function circle({ lat, lng }: Point, km: number): Shape {
   const dLat = km / 111.32;
   const dLng = km / (111.32 * Math.cos((lat * Math.PI) / 180));
   const ring = Array.from({ length: 65 }, (_, i) => {
@@ -55,29 +46,6 @@ function circleBounds({ lat, lng }: Point, km: number): [[number, number], [numb
   const dLat = km / 111.32;
   const dLng = km / (111.32 * Math.cos((lat * Math.PI) / 180));
   return [[lng - dLng, lat - dLat], [lng + dLng, lat + dLat]];
-}
-
-/** Recolours the free map to match the site, and labels it in English. */
-function restyle(map: MapLibreMap, dark: boolean) {
-  const look = dark
-    ? { land: '#14201b', water: '#16323a', green: '#1a2e25', road: '#2f4239', building: '#1d2b25', text: '#c9d3cc', halo: '#0d1512' }
-    : { land: '#f6f1e6', water: '#c9e2e6', green: '#d9ebdc', road: '#ffffff', building: '#ece5d6', text: '#3b4a42', halo: '#fbf8f1' };
-
-  for (const layer of map.getStyle().layers) {
-    const { id, type } = layer;
-    if (type === 'background') map.setPaintProperty(id, 'background-color', look.land);
-    else if (type === 'fill' && /water/.test(id)) map.setPaintProperty(id, 'fill-color', look.water);
-    else if (type === 'fill' && /park|wood|grass|landcover/.test(id)) map.setPaintProperty(id, 'fill-color', look.green);
-    else if (type === 'fill' && /building/.test(id)) map.setPaintProperty(id, 'fill-color', look.building);
-    else if (type === 'fill') map.setPaintProperty(id, 'fill-color', look.land);
-    else if (type === 'line' && /water/.test(id)) map.setPaintProperty(id, 'line-color', look.water);
-    else if (type === 'line' && /highway|road|tunnel|bridge/.test(id)) map.setPaintProperty(id, 'line-color', look.road);
-    else if (type === 'symbol' && map.getLayoutProperty(id, 'text-field')) {
-      map.setLayoutProperty(id, 'text-field', ['coalesce', ['get', 'name:en'], ['get', 'name_en'], ['get', 'name:latin'], ['get', 'name']]);
-      map.setPaintProperty(id, 'text-color', look.text);
-      map.setPaintProperty(id, 'text-halo-color', look.halo);
-    }
-  }
 }
 
 const KINDS = [
@@ -112,7 +80,7 @@ export default function MapPicker({ start, stores, places, radiusKm, radiusOptio
   const storesRef = useRef(stores);
   storesRef.current = stores;
 
-  const storeShapes = (at: Point, km: number): GeoJSON.FeatureCollection => ({
+  const storeShapes = (at: Point, km: number): Shape => ({
     type: 'FeatureCollection',
     features: storesRef.current.map((store) => ({
       type: 'Feature',
@@ -123,25 +91,14 @@ export default function MapPicker({ start, stores, places, radiusKm, radiusOptio
 
   useEffect(() => {
     if (!box.current) return;
-    loadMapStyles();
-    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const dark = prefersDark();
     let map: MapLibreMap;
     try {
-      map = new MapLibreMap({
-        container: box.current,
-        style: PUBLIC_MAP_STYLE_URL,
-        bounds: circleBounds(start, radiusKm),
-        fitBoundsOptions: { padding: 24 },
-        attributionControl: { compact: false },
-        dragRotate: false,
-        pitchWithRotate: false,
-        touchPitch: false,
-      });
+      map = createMap(box.current, circleBounds(start, radiusKm));
     } catch {
       setFailed(true); // no WebGL on this device
       return;
     }
-    map.touchZoomRotate.disableRotation();
     mapRef.current = map;
 
     const primary = dark ? '#41c08c' : '#0f5c3f';
@@ -149,7 +106,7 @@ export default function MapPicker({ start, stores, places, radiusKm, radiusOptio
 
     map.on('load', () => {
       clearTimeout(giveUp);
-      restyle(map, dark);
+      restyle(map);
       map.addSource('radius', { type: 'geojson', data: circle(start, radiusKm) });
       map.addLayer({ id: 'radius-fill', type: 'fill', source: 'radius', paint: { 'fill-color': primary, 'fill-opacity': 0.1 } });
       map.addLayer({ id: 'radius-line', type: 'line', source: 'radius', paint: { 'line-color': primary, 'line-width': 2, 'line-opacity': 0.7 } });
