@@ -48,6 +48,8 @@ artisan places:import
 artisan retail:import
 artisan retail:import-branches
 artisan catalog:import-uae
+# Only finds photos from before the 350 px squares; afterwards it has nothing to do.
+artisan media:square-products
 
 # Typesense runs in Docker (root-setup.sh). Search pages need it; say so plainly instead of half-deploying.
 if ! curl -fs http://127.0.0.1:8108/health >/dev/null; then

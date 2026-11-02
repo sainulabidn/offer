@@ -30,7 +30,7 @@ const options = offer.group_found ?? 1;
 ---
 
 <article class="card relative flex flex-col overflow-hidden transition hover:shadow-float">
-  <div class:list={['relative grid aspect-[3/2] place-items-center overflow-hidden', offer.image ? 'bg-white' : tintFor(offer.product_group)]}>
+  <div class:list={['relative grid aspect-[3/2] place-items-center overflow-hidden', offer.image ? 'photo' : tintFor(offer.product_group)]}>
     {offer.image ? (
       <ResponsiveImage base={offer.image} alt="" sizes="(min-width: 1280px) 15vw, (min-width: 1024px) 20vw, (min-width: 640px) 30vw, 45vw" class="size-full object-contain p-2" />
     ) : (

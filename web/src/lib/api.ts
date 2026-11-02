@@ -43,7 +43,7 @@ export interface Product {
   product_group: { id: number; name: string; slug: string; unit_label: string };
   icon: string | null;
   like_count: number;
-  images: { base: string; alt: string | null; width: number; height: number }[];
+  images: { base: string; alt: string | null; width: number; height: number; credit: string | null }[];
   variants: { id: number; slug: string; label: string; is_default: boolean; offers: StoreOffer[] }[];
 }
 

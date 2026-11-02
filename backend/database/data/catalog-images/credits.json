@@ -1,142 +1,312 @@
 {
-    "cherry-tomato": {
-        "source": "https://commons.wikimedia.org/wiki/File:Cherry-Tomatoes-in-Pack.jpg",
-        "author": "Evan-Amos",
-        "licence": "CC0"
+    "7up": {
+        "source": "https://world.openfoodfacts.org/product/87177756",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
     },
-    "white-onion": {
-        "source": "https://commons.wikimedia.org/wiki/File:White_onions_for_sale_in_supermarket.JPG",
-        "author": "Tomwsulcer",
-        "licence": "CC0"
+    "al-ain-drinking-water": {
+        "source": "https://world.openfoodfacts.org/product/6291100850068",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "almarai-full-fat-laban": {
+        "source": "https://world.openfoodfacts.org/product/6281007110402",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "almarai-full-fat-yoghurt": {
+        "source": "https://world.openfoodfacts.org/product/6281007040655",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "ariel-automatic-liquid-detergent": {
+        "source": "https://world.openproductsfacts.org/product/8700216688994",
+        "author": "Open Products Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "aubergine": {
+        "source": "https://commons.wikimedia.org/wiki/File:Aubergine.jpg",
+        "author": "Horst Frank",
+        "licence": "CC BY-SA 3.0"
     },
     "banana": {
-        "source": "https://commons.wikimedia.org/wiki/File:Bunch_of_bananas_on_sale.jpg",
+        "source": "https://commons.wikimedia.org/wiki/File:Bananas_white_background_DS.jpg",
+        "author": "Augustus Binu : flickr",
+        "licence": "CC BY-SA 3.0"
+    },
+    "borges-extra-virgin-olive-oil": {
+        "source": "https://world.openfoodfacts.org/product/8410179100012",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "carrot": {
+        "source": "https://commons.wikimedia.org/wiki/File:Gajar.JPG",
+        "author": "Miansari66",
+        "licence": "Public domain"
+    },
+    "cauliflower": {
+        "source": "https://commons.wikimedia.org/wiki/File:Cauliflower_2.jpg",
+        "author": "Tiia Monto",
+        "licence": "CC BY-SA 4.0"
+    },
+    "cherry-tomato": {
+        "source": "https://commons.wikimedia.org/wiki/File:Cherry_Nebula_tomatoes_2017_A1.jpg",
+        "author": "Fructibus",
+        "licence": "CC0"
+    },
+    "clorox-original-bleach": {
+        "source": "https://commons.wikimedia.org/wiki/File:Chlorox-bleach.jpg",
+        "author": "Stikeseff",
+        "licence": "CC BY-SA 4.0"
+    },
+    "cucumber": {
+        "source": "https://commons.wikimedia.org/wiki/File:Cucumber_from_Denmark.jpg",
+        "author": "WiseMan42",
+        "licence": "CC0"
+    },
+    "dettol-original-hand-wash": {
+        "source": "https://world.openbeautyfacts.org/product/8901396387701",
+        "author": "Open Beauty Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "ferrero-rocher": {
+        "source": "https://commons.wikimedia.org/wiki/File:2023_Ferrero_Rocher_(1).jpg",
+        "author": "Jacek Halicki",
+        "licence": "CC BY-SA 4.0"
+    },
+    "galaxy-smooth-milk-chocolate": {
+        "source": "https://world.openfoodfacts.org/product/8902433005787",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "garlic": {
+        "source": "https://commons.wikimedia.org/wiki/File:Opened_garlic_bulb_with_garlic_clove.jpg",
+        "author": "Dubravko Sorić SoraZG on Flickr",
+        "licence": "CC BY 2.0"
+    },
+    "ginger": {
+        "source": "https://commons.wikimedia.org/wiki/File:Ginger_2.jpg",
+        "author": "Tiia Monto",
+        "licence": "CC BY-SA 4.0"
+    },
+    "green-apple": {
+        "source": "https://commons.wikimedia.org/wiki/File:The_Granny_Smith.jpg",
+        "author": "Dmitry Makeev",
+        "licence": "CC BY-SA 4.0"
+    },
+    "green-capsicum": {
+        "source": "https://commons.wikimedia.org/wiki/File:Green_bell_pepper_2017_A.jpg",
+        "author": "Fructibus",
+        "licence": "CC0"
+    },
+    "green-chilli": {
+        "source": "https://commons.wikimedia.org/wiki/File:Green_chilli.jpg",
+        "author": "Snarayanprince",
+        "licence": "CC BY-SA 4.0"
+    },
+    "hammour": {
+        "source": "https://commons.wikimedia.org/wiki/File:Epinephelus_coioides_Iran.png",
+        "author": "Parviz Tavakoli-Kolour",
+        "licence": "CC BY 3.0"
+    },
+    "head-shoulders-classic-clean-shampoo": {
+        "source": "https://world.openbeautyfacts.org/product/8001090047014",
+        "author": "Open Beauty Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "heinz-tomato-ketchup": {
+        "source": "https://commons.wikimedia.org/wiki/File:Heinz_Tomato_Ketchup,_Canada_(front),_2026-02-19.jpg",
+        "author": "Chris Woodrich",
+        "licence": "Public domain"
+    },
+    "hellmann-s-real-mayonnaise": {
+        "source": "https://world.openfoodfacts.org/product/92000480012134800219",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "kellogg-s-corn-flakes": {
+        "source": "https://world.openfoodfacts.org/product/8901499008176",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "kingfish": {
+        "source": "https://commons.wikimedia.org/wiki/File:King_mackerel_-_Voyage_of_the_Blossom_(30992028797).jpg",
+        "author": "Tim Evanson from Cleveland Heights, Ohio, USA",
+        "licence": "CC BY-SA 2.0"
+    },
+    "kitkat-4-finger": {
+        "source": "https://world.openfoodfacts.org/product/40052397",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "kleenex-facial-tissue": {
+        "source": "https://commons.wikimedia.org/wiki/File:Kleenex-small-box.jpg",
+        "author": "Evan-Amos",
+        "licence": "Public domain"
+    },
+    "lemon": {
+        "source": "https://commons.wikimedia.org/wiki/File:Lemon.jpg",
+        "author": "André Karwath aka Aka",
+        "licence": "CC BY-SA 2.5"
+    },
+    "lipton-yellow-label-tea": {
+        "source": "https://world.openfoodfacts.org/product/8901030553868",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "luna-tomato-paste": {
+        "source": "https://world.openfoodfacts.org/product/6281020101210",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "maggi-2-minute-masala-noodles": {
+        "source": "https://world.openfoodfacts.org/product/0028000336974",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "mango": {
+        "source": "https://commons.wikimedia.org/wiki/File:Mangofil_on_white_background.jpg",
+        "author": "Filo gèn'",
+        "licence": "CC BY-SA 4.0"
+    },
+    "marmum-full-cream-fresh-milk": {
+        "source": "https://world.openfoodfacts.org/product/6291031000136",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "mazola-corn-oil": {
+        "source": "https://world.openfoodfacts.org/product/0761720758625",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "mcvitie-s-digestive-biscuits": {
+        "source": "https://world.openfoodfacts.org/product/8906033740758",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "minced-beef": {
+        "source": "https://commons.wikimedia.org/wiki/File:Minced_beef_meat_cow_cattle.png",
+        "author": "Nevit Dilmen (talk) Derivative work.",
+        "licence": "CC BY-SA 3.0"
+    },
+    "nescafe-classic-instant-coffee": {
+        "source": "https://world.openfoodfacts.org/product/9556001118752",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "nutella-hazelnut-spread": {
+        "source": "https://world.openfoodfacts.org/product/80177128",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "okra": {
+        "source": "https://commons.wikimedia.org/wiki/File:Abelmoschus_esculentus_in_Margarita_Island.jpg",
         "author": "Wilfredor",
         "licence": "CC0"
     },
     "orange": {
-        "source": "https://commons.wikimedia.org/wiki/File:Ambersweet_oranges.jpg",
-        "author": "unknown",
+        "source": "https://commons.wikimedia.org/wiki/File:Mandarin_fruit_on_white_background.jpg",
+        "author": "Paolo Neo",
         "licence": "Public domain"
     },
-    "garlic": {
-        "source": "https://commons.wikimedia.org/wiki/File:Garlic_Bulbs_(Unsplash).jpg",
-        "author": "Matthew Pilachowski matthewpilachowski",
-        "licence": "CC0"
+    "oreo-original-biscuits": {
+        "source": "https://world.openfoodfacts.org/product/7622202039775",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
     },
-    "red-capsicum": {
-        "source": "https://commons.wikimedia.org/wiki/File:Red,_Yellow,_and_Green_bell_peppers.jpg",
-        "author": "Jiafei Slay Queen",
-        "licence": "CC0"
+    "pantene-pro-v-shampoo": {
+        "source": "https://world.openbeautyfacts.org/product/8001841267111",
+        "author": "Open Beauty Facts contributors",
+        "licence": "CC BY-SA 3.0"
     },
-    "cabbage": {
-        "source": "https://commons.wikimedia.org/wiki/File:Brassica_oleracea_2011_G1.jpg",
-        "author": "George Chernilevsky",
+    "pepsi-cola": {
+        "source": "https://world.openfoodfacts.org/product/87156836",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "potato": {
+        "source": "https://commons.wikimedia.org/wiki/File:Potato_with_sprouts.jpg",
+        "author": "ZooFari",
         "licence": "Public domain"
     },
-    "okra": {
-        "source": "https://commons.wikimedia.org/wiki/File:Quiabo.jpg",
-        "author": "ArionStar",
-        "licence": "CC0"
+    "president-unsalted-butter": {
+        "source": "https://world.openfoodfacts.org/product/0077901421425",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
     },
-    "iceberg-lettuce": {
-        "source": "https://commons.wikimedia.org/wiki/File:Lettuce_iceberg_variety_from_Salinas_valley_California.jpeg",
-        "author": "unknown",
-        "licence": "Public domain"
+    "pril-dishwashing-liquid": {
+        "source": "https://world.openproductsfacts.org/product/8902102161738",
+        "author": "Open Products Facts contributors",
+        "licence": "CC BY-SA 3.0"
     },
-    "red-grapes": {
-        "source": "https://commons.wikimedia.org/wiki/File:Red_globe_grapes.jpg",
-        "author": "Leon Brooks",
-        "licence": "Public domain"
-    },
-    "mint-leaves": {
-        "source": "https://commons.wikimedia.org/wiki/File:Mint_leaves_raster.jpg",
-        "author": "Aviavlad",
-        "licence": "CC0"
-    },
-    "kingfish": {
-        "source": "https://commons.wikimedia.org/wiki/File:King_mackerel_(_Scomberomorus_cavalla_).jpg",
-        "author": "NOAA's Fisheries Collection , SEFSC Pascagoula Laboratory; Collection of Brandi Noble, NOAA/NMFS/SEFSC",
-        "licence": "Public domain"
-    },
-    "sardine": {
-        "source": "https://commons.wikimedia.org/wiki/File:Beach-sea-animal-food-seafood-fresh-1084632-pxhere.jpg",
-        "author": "PxHere",
-        "licence": "CC0"
-    },
-    "white-eggs-large": {
-        "source": "https://commons.wikimedia.org/wiki/File:Eggs_in_China_02.jpg",
-        "author": "Anna Frodesiak",
-        "licence": "Public domain"
+    "pringles-original": {
+        "source": "https://world.openfoodfacts.org/product/9880167100260",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
     },
     "red-apple": {
-        "source": "https://commons.wikimedia.org/wiki/File:Freshly_Picked_Apples_(Unsplash).jpg",
-        "author": "sydney zentz srz",
-        "licence": "CC0"
+        "source": "https://commons.wikimedia.org/wiki/File:Red_Chief_Apple_IMG_4138.jpg",
+        "author": "Hans Haase",
+        "licence": "CC BY-SA 3.0"
     },
-    "green-apple": {
-        "source": "https://commons.wikimedia.org/wiki/File:Granny_Smith_apples_2017_A.jpg",
-        "author": "Fructibus",
-        "licence": "CC0"
+    "red-capsicum": {
+        "source": "https://commons.wikimedia.org/wiki/File:Red_Bell_Pepper_(5571468261).jpg",
+        "author": "Sharunas Jurevic from Vilnius, Lithuania",
+        "licence": "CC BY 2.0"
     },
-    "cucumber": {
-        "source": "https://commons.wikimedia.org/wiki/File:Cucumbers_in_a_pile.jpg",
-        "author": "Jeffery Martin",
-        "licence": "CC0"
-    },
-    "lemon": {
-        "source": "https://commons.wikimedia.org/wiki/File:Citrus_fruits.jpg",
-        "author": "Scott Bauer, USDA",
+    "red-grapes": {
+        "source": "https://commons.wikimedia.org/wiki/File:Food_Portions_(Team_Nutrition)_(20210902-FNS-UNC-0036).jpg",
+        "author": "USDAgov",
         "licence": "Public domain"
     },
-    "ginger": {
-        "source": "https://commons.wikimedia.org/wiki/File:Ginger_rhizomes.jpg",
-        "author": "Judethedeus",
-        "licence": "CC0"
+    "red-lentils-masoor-dal": {
+        "source": "https://commons.wikimedia.org/wiki/File:Masoor_dal.JPG",
+        "author": "Rydia~commonswiki",
+        "licence": "CC BY-SA 2.5"
     },
-    "green-capsicum": {
-        "source": "https://commons.wikimedia.org/wiki/File:Green_bell_pepper_pile.jpg",
-        "author": "Jeffery Martin",
-        "licence": "CC0"
-    },
-    "watermelon": {
-        "source": "https://commons.wikimedia.org/wiki/File:Watermelon.jpg",
-        "author": "USDA photo by Scott Bauer",
-        "licence": "Public domain"
+    "red-onion": {
+        "source": "https://commons.wikimedia.org/wiki/File:Red_Onion_on_White.JPG",
+        "author": "Colin",
+        "licence": "CC BY-SA 3.0"
     },
     "salmon-fillet": {
-        "source": "https://commons.wikimedia.org/wiki/File:Raw_salmon_fillets.jpg",
-        "author": "FULVIO_TOGNON",
-        "licence": "CC0"
+        "source": "https://commons.wikimedia.org/wiki/File:Salmon2.jpg",
+        "author": "Tiia Monto",
+        "licence": "CC BY-SA 3.0"
     },
     "shrimp": {
-        "source": "https://commons.wikimedia.org/wiki/File:Frozen_raw_shrimps.jpg",
-        "author": "Fumikas Sagisavas",
-        "licence": "CC0"
+        "source": "https://commons.wikimedia.org/wiki/File:Liat_Portal_for_Foodie_Disorder_-_Fresh_jumbo_shrimp_from_San_Francisco_farmers_market.jpg",
+        "author": "HaJunkiyada",
+        "licence": "CC BY-SA 4.0"
     },
-    "carrot": {
-        "source": "https://commons.wikimedia.org/wiki/File:Cracked_carrot_2017_B.jpg",
-        "author": "Fructibus",
-        "licence": "CC0"
+    "snickers-chocolate-bar": {
+        "source": "https://commons.wikimedia.org/wiki/File:2019-01-28_19_55_14_A_Snickers_bar_with_the_wrapper_still_intact_in_the_Dulles_section_of_Sterling,_Loudoun_County,_Virginia.jpg",
+        "author": "Famartin",
+        "licence": "CC BY-SA 4.0"
     },
-    "aubergine": {
-        "source": "https://commons.wikimedia.org/wiki/File:Round_eggplant_(1).jpg",
-        "author": "Fumikas Sagisavas",
-        "licence": "CC0"
-    },
-    "coriander-leaves": {
-        "source": "https://commons.wikimedia.org/wiki/File:Coriander_fresh.JPG",
-        "author": "Miansari66",
+    "sunsilk-shampoo": {
+        "source": "https://commons.wikimedia.org/wiki/File:Sedal_Shampoo.jpg",
+        "author": "Jorge Barrios",
         "licence": "Public domain"
     },
-    "beef-cubes": {
-        "source": "https://commons.wikimedia.org/wiki/File:4848Chunks_of_beef_textures_and_Corn_cobs_in_the_Philippines_12.jpg",
-        "author": "Judgefloro",
-        "licence": "CC0"
+    "tomato": {
+        "source": "https://commons.wikimedia.org/wiki/File:Red_tomatoes._img_06.jpg",
+        "author": "Dmitry Makeev",
+        "licence": "CC BY-SA 4.0"
     },
-    "hammour": {
-        "source": "https://commons.wikimedia.org/wiki/File:Epinephelus_coioides_Uotto.jpg",
-        "author": "タウナギ",
-        "licence": "CC0"
+    "tropicana-orange-juice": {
+        "source": "https://world.openfoodfacts.org/product/8902080013029",
+        "author": "Open Food Facts contributors",
+        "licence": "CC BY-SA 3.0"
+    },
+    "watermelon": {
+        "source": "https://commons.wikimedia.org/wiki/File:Food_Portions_(Team_Nutrition)_(20210902-FNS-UNC-0039).jpg",
+        "author": "USDAgov",
+        "licence": "Public domain"
+    },
+    "white-eggs-large": {
+        "source": "https://commons.wikimedia.org/wiki/File:White_chicken_egg_square.jpg",
+        "author": "Ren West, square crop by uploader",
+        "licence": "CC BY 2.0"
     }
 }

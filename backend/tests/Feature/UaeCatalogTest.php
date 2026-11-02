@@ -9,6 +9,7 @@ use App\Domain\Catalog\ProductGroup;
 use App\Domain\Search\Synonym;
 use Database\Seeders\CatalogStructureSeeder;
 use Database\Seeders\DemoCatalogSeeder;
+use Database\Seeders\GeoSeeder;
 use Database\Seeders\UnitSeeder;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
@@ -39,9 +40,27 @@ it('adds the starter catalogue with sizes, origins, grades, synonyms and photos,
         ->and($ferrero->variants()->count())->toBe(3)
         ->and(Synonym::query()->whereJsonContains('terms', 'hammour')->exists())->toBeTrue()
         ->and(Product::where('slug', 'banana')->firstOrFail()->images()->count())->toBe(1)
+        ->and(Product::where('slug', 'tomato')->firstOrFail()->images()->sole()->credit)->toBe('Dmitry Makeev, CC BY-SA 4.0')
         ->and(app(ImportUaeCatalog::class)())->toBeNull();
 
     Bus::assertDispatched(GenerateImageSizes::class);
+});
+
+it('swaps a photo an earlier import added for the new one, and keeps one staff uploaded', function () {
+    app(ImportUaeCatalog::class)();
+    $banana = Product::where('slug', 'banana')->firstOrFail();
+    $banana->images()->update(['path' => 'products/banana-00000000-350.webp']);
+    $carrot = Product::where('slug', 'carrot')->firstOrFail();
+    $carrot->images()->update(['path' => 'products/01jstaffupload-350.webp']);
+    // White onion's photo was taken out of the set.
+    $onion = Product::where('slug', 'white-onion')->firstOrFail();
+    $onion->images()->create(['path' => 'products/white-onion-12345678-350.webp']);
+
+    app(ImportUaeCatalog::class)(force: true);
+
+    expect($banana->images()->sole()->path)->toMatch('#^products/banana-[0-9a-f]{8}\.jpg$#')->not->toContain('00000000')
+        ->and($carrot->images()->sole()->path)->toBe('products/01jstaffupload-350.webp')
+        ->and($onion->images()->count())->toBe(0);
 });
 
 it('leaves products, groups and grades staff already have as they are', function () {

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Translatable\HasTranslations;
 
-/** `path` is the uploaded original on the public disk; AVIF/WebP sizes (160–1200 px) are generated next to it. */
+/** `path` is the upload until GenerateImageSizes replaces it with the 350 px square, "{base}-350.webp", beside "{base}-160.webp". */
 class ProductImage extends Model
 {
     use HasTranslations;
@@ -24,13 +24,11 @@ class ProductImage extends Model
         });
 
         static::deleted(function (ProductImage $image) {
-            $base = GenerateImageSizes::basePath($image->path);
-            $sizes = collect(GenerateImageSizes::WIDTHS)->flatMap(fn (int $w) => ["{$base}-{$w}.avif", "{$base}-{$w}.webp"]);
-            GenerateImageSizes::disk()->delete([$image->path, ...$sizes]);
+            GenerateImageSizes::disk()->delete(GenerateImageSizes::allFiles($image->path));
         });
     }
 
-    /** For the website: base URL (append "-{width}.avif|webp"), alt text and the original's dimensions. */
+    /** For the website: base URL (append "-160.webp" or "-350.webp"), alt text and the square's size. */
     public function toPublicArray(): array
     {
         return [
@@ -38,6 +36,7 @@ class ProductImage extends Model
             'alt' => $this->getTranslation('alt', 'en', false) ?: null,
             'width' => $this->width,
             'height' => $this->height,
+            'credit' => $this->credit,
         ];
     }
 

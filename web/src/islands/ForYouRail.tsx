@@ -47,9 +47,9 @@ export default function ForYouRail({ radiusFilter }: { radiusFilter?: string }) 
           const { hit } = entry.item;
           return (
             <li key={hit.id} className="card relative w-40 overflow-hidden">
-              <div className={`grid h-24 place-items-center ${hit.image ? 'bg-white' : tintFor(String(hit.product_group_id))}`}>
+              <div className={`grid h-24 place-items-center ${hit.image ? 'photo' : tintFor(String(hit.product_group_id))}`}>
                 {hit.image
-                  ? <img src={`${hit.image}-320.webp`} alt="" loading="lazy" className="size-full object-contain p-1" />
+                  ? <img src={`${hit.image}-350.webp`} alt="" loading="lazy" className="size-full object-contain p-1" />
                   : <span aria-hidden="true" className="text-[2.5rem] leading-none">{hit.icon ?? hit.product_name.charAt(0)}</span>}
               </div>
               <button type="button" aria-label={`Not interested in ${hit.product_name}`} onClick={() => notInterested(entry)} className="absolute end-1.5 top-1.5 z-10 grid size-8 place-items-center rounded-full bg-white/90 text-muted shadow-sm">

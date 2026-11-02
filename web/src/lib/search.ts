@@ -45,7 +45,7 @@ export interface OfferHit {
   deal_score?: number;
   is_lowest_90d?: boolean;
   was_price_suspicious?: boolean;
-  /** Base URL of the product photo; append "-{width}.avif|webp". */
+  /** Base URL of the product photo; append "-160.webp" or "-350.webp". */
   image?: string;
   /** Emoji for the card when there's no photo. */
   icon?: string;

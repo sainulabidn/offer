@@ -1,13 +1,11 @@
 <?php
 
-use App\Domain\Catalog\GenerateImageSizes;
 use App\Domain\Catalog\Product;
 use App\Domain\Catalog\ProductImage;
 use Database\Seeders\CatalogStructureSeeder;
 use Database\Seeders\DemoCatalogSeeder;
 use Database\Seeders\GeoSeeder;
 use Database\Seeders\UnitSeeder;
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\getJson;
@@ -15,36 +13,45 @@ use function Pest\Laravel\getJson;
 beforeEach(function () {
     $this->seed([UnitSeeder::class, GeoSeeder::class, CatalogStructureSeeder::class, DemoCatalogSeeder::class]);
     Storage::fake('public');
+    Storage::disk('public')->makeDirectory('products');
 });
 
-it('makes AVIF and WebP sizes and exposes them to the website', function (string $tool) {
-    config(['filesystems.image_tool' => $tool]);
-    // A real 1000×800 PNG made by libvips itself.
-    $path = 'products/rice.png';
-    Storage::disk('public')->makeDirectory('products');
-    Process::run(['vips', 'black', Storage::disk('public')->path($path), '1000', '800'])->throw();
+/** A 1000×800 white photo with a dark 400×200 product in it. */
+function photoOnWhite(string $path): void
+{
+    $photo = imagecreatetruecolor(1000, 800);
+    imagefill($photo, 0, 0, imagecolorallocate($photo, 255, 255, 255));
+    imagefilledrectangle($photo, 300, 300, 699, 499, imagecolorallocate($photo, 40, 90, 60));
+    imagepng($photo, Storage::disk('public')->path($path));
+}
 
+it('keeps only a trimmed 350 px square and a 160 px copy, and exposes them to the website', function () {
+    photoOnWhite('products/rice.png');
     $product = Product::where('slug', 'india-gate-classic-basmati-rice')->firstOrFail();
-    $image = $product->images()->create(['path' => $path, 'alt' => ['en' => 'Rice bag']]); // job runs on the sync queue
 
-    expect($image->fresh())->width->toBe(1000)->height->toBe(800);
-    foreach (GenerateImageSizes::WIDTHS as $width) {
-        Storage::disk('public')->assertExists(["products/rice-{$width}.avif", "products/rice-{$width}.webp"]);
-    }
-    // Never upscaled: the 1200 px copy stays 1000 px wide; smaller sizes really are smaller.
-    $widthOf = fn (string $file) => trim(Process::run(['vipsheader', '-f', 'width', Storage::disk('public')->path($file)])->output());
-    expect($widthOf('products/rice-1200.webp'))->toBe('1000')
-        ->and($widthOf('products/rice-320.avif'))->toBe('320');
+    $image = $product->images()->create(['path' => 'products/rice.png', 'alt' => ['en' => 'Rice bag']]); // job runs on the sync queue
+
+    expect($image->fresh())->path->toBe('products/rice-350.webp')->width->toBe(350)->height->toBe(350)
+        ->and(Storage::disk('public')->allFiles('products'))->toEqualCanonicalizing(['products/rice-160.webp', 'products/rice-350.webp']);
+
+    $square = imagecreatefromwebp(Storage::disk('public')->path('products/rice-350.webp'));
+    $dark = fn (int $x, int $y) => (imagecolorat($square, $x, $y) & 0xFF) < 128;
+    // The white border is trimmed: the product spans the square, less its margin, and stays centred.
+    expect([imagesx($square), imagesy($square)])->toBe([350, 350])
+        ->and($dark(30, 175))->toBeTrue()
+        ->and($dark(175, 60))->toBeFalse()
+        ->and(getimagesize(Storage::disk('public')->path('products/rice-160.webp'))[0])->toBe(160);
 
     getJson('/api/v1/products/india-gate-classic-basmati-rice')
         ->assertJsonPath('images.0.alt', 'Rice bag')
-        ->assertJsonPath('images.0.width', 1000);
-})->with(['libvips' => 'vips', 'GD (AlmaLinux 8 server)' => 'gd']);
+        ->assertJsonPath('images.0.width', 350)
+        ->assertJsonPath('images.0.base', Storage::disk('public')->url('products/rice'));
+});
 
-it('deletes every size with the image', function () {
-    Storage::disk('public')->makeDirectory('products');
-    Process::run(['vips', 'black', Storage::disk('public')->path('products/a.png'), '400', '400'])->throw();
+it('deletes every size with the image, including those earlier versions made', function () {
+    photoOnWhite('products/a.png');
     $image = Product::firstOrFail()->images()->create(['path' => 'products/a.png']);
+    Storage::disk('public')->put('products/a-1200.avif', 'old');
 
     ProductImage::findOrFail($image->id)->delete();
 

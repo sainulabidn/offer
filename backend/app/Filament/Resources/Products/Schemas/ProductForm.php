@@ -44,7 +44,7 @@ class ProductForm
                     ]),
                 Section::make('Images')
                     ->columnSpanFull()
-                    ->description('The first image shows on cards. JPG, PNG or WebP up to 8 MB; smaller AVIF/WebP copies are made automatically.')
+                    ->description('The first image shows on cards. JPG, PNG or WebP up to 8 MB. Best on a white or transparent background: it is trimmed, squared and kept at 350 px.')
                     ->schema([
                         Repeater::make('images')
                             ->relationship()
@@ -65,6 +65,10 @@ class ProductForm
                                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                                     ->required(),
                                 TextInput::make('alt.en')->label('Description (for screen readers)'),
+                                TextInput::make('credit')
+                                    ->label('Photo credit')
+                                    ->maxLength(255)
+                                    ->helperText('When the licence asks for one, e.g. "Jane Doe, CC BY-SA 4.0".'),
                             ]),
                     ]),
                 Section::make('Details')

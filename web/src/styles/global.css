@@ -130,6 +130,15 @@
     @apply border-primary bg-primary-soft font-semibold text-link;
   }
 
+  /* Product photos are white squares: multiply lets the white take on this soft light, in both colour modes. */
+  .photo {
+    background: radial-gradient(75% 75% at 50% 45%, #ffffff 0%, #fafafa 45%, #ebebeb 100%);
+  }
+
+  .photo img {
+    mix-blend-mode: multiply;
+  }
+
   .card {
     @apply rounded-(--radius-card) border border-line/70 bg-surface shadow-card;
   }

@@ -48,7 +48,7 @@ const jsonLd = {
   '@type': 'Product',
   name: product.name,
   ...(product.brand && { brand: { '@type': 'Brand', name: product.brand.name } }),
-  ...(product.images[0] && { image: `${product.images[0].base}-800.webp` }),
+  ...(product.images[0] && { image: `${product.images[0].base}-350.webp` }),
   category: product.category.name,
   ...(allOffers.length && {
     offers: {
@@ -77,13 +77,16 @@ const jsonLd = {
   </nav>
 
   <div class="grid gap-6 md:grid-cols-[minmax(0,20rem)_1fr] lg:gap-10">
-    <div class:list={['relative grid aspect-[3/2] place-items-center self-start overflow-hidden rounded-(--radius-card) shadow-card md:aspect-square', product.images[0] ? 'bg-white' : tintFor(product.product_group.name)]}>
-      {product.images[0] ? (
-        <ResponsiveImage base={product.images[0].base} alt={product.images[0].alt ?? product.name} width={product.images[0].width} height={product.images[0].height} sizes="(min-width: 768px) 20rem, 100vw" priority class="size-full object-contain" />
-      ) : (
-        <span aria-hidden="true" class="text-7xl leading-none drop-shadow-sm">{product.icon ?? product.name.charAt(0)}</span>
-      )}
-      <div class="absolute end-3 top-3"><LikeButton client:visible target={`product:${product.id}`} /></div>
+    <div class="self-start">
+      <div class:list={['relative grid aspect-[3/2] place-items-center overflow-hidden rounded-(--radius-card) shadow-card md:aspect-square', product.images[0] ? 'photo' : tintFor(product.product_group.name)]}>
+        {product.images[0] ? (
+          <ResponsiveImage base={product.images[0].base} alt={product.images[0].alt ?? product.name} sizes="(min-width: 768px) 20rem, 100vw" priority class="size-full object-contain" />
+        ) : (
+          <span aria-hidden="true" class="text-7xl leading-none drop-shadow-sm">{product.icon ?? product.name.charAt(0)}</span>
+        )}
+        <div class="absolute end-3 top-3"><LikeButton client:visible target={`product:${product.id}`} /></div>
+      </div>
+      {product.images[0]?.credit && <p class="mt-1.5 text-xs text-muted">Photo: {product.images[0].credit}</p>}
     </div>
 
     <div class="min-w-0">

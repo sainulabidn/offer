@@ -22,13 +22,17 @@ final class ImportUaeCatalog
 
     private const string DONE = 'uae_catalog_hash';
 
+    private ?array $credits = null;
+
     public function __construct(private readonly CatalogRowImporter $rows) {}
 
     /** @return array{categories: int, groups: int, products: int, photos: int, synonyms: int}|null null when already imported */
     public function __invoke(bool $force = false): ?array
     {
         $path = database_path(self::FILE);
-        $hash = hash_file('sha256', $path);
+        // New or changed photos count as a change too.
+        $files = [$path, ...glob(database_path(self::PHOTOS.'/*.jpg')) ?: []];
+        $hash = hash('sha256', implode(array_map(fn (string $file) => hash_file('sha256', $file), $files)));
         if (! $force && SiteSetting::where('key', self::DONE)->value('value') === $hash) {
             return null;
         }
@@ -140,21 +144,48 @@ final class ImportUaeCatalog
         ];
     }
 
-    /** Adds the product's photo when it has none yet. */
+    /** Adds the product's photo, or swaps one an earlier import added for a newer file. Photos staff added stay. */
     private function photo(array $product): bool
     {
         $slug = Str::slug($product['n']);
         $source = database_path(self::PHOTOS."/{$slug}.jpg");
-        $record = Product::where('slug', $slug)->first();
-        if (! is_file($source) || ! $record || $record->images()->exists()) {
+        $record = Product::where('slug', $slug)->with('images')->first();
+        if (! $record) {
             return false;
         }
 
-        $path = "products/{$slug}-".substr(hash_file('sha256', $source), 0, 8).'.jpg';
-        GenerateImageSizes::disk()->put($path, (string) file_get_contents($source), 'public');
-        // Saving queues the resized copies the website shows.
-        $record->images()->create(['path' => $path, 'alt' => ['en' => $product['n']]]);
+        // Imported photos are named "{slug}-{hash}", before and after squaring; staff uploads never are.
+        $imported = fn (ProductImage $image) => preg_match('#^products/'.preg_quote($slug, '#').'-[0-9a-f]{8}$#', GenerateImageSizes::basePath($image->path));
+        if (! is_file($source)) {
+            // Its file was taken out of the set: the photo wasn't good enough, so the card falls back to the icon.
+            $record->images->filter($imported)->each->delete();
+
+            return false;
+        }
+
+        $base = "products/{$slug}-".substr(hash_file('sha256', $source), 0, 8);
+        if ($record->images->contains(fn (ProductImage $image) => GenerateImageSizes::basePath($image->path) === $base)
+            || $record->images->reject($imported)->isNotEmpty()) {
+            return false;
+        }
+
+        $record->images->each->delete();
+        GenerateImageSizes::disk()->put("{$base}.jpg", (string) file_get_contents($source), 'public');
+        // Saving queues the square copies the website shows.
+        $record->images()->create(['path' => "{$base}.jpg", 'alt' => ['en' => $product['n']], 'credit' => $this->credit($slug)]);
 
         return true;
+    }
+
+    /** "Author, CC BY-SA 4.0" from catalog-images/credits.json; public-domain and CC0 photos need none. */
+    private function credit(string $slug): ?string
+    {
+        $this->credits ??= json_decode((string) @file_get_contents(database_path(self::PHOTOS.'/credits.json')), true) ?: [];
+        $credit = $this->credits[$slug] ?? null;
+        if (! $credit || preg_match('/^(cc0|public domain|pdm)/i', $credit['licence'])) {
+            return null;
+        }
+
+        return Str::limit("{$credit['author']}, {$credit['licence']}", 250);
     }
 }

@@ -60,7 +60,7 @@ export default function SearchBox({ initial = '' }: { initial?: string }) {
         label: p.name,
         render: () => (
           <span className="flex items-center gap-3">
-            <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-sunken text-muted">
+            <span className={`grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl text-muted ${p.image ? 'photo' : 'bg-sunken'}`}>
               {p.image ? <img src={`${p.image}-160.webp`} alt="" width={44} height={44} loading="lazy" className="size-full object-contain" /> : p.name.charAt(0)}
             </span>
             <span className="min-w-0 flex-1">

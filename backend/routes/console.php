@@ -2,7 +2,9 @@
 
 use App\Domain\Alerts\WeeklyDigest;
 use App\Domain\Catalog\EssentialGrades;
+use App\Domain\Catalog\GenerateImageSizes;
 use App\Domain\Catalog\ImportUaeCatalog;
+use App\Domain\Catalog\ProductImage;
 use App\Domain\Engagement\Counters;
 use App\Domain\Engagement\Likes;
 use App\Domain\Geo\ImportPlaceNames;
@@ -108,6 +110,23 @@ Artisan::command('demo:seed', function () {
     $this->call('db:seed', ['--class' => DemoOffersSeeder::class, '--force' => true]);
     $this->call('db:seed', ['--class' => DemoNearbySeeder::class, '--force' => true]);
 })->purpose('Load the demo catalog, stores and offers (for staging servers)');
+
+Artisan::command('media:square-products', function () {
+    // Photos from before the 350 px squares: redo each once, which also deletes its larger copies.
+    $ids = ProductImage::query()->where('path', 'not like', '%-'.GenerateImageSizes::SIZE.'.webp')->pluck('id');
+    $failed = $ids->reject(function (int $id) {
+        try {
+            GenerateImageSizes::dispatchSync($id);
+
+            return true;
+        } catch (Throwable $e) {
+            $this->warn("Photo {$id}: {$e->getMessage()}");
+
+            return false;
+        }
+    });
+    $this->info('Squared '.($ids->count() - $failed->count()).' product photos.');
+})->purpose('Redo product photos made before the 350 px squares, and delete their larger copies');
 
 Artisan::command('media:copy {from=public} {--to=}', function (string $from) {
     // Moving product photos between disks (e.g. local "public" → "r2"): copy, then re-index so cards get the new URLs.
