@@ -36,7 +36,8 @@ class CatalogController extends Controller
         return response()->json([
             'products' => Product::query()->approved()->where('status', ProductStatus::Active)->get(['slug', 'updated_at'])
                 ->map(fn (Product $p) => ['slug' => $p->slug, 'updated' => $p->updated_at->toDateString()]),
-            'chains' => Chain::query()->where('is_active', true)->pluck('slug'),
+            // A store with no branches yet has an empty page, which search engines shouldn't list.
+            'chains' => Chain::query()->where('is_active', true)->whereHas('branches', fn ($q) => $q->where('is_active', true))->pluck('slug'),
             'categories' => Category::query()->approved()->where('is_active', true)->pluck('slug'),
         ])->setCache(['public' => true, 'max_age' => 3600, 's_maxage' => 3600]);
     }

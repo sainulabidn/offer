@@ -7,6 +7,7 @@ use App\Domain\Engagement\Likes;
 use App\Domain\Geo\ImportPlaceNames;
 use App\Domain\Offers\ExpireOffers;
 use App\Domain\Offers\Offer;
+use App\Domain\Retail\ImportRetailDirectory;
 use App\Domain\Search\OfferDocument;
 use App\Domain\Search\RankSync;
 use App\Domain\Search\SearchKeys;
@@ -60,6 +61,13 @@ Schedule::command('catalog:grade-essentials')->dailyAt('03:30')->timezone(config
 Artisan::command('places:import', function (ImportPlaceNames $import) {
     $this->info("The location search now lists {$import()} places.");
 })->purpose('Load the UAE place list for the location search');
+
+Artisan::command('retail:import {--force : Run even if the list has not changed}', function (ImportRetailDirectory $import) {
+    $result = $import((bool) $this->option('force'));
+    $this->info($result
+        ? "Added {$result['groups']} groups and {$result['chains']} stores; filled gaps in {$result['filled']} existing ones."
+        : 'The retailer list has not changed since it was last imported.');
+})->purpose('Add the UAE supermarket groups and stores from database/data/uae-retailers.json');
 
 Artisan::command('engagement:prune', function (Counters $counters) {
     $this->info("Removed {$counters->prune()} old count rows.");
