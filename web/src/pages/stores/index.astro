@@ -1,24 +1,40 @@
 ---
 import { distanceKm } from '@offer/rank';
 import Base from '../../layouts/Base.astro';
-import StoresExplorer from '../../islands/StoresExplorer';
-import { directory, placeOf, storeCards } from '../../lib/near';
+import StoresExplorer, { type ExplorerStore } from '../../islands/StoresExplorer';
+import { directory, placeOf, storeCards, storeRadius } from '../../lib/near';
 import { cacheFor } from '../../lib/format';
 
-const dir = await directory();
-const place = placeOf(dir, Astro.locals.prefs);
-const here = place.rough ? null : place.at;
+// Hundreds of branches across the UAE: the page carries the ones that matter here, not all of them.
+const MOST = 120;
+const AT_LEAST = 20;
 
-const stores = storeCards(dir)
+const prefs = Astro.locals.prefs;
+const dir = await directory();
+const place = placeOf(dir, prefs);
+const here = place.rough ? null : place.at;
+const radiusKm = storeRadius(dir, prefs);
+
+const all = storeCards(dir)
+  // A rough, emirate-level location has no centre to measure from: that emirate's stores are the honest list.
+  .filter((store) => !place.rough || store.emirate === prefs.emirate)
   .map((store) => ({ ...store, km: here ? distanceKm(here, store) : null }))
   .sort((a, b) => (a.km ?? 0) - (b.km ?? 0) || a.grade - b.grade || a.chain.localeCompare(b.chain));
+
+const inRange = here && radiusKm ? all.filter((store) => (store.km ?? 0) <= radiusKm) : all;
+const stores: ExplorerStore[] = (inRange.length >= AT_LEAST ? inRange : all.slice(0, AT_LEAST))
+  .slice(0, MOST)
+  .map(({ id, chain, chainSlug, name, slug, grade, logo, lat, lng, offers, km, hours, closed_today }) => ({ id, chain, chainSlug, name, slug, grade, logo, lat, lng, offers, km, hours, closed_today }));
 
 cacheFor(Astro.response.headers);
 ---
 
 <Base title="Stores near you · offer" description="Every supermarket on offer, with this week's deals at each branch.">
   <h1 class="text-2xl font-bold">Stores{here && place.name ? ` near ${place.name}` : ''}</h1>
-  <p class="mt-1 mb-4 text-sm text-muted">{stores.length} stores{here ? ', nearest first' : ''}. Tick up to 4 to compare their prices.</p>
+  <p class="mt-1 mb-4 text-sm text-muted">
+    {inRange.length > stores.length && inRange.length >= AT_LEAST ? `The nearest ${stores.length} of ${inRange.length} stores` : `${stores.length} stores`}{here ? (inRange.length >= AT_LEAST ? ` within ${radiusKm} km, nearest first` : ', nearest first') : ''}. Tick up to 4 to compare their prices.
+    {all.length > stores.length && ' Change your area to see stores elsewhere.'}
+  </p>
 
   <StoresExplorer client:load stores={stores} />
 </Base>

@@ -35,8 +35,10 @@
   ],
   "chains": [
     { "slug": "carrefour", "name": "Carrefour", "group": "majid-al-futtaim", "format": "hypermarket", "grade": 1, "website": "https://www.carrefouruae.com" },
+    { "slug": "carrefour-market", "name": "Carrefour Market", "group": "majid-al-futtaim", "format": "supermarket", "grade": 2, "website": "https://www.carrefouruae.com", "note": "Added from OpenStreetMap branch names." },
     { "slug": "lulu-hypermarket", "name": "LuLu Hypermarket", "group": "lulu-group-international", "format": "hypermarket", "grade": 1, "website": "https://www.luluhypermarket.com" },
     { "slug": "lulu-supermarket", "name": "LuLu Supermarket", "group": "lulu-group-international", "format": "supermarket", "grade": 2, "website": "https://www.luluhypermarket.com" },
+    { "slug": "lulu-express", "name": "LuLu Express", "group": "lulu-group-international", "format": "express", "grade": 2, "website": "https://www.luluhypermarket.com", "note": "Added from OpenStreetMap branch names." },
     { "slug": "nesto-hypermarket", "name": "Nesto Hypermarket", "group": "western-international-group", "format": "hypermarket", "grade": 1, "website": "https://www.nestogroup.com" },
     { "slug": "mark-and-save", "name": "Mark & Save", "group": "western-international-group", "format": "supermarket", "grade": 3, "website": null },
     { "slug": "union-coop", "name": "Union Coop", "group": "union-coop", "format": "hypermarket", "grade": 1, "website": "https://www.unioncoop.ae" },

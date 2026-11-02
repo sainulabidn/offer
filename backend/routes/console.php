@@ -9,6 +9,7 @@ use App\Domain\Geo\ImportPlaceNames;
 use App\Domain\Offers\ExpireOffers;
 use App\Domain\Offers\Offer;
 use App\Domain\Retail\ImportRetailDirectory;
+use App\Domain\Retail\ImportUaeBranches;
 use App\Domain\Search\OfferDocument;
 use App\Domain\Search\RankSync;
 use App\Domain\Search\SearchKeys;
@@ -69,6 +70,13 @@ Artisan::command('retail:import {--force : Run even if the list has not changed}
         ? "Added {$result['groups']} groups and {$result['chains']} stores; filled gaps in {$result['filled']} existing ones."
         : 'The retailer list has not changed since it was last imported.');
 })->purpose('Add the UAE supermarket groups and stores from database/data/uae-retailers.json');
+
+Artisan::command('retail:import-branches {--force : Run even if the list has not changed}', function (ImportUaeBranches $import) {
+    $result = $import((bool) $this->option('force'));
+    $this->info($result
+        ? "Added {$result['added']} branches; filled gaps in {$result['filled']}; skipped {$result['skipped']} of stores that aren't set up."
+        : 'The branch list has not changed since it was last imported.');
+})->purpose('Add the UAE branches from database/data/uae-branches.json (OpenStreetMap)');
 
 Artisan::command('catalog:import-uae {--force : Run even if the catalogue has not changed}', function (ImportUaeCatalog $import) {
     $result = $import((bool) $this->option('force'));
