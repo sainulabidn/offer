@@ -46,6 +46,7 @@ artisan catalog:grade-essentials
 artisan places:import
 # Only acts when database/data/uae-retailers.json changed, and never overwrites what staff edited.
 artisan retail:import
+artisan catalog:import-uae
 
 # Typesense runs in Docker (root-setup.sh). Search pages need it; say so plainly instead of half-deploying.
 if ! curl -fs http://127.0.0.1:8108/health >/dev/null; then

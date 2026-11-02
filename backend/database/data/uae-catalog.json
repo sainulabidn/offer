@@ -1,0 +1,4108 @@
+{
+    "_about": "Common UAE supermarket items, compiled 2 Nov 2026 from general market knowledge, not from a product register: pack sizes need a staff check and there are no barcodes. Groups: [English, Arabic, category, grade, compare as, icon]. Variants: [quantity, unit, pack count] or, with option Origin, [label, quantity, unit, ISO country].",
+    "categories": {
+        "Pantry": [
+            [
+                "Pasta & Noodles",
+                "🍝"
+            ],
+            [
+                "Dates & Nuts",
+                "🌰"
+            ],
+            [
+                "Sauces & Condiments",
+                "🥫"
+            ],
+            [
+                "Sugar & Salt",
+                "🧂"
+            ]
+        ],
+        "Frozen Food": [
+            [
+                "Frozen Meat & Poultry",
+                "🍗"
+            ],
+            [
+                "Frozen Vegetables & Fries",
+                "🍟"
+            ],
+            [
+                "Ice Cream",
+                "🍨"
+            ]
+        ],
+        "Household": [
+            [
+                "Dishwashing",
+                "🧽"
+            ]
+        ],
+        "Personal Care": [
+            [
+                "Hair Care",
+                "🧴"
+            ],
+            [
+                "Bath & Body",
+                "🧼"
+            ],
+            [
+                "Oral Care",
+                "🪥"
+            ]
+        ],
+        "Baby": [
+            [
+                "Diapers",
+                "👶"
+            ],
+            [
+                "Baby Milk & Food",
+                "🍼"
+            ]
+        ]
+    },
+    "groups": [
+        [
+            "Tomato",
+            "طماطم",
+            "Fruits & Vegetables",
+            1,
+            "group",
+            "🍅"
+        ],
+        [
+            "Potato",
+            "بطاطس",
+            "Fruits & Vegetables",
+            1,
+            "group",
+            "🥔"
+        ],
+        [
+            "Onion",
+            "بصل",
+            "Fruits & Vegetables",
+            1,
+            "group",
+            "🧅"
+        ],
+        [
+            "Banana",
+            "موز",
+            "Fruits & Vegetables",
+            1,
+            "group",
+            "🍌"
+        ],
+        [
+            "Apple",
+            "تفاح",
+            "Fruits & Vegetables",
+            1,
+            "group",
+            "🍎"
+        ],
+        [
+            "Orange",
+            "برتقال",
+            "Fruits & Vegetables",
+            1,
+            "group",
+            "🍊"
+        ],
+        [
+            "Cucumber",
+            "خيار",
+            "Fruits & Vegetables",
+            1,
+            "group",
+            "🥒"
+        ],
+        [
+            "Carrot",
+            "جزر",
+            "Fruits & Vegetables",
+            1,
+            "group",
+            "🥕"
+        ],
+        [
+            "Lemon",
+            "ليمون",
+            "Fruits & Vegetables",
+            1,
+            "group",
+            "🍋"
+        ],
+        [
+            "Garlic",
+            "ثوم",
+            "Fruits & Vegetables",
+            1,
+            "group",
+            "🧄"
+        ],
+        [
+            "Ginger",
+            "زنجبيل",
+            "Fruits & Vegetables",
+            1,
+            "group",
+            "🫚"
+        ],
+        [
+            "Green Chilli",
+            "فلفل أخضر حار",
+            "Fruits & Vegetables",
+            1,
+            "group",
+            "🌶️"
+        ],
+        [
+            "Capsicum",
+            "فلفل رومي",
+            "Fruits & Vegetables",
+            2,
+            "group",
+            "🫑"
+        ],
+        [
+            "Cabbage",
+            "ملفوف",
+            "Fruits & Vegetables",
+            2,
+            "group",
+            "🥬"
+        ],
+        [
+            "Cauliflower",
+            "قرنبيط",
+            "Fruits & Vegetables",
+            2,
+            "group",
+            "🥦"
+        ],
+        [
+            "Aubergine",
+            "باذنجان",
+            "Fruits & Vegetables",
+            2,
+            "group",
+            "🍆"
+        ],
+        [
+            "Okra",
+            "بامية",
+            "Fruits & Vegetables",
+            2,
+            "group",
+            "🫛"
+        ],
+        [
+            "Lettuce",
+            "خس",
+            "Fruits & Vegetables",
+            2,
+            "group",
+            "🥬"
+        ],
+        [
+            "Watermelon",
+            "بطيخ",
+            "Fruits & Vegetables",
+            2,
+            "group",
+            "🍉"
+        ],
+        [
+            "Mango",
+            "مانجو",
+            "Fruits & Vegetables",
+            2,
+            "group",
+            "🥭"
+        ],
+        [
+            "Grapes",
+            "عنب",
+            "Fruits & Vegetables",
+            2,
+            "group",
+            "🍇"
+        ],
+        [
+            "Coriander Leaves",
+            "كزبرة",
+            "Fruits & Vegetables",
+            2,
+            "group",
+            "🌿"
+        ],
+        [
+            "Mint Leaves",
+            "نعناع",
+            "Fruits & Vegetables",
+            2,
+            "group",
+            "🌿"
+        ],
+        [
+            "Whole Chicken",
+            "دجاج كامل",
+            "Meat & Poultry",
+            1,
+            "group",
+            "🐔"
+        ],
+        [
+            "Chicken Breast",
+            "صدر دجاج",
+            "Meat & Poultry",
+            1,
+            "group",
+            "🍗"
+        ],
+        [
+            "Mutton",
+            "لحم ضأن",
+            "Meat & Poultry",
+            1,
+            "group",
+            "🍖"
+        ],
+        [
+            "Beef",
+            "لحم بقر",
+            "Meat & Poultry",
+            1,
+            "group",
+            "🥩"
+        ],
+        [
+            "Minced Beef",
+            "لحم بقر مفروم",
+            "Meat & Poultry",
+            1,
+            "group",
+            "🥩"
+        ],
+        [
+            "Hammour",
+            "هامور",
+            "Fish & Seafood",
+            1,
+            "group",
+            "🐟"
+        ],
+        [
+            "Kingfish",
+            "كنعد",
+            "Fish & Seafood",
+            1,
+            "group",
+            "🐟"
+        ],
+        [
+            "Salmon",
+            "سلمون",
+            "Fish & Seafood",
+            2,
+            "group",
+            "🐟"
+        ],
+        [
+            "Sardine",
+            "سردين",
+            "Fish & Seafood",
+            1,
+            "group",
+            "🐟"
+        ],
+        [
+            "Shrimp",
+            "روبيان",
+            "Fish & Seafood",
+            2,
+            "group",
+            "🦐"
+        ],
+        [
+            "Fresh Milk",
+            "حليب طازج",
+            "Dairy & Eggs",
+            1,
+            "product",
+            "🥛"
+        ],
+        [
+            "Long Life Milk",
+            "حليب طويل الأجل",
+            "Dairy & Eggs",
+            1,
+            "product",
+            "🥛"
+        ],
+        [
+            "Laban",
+            "لبن",
+            "Dairy & Eggs",
+            1,
+            "product",
+            "🥛"
+        ],
+        [
+            "Yogurt",
+            "زبادي",
+            "Dairy & Eggs",
+            2,
+            "product",
+            "🥣"
+        ],
+        [
+            "Eggs",
+            "بيض",
+            "Dairy & Eggs",
+            1,
+            "group",
+            "🥚"
+        ],
+        [
+            "Cheese Slices",
+            "جبن شرائح",
+            "Dairy & Eggs",
+            2,
+            "product",
+            "🧀"
+        ],
+        [
+            "Cream Cheese Spread",
+            "جبنة كريمية",
+            "Dairy & Eggs",
+            2,
+            "product",
+            "🧀"
+        ],
+        [
+            "Labneh",
+            "لبنة",
+            "Dairy & Eggs",
+            2,
+            "product",
+            "🥣"
+        ],
+        [
+            "Butter",
+            "زبدة",
+            "Dairy & Eggs",
+            2,
+            "product",
+            "🧈"
+        ],
+        [
+            "Bread",
+            "خبز توست",
+            "Bakery",
+            1,
+            "product",
+            "🍞"
+        ],
+        [
+            "Arabic Bread",
+            "خبز عربي",
+            "Bakery",
+            1,
+            "product",
+            "🫓"
+        ],
+        [
+            "Basmati Rice",
+            "أرز بسمتي",
+            "Rice & Grains",
+            1,
+            "product",
+            "🍚"
+        ],
+        [
+            "Calrose Rice",
+            "أرز كالروز",
+            "Rice & Grains",
+            1,
+            "product",
+            "🍚"
+        ],
+        [
+            "Sunflower Oil",
+            "زيت دوار الشمس",
+            "Oil & Ghee",
+            1,
+            "product",
+            "🌻"
+        ],
+        [
+            "Corn Oil",
+            "زيت الذرة",
+            "Oil & Ghee",
+            1,
+            "product",
+            "🌽"
+        ],
+        [
+            "Olive Oil",
+            "زيت زيتون",
+            "Oil & Ghee",
+            2,
+            "product",
+            "🫒"
+        ],
+        [
+            "Ghee",
+            "سمن",
+            "Oil & Ghee",
+            1,
+            "product",
+            "🧈"
+        ],
+        [
+            "Wheat Flour",
+            "طحين القمح الكامل",
+            "Flour & Baking",
+            1,
+            "product",
+            "🌾"
+        ],
+        [
+            "Sugar",
+            "سكر",
+            "Sugar & Salt",
+            1,
+            "group",
+            "🍬"
+        ],
+        [
+            "Salt",
+            "ملح",
+            "Sugar & Salt",
+            1,
+            "group",
+            "🧂"
+        ],
+        [
+            "Red Lentils",
+            "عدس أحمر",
+            "Pulses & Lentils",
+            1,
+            "group",
+            "🫘"
+        ],
+        [
+            "Toor Dal",
+            "توور دال",
+            "Pulses & Lentils",
+            1,
+            "group",
+            "🫘"
+        ],
+        [
+            "Chickpeas",
+            "حمص",
+            "Pulses & Lentils",
+            1,
+            "group",
+            "🫘"
+        ],
+        [
+            "Chilli Powder",
+            "فلفل أحمر مطحون",
+            "Spices",
+            2,
+            "product",
+            "🌶️"
+        ],
+        [
+            "Turmeric Powder",
+            "كركم مطحون",
+            "Spices",
+            2,
+            "product",
+            "🟡"
+        ],
+        [
+            "Black Tea",
+            "شاي أسود",
+            "Tea & Coffee",
+            2,
+            "product",
+            "🍵"
+        ],
+        [
+            "Instant Coffee",
+            "قهوة سريعة التحضير",
+            "Tea & Coffee",
+            2,
+            "product",
+            "☕"
+        ],
+        [
+            "Canned Tuna",
+            "تونة معلبة",
+            "Canned Food",
+            2,
+            "product",
+            "🐟"
+        ],
+        [
+            "Tomato Paste",
+            "معجون طماطم",
+            "Canned Food",
+            2,
+            "product",
+            "🥫"
+        ],
+        [
+            "Foul Medames",
+            "فول مدمس",
+            "Canned Food",
+            2,
+            "product",
+            "🫘"
+        ],
+        [
+            "Corn Flakes",
+            "كورن فليكس",
+            "Breakfast & Cereals",
+            3,
+            "product",
+            "🥣"
+        ],
+        [
+            "Oats",
+            "شوفان",
+            "Breakfast & Cereals",
+            2,
+            "product",
+            "🥣"
+        ],
+        [
+            "Honey",
+            "عسل",
+            "Breakfast & Cereals",
+            3,
+            "product",
+            "🍯"
+        ],
+        [
+            "Chocolate Spread",
+            "شوكولاتة قابلة للدهن",
+            "Breakfast & Cereals",
+            3,
+            "product",
+            "🍫"
+        ],
+        [
+            "Potato Chips",
+            "شيبس",
+            "Snacks & Sweets",
+            3,
+            "product",
+            "🍟"
+        ],
+        [
+            "Chocolate Bars",
+            "ألواح شوكولاتة",
+            "Snacks & Sweets",
+            3,
+            "product",
+            "🍫"
+        ],
+        [
+            "Boxed Chocolates",
+            "علب شوكولاتة",
+            "Snacks & Sweets",
+            3,
+            "product",
+            "🎁"
+        ],
+        [
+            "Biscuits",
+            "بسكويت",
+            "Snacks & Sweets",
+            3,
+            "product",
+            "🍪"
+        ],
+        [
+            "Pasta",
+            "معكرونة",
+            "Pasta & Noodles",
+            2,
+            "product",
+            "🍝"
+        ],
+        [
+            "Instant Noodles",
+            "نودلز سريعة التحضير",
+            "Pasta & Noodles",
+            3,
+            "product",
+            "🍜"
+        ],
+        [
+            "Dates",
+            "تمر",
+            "Dates & Nuts",
+            2,
+            "product",
+            "🌴"
+        ],
+        [
+            "Ketchup",
+            "كاتشب",
+            "Sauces & Condiments",
+            3,
+            "product",
+            "🍅"
+        ],
+        [
+            "Mayonnaise",
+            "مايونيز",
+            "Sauces & Condiments",
+            3,
+            "product",
+            "🥚"
+        ],
+        [
+            "Frozen Whole Chicken",
+            "دجاج كامل مجمد",
+            "Frozen Meat & Poultry",
+            1,
+            "group",
+            "🐔"
+        ],
+        [
+            "Frozen Mixed Vegetables",
+            "خضار مشكلة مجمدة",
+            "Frozen Vegetables & Fries",
+            2,
+            "product",
+            "🥦"
+        ],
+        [
+            "French Fries",
+            "بطاطس مقلية مجمدة",
+            "Frozen Vegetables & Fries",
+            3,
+            "product",
+            "🍟"
+        ],
+        [
+            "Ice Cream",
+            "آيس كريم",
+            "Ice Cream",
+            3,
+            "product",
+            "🍨"
+        ],
+        [
+            "Drinking Water",
+            "مياه شرب",
+            "Water",
+            1,
+            "group",
+            "💧"
+        ],
+        [
+            "Cola",
+            "كولا",
+            "Soft Drinks",
+            3,
+            "product",
+            "🥤"
+        ],
+        [
+            "Lemon-Lime Soda",
+            "مشروب غازي بنكهة الليمون",
+            "Soft Drinks",
+            3,
+            "product",
+            "🥤"
+        ],
+        [
+            "Orange Juice",
+            "عصير برتقال",
+            "Juices",
+            2,
+            "product",
+            "🧃"
+        ],
+        [
+            "Washing Powder",
+            "مسحوق غسيل",
+            "Laundry",
+            2,
+            "product",
+            "🧺"
+        ],
+        [
+            "Liquid Detergent",
+            "منظف غسيل سائل",
+            "Laundry",
+            2,
+            "product",
+            "🧴"
+        ],
+        [
+            "Dishwashing Liquid",
+            "سائل غسيل الصحون",
+            "Dishwashing",
+            2,
+            "product",
+            "🧽"
+        ],
+        [
+            "Bleach",
+            "مبيض",
+            "Cleaning",
+            2,
+            "product",
+            "🧴"
+        ],
+        [
+            "Facial Tissue",
+            "مناديل وجه",
+            "Paper & Tissues",
+            2,
+            "product",
+            "🤧"
+        ],
+        [
+            "Toilet Paper",
+            "ورق تواليت",
+            "Paper & Tissues",
+            2,
+            "product",
+            "🧻"
+        ],
+        [
+            "Kitchen Towel",
+            "مناديل مطبخ",
+            "Paper & Tissues",
+            2,
+            "product",
+            "🧻"
+        ],
+        [
+            "Shampoo",
+            "شامبو",
+            "Hair Care",
+            3,
+            "product",
+            "🧴"
+        ],
+        [
+            "Bath Soap",
+            "صابون استحمام",
+            "Bath & Body",
+            2,
+            "product",
+            "🧼"
+        ],
+        [
+            "Hand Wash",
+            "غسول اليدين",
+            "Bath & Body",
+            2,
+            "product",
+            "🧴"
+        ],
+        [
+            "Toothpaste",
+            "معجون أسنان",
+            "Oral Care",
+            2,
+            "product",
+            "🪥"
+        ],
+        [
+            "Diapers",
+            "حفاضات",
+            "Diapers",
+            2,
+            "product",
+            "👶"
+        ],
+        [
+            "Infant Formula",
+            "حليب أطفال",
+            "Baby Milk & Food",
+            2,
+            "product",
+            "🍼"
+        ]
+    ],
+    "products": [
+        {
+            "g": "Tomato",
+            "n": "Tomato",
+            "ar": "طماطم",
+            "o": "Origin",
+            "w": true,
+            "img": "red tomatoes",
+            "v": [
+                [
+                    "Jordan",
+                    1,
+                    "kg",
+                    "JO"
+                ],
+                [
+                    "UAE",
+                    1,
+                    "kg",
+                    "AE"
+                ],
+                [
+                    "Oman",
+                    1,
+                    "kg",
+                    "OM"
+                ]
+            ]
+        },
+        {
+            "g": "Tomato",
+            "n": "Cherry Tomato",
+            "ar": "طماطم كرزية",
+            "o": "Origin",
+            "img": "cherry tomatoes",
+            "v": [
+                [
+                    "Netherlands",
+                    250,
+                    "g",
+                    "NL"
+                ],
+                [
+                    "UAE",
+                    250,
+                    "g",
+                    "AE"
+                ]
+            ]
+        },
+        {
+            "g": "Potato",
+            "n": "Potato",
+            "ar": "بطاطس",
+            "o": "Origin",
+            "w": true,
+            "img": "potatoes",
+            "v": [
+                [
+                    "Lebanon",
+                    1,
+                    "kg",
+                    "LB"
+                ],
+                [
+                    "Egypt",
+                    1,
+                    "kg",
+                    "EG"
+                ],
+                [
+                    "Pakistan",
+                    1,
+                    "kg",
+                    "PK"
+                ]
+            ]
+        },
+        {
+            "g": "Onion",
+            "n": "Red Onion",
+            "ar": "بصل أحمر",
+            "o": "Origin",
+            "w": true,
+            "img": "red onion bulbs",
+            "v": [
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ],
+                [
+                    "Pakistan",
+                    1,
+                    "kg",
+                    "PK"
+                ],
+                [
+                    "Egypt",
+                    1,
+                    "kg",
+                    "EG"
+                ]
+            ]
+        },
+        {
+            "g": "Onion",
+            "n": "White Onion",
+            "ar": "بصل أبيض",
+            "o": "Origin",
+            "w": true,
+            "img": "white onions",
+            "v": [
+                [
+                    "Egypt",
+                    1,
+                    "kg",
+                    "EG"
+                ]
+            ]
+        },
+        {
+            "g": "Banana",
+            "n": "Banana",
+            "ar": "موز",
+            "o": "Origin",
+            "w": true,
+            "img": "bananas",
+            "v": [
+                [
+                    "Philippines",
+                    1,
+                    "kg",
+                    "PH"
+                ],
+                [
+                    "Ecuador",
+                    1,
+                    "kg",
+                    "EC"
+                ],
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ]
+            ]
+        },
+        {
+            "g": "Apple",
+            "n": "Red Apple",
+            "ar": "تفاح أحمر",
+            "o": "Origin",
+            "w": true,
+            "img": "red apples pile",
+            "v": [
+                [
+                    "USA",
+                    1,
+                    "kg",
+                    "US"
+                ],
+                [
+                    "Italy",
+                    1,
+                    "kg",
+                    "IT"
+                ],
+                [
+                    "South Africa",
+                    1,
+                    "kg",
+                    "ZA"
+                ]
+            ]
+        },
+        {
+            "g": "Apple",
+            "n": "Green Apple",
+            "ar": "تفاح أخضر",
+            "o": "Origin",
+            "w": true,
+            "img": "granny smith apples",
+            "v": [
+                [
+                    "France",
+                    1,
+                    "kg",
+                    "FR"
+                ],
+                [
+                    "USA",
+                    1,
+                    "kg",
+                    "US"
+                ]
+            ]
+        },
+        {
+            "g": "Orange",
+            "n": "Orange",
+            "ar": "برتقال",
+            "o": "Origin",
+            "w": true,
+            "img": "oranges fruit",
+            "v": [
+                [
+                    "Egypt",
+                    1,
+                    "kg",
+                    "EG"
+                ],
+                [
+                    "South Africa",
+                    1,
+                    "kg",
+                    "ZA"
+                ]
+            ]
+        },
+        {
+            "g": "Cucumber",
+            "n": "Cucumber",
+            "ar": "خيار",
+            "o": "Origin",
+            "w": true,
+            "img": "cucumbers pile",
+            "v": [
+                [
+                    "UAE",
+                    1,
+                    "kg",
+                    "AE"
+                ],
+                [
+                    "Oman",
+                    1,
+                    "kg",
+                    "OM"
+                ]
+            ]
+        },
+        {
+            "g": "Carrot",
+            "n": "Carrot",
+            "ar": "جزر",
+            "o": "Origin",
+            "w": true,
+            "img": "carrots vegetable",
+            "v": [
+                [
+                    "Australia",
+                    1,
+                    "kg",
+                    "AU"
+                ],
+                [
+                    "China",
+                    1,
+                    "kg",
+                    "CN"
+                ]
+            ]
+        },
+        {
+            "g": "Lemon",
+            "n": "Lemon",
+            "ar": "ليمون",
+            "o": "Origin",
+            "w": true,
+            "img": "lemons citrus fruit",
+            "v": [
+                [
+                    "South Africa",
+                    1,
+                    "kg",
+                    "ZA"
+                ],
+                [
+                    "Egypt",
+                    1,
+                    "kg",
+                    "EG"
+                ],
+                [
+                    "Turkey",
+                    1,
+                    "kg",
+                    "TR"
+                ]
+            ]
+        },
+        {
+            "g": "Garlic",
+            "n": "Garlic",
+            "ar": "ثوم",
+            "o": "Origin",
+            "w": true,
+            "img": "garlic bulbs",
+            "v": [
+                [
+                    "China",
+                    1,
+                    "kg",
+                    "CN"
+                ],
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ]
+            ]
+        },
+        {
+            "g": "Ginger",
+            "n": "Ginger",
+            "ar": "زنجبيل",
+            "o": "Origin",
+            "w": true,
+            "img": "ginger rhizome",
+            "v": [
+                [
+                    "China",
+                    1,
+                    "kg",
+                    "CN"
+                ],
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ]
+            ]
+        },
+        {
+            "g": "Green Chilli",
+            "n": "Green Chilli",
+            "ar": "فلفل أخضر حار",
+            "o": "Origin",
+            "w": true,
+            "img": "green chili pepper",
+            "v": [
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ],
+                [
+                    "UAE",
+                    1,
+                    "kg",
+                    "AE"
+                ]
+            ]
+        },
+        {
+            "g": "Capsicum",
+            "n": "Green Capsicum",
+            "ar": "فلفل رومي أخضر",
+            "o": "Origin",
+            "w": true,
+            "img": "green bell pepper",
+            "v": [
+                [
+                    "Jordan",
+                    1,
+                    "kg",
+                    "JO"
+                ],
+                [
+                    "Netherlands",
+                    1,
+                    "kg",
+                    "NL"
+                ]
+            ]
+        },
+        {
+            "g": "Capsicum",
+            "n": "Red Capsicum",
+            "ar": "فلفل رومي أحمر",
+            "o": "Origin",
+            "w": true,
+            "img": "red bell peppers",
+            "v": [
+                [
+                    "Netherlands",
+                    1,
+                    "kg",
+                    "NL"
+                ],
+                [
+                    "Spain",
+                    1,
+                    "kg",
+                    "ES"
+                ]
+            ]
+        },
+        {
+            "g": "Cabbage",
+            "n": "Cabbage",
+            "ar": "ملفوف",
+            "o": "Origin",
+            "w": true,
+            "img": "cabbage",
+            "v": [
+                [
+                    "Jordan",
+                    1,
+                    "kg",
+                    "JO"
+                ],
+                [
+                    "China",
+                    1,
+                    "kg",
+                    "CN"
+                ]
+            ]
+        },
+        {
+            "g": "Cauliflower",
+            "n": "Cauliflower",
+            "ar": "قرنبيط",
+            "o": "Origin",
+            "w": true,
+            "img": "cauliflower white",
+            "v": [
+                [
+                    "Jordan",
+                    1,
+                    "kg",
+                    "JO"
+                ],
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ]
+            ]
+        },
+        {
+            "g": "Aubergine",
+            "n": "Aubergine",
+            "ar": "باذنجان",
+            "o": "Origin",
+            "w": true,
+            "img": "aubergines",
+            "v": [
+                [
+                    "Jordan",
+                    1,
+                    "kg",
+                    "JO"
+                ],
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ]
+            ]
+        },
+        {
+            "g": "Okra",
+            "n": "Okra",
+            "ar": "بامية",
+            "o": "Origin",
+            "w": true,
+            "img": "okra",
+            "v": [
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ],
+                [
+                    "Oman",
+                    1,
+                    "kg",
+                    "OM"
+                ]
+            ]
+        },
+        {
+            "g": "Lettuce",
+            "n": "Iceberg Lettuce",
+            "ar": "خس آيسبرغ",
+            "o": "Origin",
+            "w": true,
+            "img": "iceberg lettuce",
+            "v": [
+                [
+                    "Spain",
+                    1,
+                    "kg",
+                    "ES"
+                ],
+                [
+                    "USA",
+                    1,
+                    "kg",
+                    "US"
+                ]
+            ]
+        },
+        {
+            "g": "Watermelon",
+            "n": "Watermelon",
+            "ar": "بطيخ",
+            "o": "Origin",
+            "w": true,
+            "img": "watermelon slices",
+            "v": [
+                [
+                    "Jordan",
+                    1,
+                    "kg",
+                    "JO"
+                ],
+                [
+                    "Oman",
+                    1,
+                    "kg",
+                    "OM"
+                ]
+            ]
+        },
+        {
+            "g": "Mango",
+            "n": "Mango",
+            "ar": "مانجو",
+            "o": "Origin",
+            "w": true,
+            "img": "mangoes",
+            "v": [
+                [
+                    "Pakistan",
+                    1,
+                    "kg",
+                    "PK"
+                ],
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ],
+                [
+                    "Kenya",
+                    1,
+                    "kg",
+                    "KE"
+                ]
+            ]
+        },
+        {
+            "g": "Grapes",
+            "n": "Red Grapes",
+            "ar": "عنب أحمر",
+            "o": "Origin",
+            "w": true,
+            "img": "red grapes",
+            "v": [
+                [
+                    "Egypt",
+                    1,
+                    "kg",
+                    "EG"
+                ],
+                [
+                    "South Africa",
+                    1,
+                    "kg",
+                    "ZA"
+                ]
+            ]
+        },
+        {
+            "g": "Coriander Leaves",
+            "n": "Coriander Leaves",
+            "ar": "كزبرة",
+            "o": "Origin",
+            "img": "fresh coriander",
+            "v": [
+                [
+                    "UAE",
+                    1,
+                    "pc",
+                    "AE"
+                ],
+                [
+                    "Jordan",
+                    1,
+                    "pc",
+                    "JO"
+                ]
+            ]
+        },
+        {
+            "g": "Mint Leaves",
+            "n": "Mint Leaves",
+            "ar": "نعناع",
+            "o": "Origin",
+            "img": "mint leaves",
+            "v": [
+                [
+                    "UAE",
+                    1,
+                    "pc",
+                    "AE"
+                ],
+                [
+                    "Jordan",
+                    1,
+                    "pc",
+                    "JO"
+                ]
+            ]
+        },
+        {
+            "g": "Whole Chicken",
+            "b": "Al Ain",
+            "n": "Al Ain Fresh Whole Chicken",
+            "v": [
+                [
+                    1000,
+                    "g"
+                ],
+                [
+                    1100,
+                    "g"
+                ],
+                [
+                    1200,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Whole Chicken",
+            "b": "Al Rawdah",
+            "n": "Al Rawdah Fresh Whole Chicken",
+            "v": [
+                [
+                    1000,
+                    "g"
+                ],
+                [
+                    1200,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Whole Chicken",
+            "b": "Al Jazira",
+            "n": "Al Jazira Fresh Whole Chicken",
+            "v": [
+                [
+                    1000,
+                    "g"
+                ],
+                [
+                    1100,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Chicken Breast",
+            "b": "Al Ain",
+            "n": "Al Ain Fresh Chicken Breast Fillet",
+            "v": [
+                [
+                    450,
+                    "g"
+                ],
+                [
+                    900,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Chicken Breast",
+            "b": "Sadia",
+            "n": "Sadia Frozen Chicken Breast",
+            "v": [
+                [
+                    1,
+                    "kg"
+                ],
+                [
+                    2,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Mutton",
+            "n": "Mutton",
+            "ar": "لحم ضأن",
+            "o": "Origin",
+            "w": true,
+            "img": "lamb chops raw",
+            "v": [
+                [
+                    "Australia",
+                    1,
+                    "kg",
+                    "AU"
+                ],
+                [
+                    "Pakistan",
+                    1,
+                    "kg",
+                    "PK"
+                ],
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ]
+            ]
+        },
+        {
+            "g": "Beef",
+            "n": "Beef Cubes",
+            "ar": "مكعبات لحم بقر",
+            "o": "Origin",
+            "w": true,
+            "img": "beef chunks",
+            "v": [
+                [
+                    "Brazil",
+                    1,
+                    "kg",
+                    "BR"
+                ],
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ]
+            ]
+        },
+        {
+            "g": "Minced Beef",
+            "n": "Minced Beef",
+            "ar": "لحم بقر مفروم",
+            "o": "Origin",
+            "w": true,
+            "img": "ground beef",
+            "v": [
+                [
+                    "Brazil",
+                    1,
+                    "kg",
+                    "BR"
+                ],
+                [
+                    "Australia",
+                    1,
+                    "kg",
+                    "AU"
+                ]
+            ]
+        },
+        {
+            "g": "Hammour",
+            "n": "Hammour",
+            "ar": "هامور",
+            "o": "Origin",
+            "w": true,
+            "img": "Epinephelus coioides",
+            "v": [
+                [
+                    "UAE",
+                    1,
+                    "kg",
+                    "AE"
+                ],
+                [
+                    "Oman",
+                    1,
+                    "kg",
+                    "OM"
+                ]
+            ]
+        },
+        {
+            "g": "Kingfish",
+            "n": "Kingfish",
+            "ar": "كنعد",
+            "o": "Origin",
+            "w": true,
+            "img": "king mackerel fish",
+            "v": [
+                [
+                    "Oman",
+                    1,
+                    "kg",
+                    "OM"
+                ],
+                [
+                    "UAE",
+                    1,
+                    "kg",
+                    "AE"
+                ]
+            ]
+        },
+        {
+            "g": "Salmon",
+            "n": "Salmon Fillet",
+            "ar": "فيليه سلمون",
+            "o": "Origin",
+            "w": true,
+            "img": "raw salmon fillet",
+            "v": [
+                [
+                    "Norway",
+                    1,
+                    "kg",
+                    "NO"
+                ]
+            ]
+        },
+        {
+            "g": "Sardine",
+            "n": "Sardine",
+            "ar": "سردين",
+            "o": "Origin",
+            "w": true,
+            "img": "fresh sardines",
+            "v": [
+                [
+                    "Oman",
+                    1,
+                    "kg",
+                    "OM"
+                ],
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ]
+            ]
+        },
+        {
+            "g": "Shrimp",
+            "n": "Shrimp",
+            "ar": "روبيان",
+            "o": "Origin",
+            "w": true,
+            "img": "raw prawns",
+            "v": [
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ],
+                [
+                    "Saudi Arabia",
+                    1,
+                    "kg",
+                    "SA"
+                ]
+            ]
+        },
+        {
+            "g": "Fresh Milk",
+            "b": "Almarai",
+            "n": "Almarai Full Fat Fresh Milk",
+            "v": [
+                [
+                    1,
+                    "l"
+                ],
+                [
+                    2,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Fresh Milk",
+            "b": "Almarai",
+            "n": "Almarai Low Fat Fresh Milk",
+            "v": [
+                [
+                    1,
+                    "l"
+                ],
+                [
+                    2,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Fresh Milk",
+            "b": "Al Rawabi",
+            "n": "Al Rawabi Full Cream Fresh Milk",
+            "v": [
+                [
+                    1,
+                    "l"
+                ],
+                [
+                    2,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Fresh Milk",
+            "b": "Al Ain",
+            "n": "Al Ain Full Cream Fresh Milk",
+            "v": [
+                [
+                    1,
+                    "l"
+                ],
+                [
+                    2,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Fresh Milk",
+            "b": "Marmum",
+            "n": "Marmum Full Cream Fresh Milk",
+            "v": [
+                [
+                    1,
+                    "l"
+                ],
+                [
+                    2,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Long Life Milk",
+            "b": "Lacnor",
+            "n": "Lacnor Essentials Full Cream Milk",
+            "v": [
+                [
+                    1,
+                    "l"
+                ],
+                [
+                    1,
+                    "l",
+                    4
+                ]
+            ]
+        },
+        {
+            "g": "Long Life Milk",
+            "b": "Almarai",
+            "n": "Almarai Long Life Full Fat Milk",
+            "v": [
+                [
+                    1,
+                    "l"
+                ],
+                [
+                    1,
+                    "l",
+                    4
+                ]
+            ]
+        },
+        {
+            "g": "Long Life Milk",
+            "b": "Al Ain",
+            "n": "Al Ain Long Life Full Cream Milk",
+            "v": [
+                [
+                    1,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Laban",
+            "b": "Al Rawabi",
+            "n": "Al Rawabi Fresh Laban",
+            "v": [
+                [
+                    1,
+                    "l"
+                ],
+                [
+                    2,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Laban",
+            "b": "Almarai",
+            "n": "Almarai Full Fat Laban",
+            "v": [
+                [
+                    1,
+                    "l"
+                ],
+                [
+                    2,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Laban",
+            "b": "Marmum",
+            "n": "Marmum Fresh Laban",
+            "v": [
+                [
+                    1,
+                    "l"
+                ],
+                [
+                    2,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Yogurt",
+            "b": "Almarai",
+            "n": "Almarai Full Fat Yoghurt",
+            "v": [
+                [
+                    170,
+                    "g"
+                ],
+                [
+                    1,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Yogurt",
+            "b": "Al Rawabi",
+            "n": "Al Rawabi Fresh Yoghurt",
+            "v": [
+                [
+                    170,
+                    "g"
+                ],
+                [
+                    1,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Yogurt",
+            "b": "Marmum",
+            "n": "Marmum Full Fat Yoghurt",
+            "v": [
+                [
+                    1,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Eggs",
+            "b": "Al Jazira",
+            "n": "Al Jazira White Eggs",
+            "v": [
+                [
+                    30,
+                    "pc"
+                ],
+                [
+                    15,
+                    "pc"
+                ]
+            ]
+        },
+        {
+            "g": "Eggs",
+            "b": "Al Jazira",
+            "n": "Al Jazira Brown Eggs",
+            "v": [
+                [
+                    30,
+                    "pc"
+                ],
+                [
+                    15,
+                    "pc"
+                ]
+            ]
+        },
+        {
+            "g": "Eggs",
+            "n": "White Eggs Large",
+            "ar": "بيض أبيض كبير",
+            "o": "Origin",
+            "img": "white eggs tray",
+            "v": [
+                [
+                    "India",
+                    30,
+                    "pc",
+                    "IN"
+                ],
+                [
+                    "Turkey",
+                    30,
+                    "pc",
+                    "TR"
+                ]
+            ]
+        },
+        {
+            "g": "Cheese Slices",
+            "b": "Kraft",
+            "n": "Kraft Cheddar Cheese Slices",
+            "v": [
+                [
+                    200,
+                    "g"
+                ],
+                [
+                    400,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Cheese Slices",
+            "b": "Almarai",
+            "n": "Almarai Cheddar Cheese Slices",
+            "v": [
+                [
+                    200,
+                    "g"
+                ],
+                [
+                    400,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Cream Cheese Spread",
+            "b": "Puck",
+            "n": "Puck Cream Cheese Spread",
+            "v": [
+                [
+                    240,
+                    "g"
+                ],
+                [
+                    500,
+                    "g"
+                ],
+                [
+                    910,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Cream Cheese Spread",
+            "b": "Kraft",
+            "n": "Kraft Cheddar Cheese Spread",
+            "v": [
+                [
+                    200,
+                    "g"
+                ],
+                [
+                    480,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Labneh",
+            "b": "Almarai",
+            "n": "Almarai Labneh Full Fat",
+            "v": [
+                [
+                    200,
+                    "g"
+                ],
+                [
+                    400,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Labneh",
+            "b": "Al Rawabi",
+            "n": "Al Rawabi Labneh",
+            "v": [
+                [
+                    400,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Butter",
+            "b": "Lurpak",
+            "n": "Lurpak Unsalted Butter",
+            "v": [
+                [
+                    200,
+                    "g"
+                ],
+                [
+                    400,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Butter",
+            "b": "President",
+            "n": "President Unsalted Butter",
+            "v": [
+                [
+                    200,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Butter",
+            "b": "Almarai",
+            "n": "Almarai Unsalted Butter",
+            "v": [
+                [
+                    200,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Bread",
+            "b": "Modern Bakery",
+            "n": "Modern Bakery White Bread",
+            "v": [
+                [
+                    600,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Bread",
+            "b": "Modern Bakery",
+            "n": "Modern Bakery Brown Bread",
+            "v": [
+                [
+                    600,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Bread",
+            "b": "Lusine",
+            "n": "Lusine White Sliced Bread",
+            "v": [
+                [
+                    600,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Arabic Bread",
+            "b": "Modern Bakery",
+            "n": "Modern Bakery Arabic Bread",
+            "v": [
+                [
+                    6,
+                    "pc"
+                ]
+            ]
+        },
+        {
+            "g": "Basmati Rice",
+            "b": "India Gate",
+            "n": "India Gate Classic Basmati Rice",
+            "v": [
+                [
+                    5,
+                    "kg"
+                ],
+                [
+                    10,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Basmati Rice",
+            "b": "Daawat",
+            "n": "Daawat Traditional Basmati Rice",
+            "v": [
+                [
+                    5,
+                    "kg"
+                ],
+                [
+                    10,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Basmati Rice",
+            "b": "Tilda",
+            "n": "Tilda Pure Basmati Rice",
+            "v": [
+                [
+                    2,
+                    "kg"
+                ],
+                [
+                    5,
+                    "kg"
+                ],
+                [
+                    10,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Basmati Rice",
+            "b": "Abu Kass",
+            "n": "Abu Kass Mazza Basmati Rice",
+            "v": [
+                [
+                    5,
+                    "kg"
+                ],
+                [
+                    10,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Calrose Rice",
+            "b": "Sunwhite",
+            "n": "Sunwhite Calrose Rice",
+            "v": [
+                [
+                    5,
+                    "kg"
+                ],
+                [
+                    10,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Sunflower Oil",
+            "b": "Noor",
+            "n": "Noor Sunflower Oil",
+            "v": [
+                [
+                    1.5,
+                    "l"
+                ],
+                [
+                    3,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Sunflower Oil",
+            "b": "Afia",
+            "n": "Afia Sunflower Oil",
+            "v": [
+                [
+                    1.5,
+                    "l"
+                ],
+                [
+                    3,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Corn Oil",
+            "b": "Mazola",
+            "n": "Mazola Corn Oil",
+            "v": [
+                [
+                    1.5,
+                    "l"
+                ],
+                [
+                    3,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Corn Oil",
+            "b": "Afia",
+            "n": "Afia Corn Oil",
+            "v": [
+                [
+                    1.5,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Olive Oil",
+            "b": "Borges",
+            "n": "Borges Extra Virgin Olive Oil",
+            "v": [
+                [
+                    500,
+                    "ml"
+                ],
+                [
+                    1,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Olive Oil",
+            "b": "Figaro",
+            "n": "Figaro Olive Oil",
+            "v": [
+                [
+                    500,
+                    "ml"
+                ],
+                [
+                    1,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Ghee",
+            "b": "Amul",
+            "n": "Amul Pure Ghee",
+            "v": [
+                [
+                    500,
+                    "ml"
+                ],
+                [
+                    1,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Wheat Flour",
+            "b": "Aashirvaad",
+            "n": "Aashirvaad Whole Wheat Atta",
+            "v": [
+                [
+                    5,
+                    "kg"
+                ],
+                [
+                    10,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Sugar",
+            "b": "Al Khaleej",
+            "n": "Al Khaleej White Sugar",
+            "v": [
+                [
+                    2,
+                    "kg"
+                ],
+                [
+                    5,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Sugar",
+            "b": "Al Osra",
+            "n": "Al Osra White Sugar",
+            "v": [
+                [
+                    2,
+                    "kg"
+                ],
+                [
+                    5,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Salt",
+            "b": "Tata",
+            "n": "Tata Salt",
+            "v": [
+                [
+                    1,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Red Lentils",
+            "b": "Tilda",
+            "n": "Tilda Red Lentils",
+            "v": [
+                [
+                    1,
+                    "kg"
+                ],
+                [
+                    2,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Red Lentils",
+            "n": "Red Lentils (Masoor Dal)",
+            "ar": "عدس أحمر",
+            "o": "Origin",
+            "v": [
+                [
+                    "Canada",
+                    1,
+                    "kg",
+                    "CA"
+                ],
+                [
+                    "Australia",
+                    1,
+                    "kg",
+                    "AU"
+                ]
+            ]
+        },
+        {
+            "g": "Toor Dal",
+            "n": "Toor Dal",
+            "o": "Origin",
+            "v": [
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ],
+                [
+                    "Tanzania",
+                    1,
+                    "kg",
+                    "TZ"
+                ]
+            ]
+        },
+        {
+            "g": "Chickpeas",
+            "n": "Chickpeas (Kabuli Chana)",
+            "ar": "حمص حب",
+            "o": "Origin",
+            "v": [
+                [
+                    "Mexico",
+                    1,
+                    "kg",
+                    "MX"
+                ],
+                [
+                    "India",
+                    1,
+                    "kg",
+                    "IN"
+                ]
+            ]
+        },
+        {
+            "g": "Chilli Powder",
+            "b": "Eastern",
+            "n": "Eastern Chilli Powder",
+            "v": [
+                [
+                    250,
+                    "g"
+                ],
+                [
+                    500,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Turmeric Powder",
+            "b": "Eastern",
+            "n": "Eastern Turmeric Powder",
+            "v": [
+                [
+                    200,
+                    "g"
+                ],
+                [
+                    400,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Black Tea",
+            "b": "Lipton",
+            "n": "Lipton Yellow Label Tea",
+            "v": [
+                [
+                    100,
+                    "pc"
+                ],
+                [
+                    200,
+                    "pc"
+                ]
+            ]
+        },
+        {
+            "g": "Black Tea",
+            "b": "Alokozay",
+            "n": "Alokozay Black Tea",
+            "v": [
+                [
+                    100,
+                    "pc"
+                ]
+            ]
+        },
+        {
+            "g": "Black Tea",
+            "b": "Tetley",
+            "n": "Tetley Black Tea",
+            "v": [
+                [
+                    100,
+                    "pc"
+                ]
+            ]
+        },
+        {
+            "g": "Instant Coffee",
+            "b": "Nescafe",
+            "n": "Nescafe Classic Instant Coffee",
+            "v": [
+                [
+                    100,
+                    "g"
+                ],
+                [
+                    200,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Instant Coffee",
+            "b": "Nescafe",
+            "n": "Nescafe Gold Instant Coffee",
+            "v": [
+                [
+                    100,
+                    "g"
+                ],
+                [
+                    200,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Instant Coffee",
+            "b": "Davidoff",
+            "n": "Davidoff Rich Aroma Instant Coffee",
+            "v": [
+                [
+                    100,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Canned Tuna",
+            "b": "Al Alali",
+            "n": "Al Alali Light Meat Tuna in Sunflower Oil",
+            "v": [
+                [
+                    170,
+                    "g"
+                ],
+                [
+                    170,
+                    "g",
+                    3
+                ]
+            ]
+        },
+        {
+            "g": "Canned Tuna",
+            "b": "Goody",
+            "n": "Goody Light Meat Tuna in Oil",
+            "v": [
+                [
+                    185,
+                    "g"
+                ],
+                [
+                    185,
+                    "g",
+                    3
+                ]
+            ]
+        },
+        {
+            "g": "Tomato Paste",
+            "b": "Al Alali",
+            "n": "Al Alali Tomato Paste",
+            "v": [
+                [
+                    135,
+                    "g"
+                ],
+                [
+                    400,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Tomato Paste",
+            "b": "Luna",
+            "n": "Luna Tomato Paste",
+            "v": [
+                [
+                    135,
+                    "g"
+                ],
+                [
+                    400,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Foul Medames",
+            "b": "California Garden",
+            "n": "California Garden Foul Medames",
+            "v": [
+                [
+                    400,
+                    "g"
+                ],
+                [
+                    400,
+                    "g",
+                    3
+                ]
+            ]
+        },
+        {
+            "g": "Corn Flakes",
+            "b": "Kellogg's",
+            "n": "Kellogg's Corn Flakes",
+            "v": [
+                [
+                    375,
+                    "g"
+                ],
+                [
+                    750,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Oats",
+            "b": "Quaker",
+            "n": "Quaker White Oats",
+            "v": [
+                [
+                    500,
+                    "g"
+                ],
+                [
+                    1,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Honey",
+            "b": "Al Shifa",
+            "n": "Al Shifa Natural Honey",
+            "v": [
+                [
+                    250,
+                    "g"
+                ],
+                [
+                    500,
+                    "g"
+                ],
+                [
+                    1,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Chocolate Spread",
+            "b": "Nutella",
+            "n": "Nutella Hazelnut Spread",
+            "v": [
+                [
+                    350,
+                    "g"
+                ],
+                [
+                    750,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Potato Chips",
+            "b": "Lay's",
+            "n": "Lay's Salted Potato Chips",
+            "v": [
+                [
+                    170,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Potato Chips",
+            "b": "Pringles",
+            "n": "Pringles Original",
+            "v": [
+                [
+                    165,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Potato Chips",
+            "b": "Oman Chips",
+            "n": "Oman Chips Chilli",
+            "v": [
+                [
+                    15,
+                    "g",
+                    25
+                ]
+            ]
+        },
+        {
+            "g": "Chocolate Bars",
+            "b": "Galaxy",
+            "n": "Galaxy Smooth Milk Chocolate",
+            "v": [
+                [
+                    90,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Chocolate Bars",
+            "b": "KitKat",
+            "n": "KitKat 4 Finger",
+            "v": [
+                [
+                    41.5,
+                    "g"
+                ],
+                [
+                    41.5,
+                    "g",
+                    12
+                ]
+            ]
+        },
+        {
+            "g": "Chocolate Bars",
+            "b": "Snickers",
+            "n": "Snickers Chocolate Bar",
+            "v": [
+                [
+                    50,
+                    "g"
+                ],
+                [
+                    50,
+                    "g",
+                    6
+                ]
+            ]
+        },
+        {
+            "g": "Boxed Chocolates",
+            "b": "Ferrero Rocher",
+            "n": "Ferrero Rocher",
+            "v": [
+                [
+                    200,
+                    "g"
+                ],
+                [
+                    300,
+                    "g"
+                ],
+                [
+                    375,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Boxed Chocolates",
+            "b": "Quality Street",
+            "n": "Quality Street Tin",
+            "v": [
+                [
+                    480,
+                    "g"
+                ],
+                [
+                    650,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Biscuits",
+            "b": "Oreo",
+            "n": "Oreo Original Biscuits",
+            "v": [
+                [
+                    38,
+                    "g",
+                    16
+                ],
+                [
+                    133,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Biscuits",
+            "b": "McVitie's",
+            "n": "McVitie's Digestive Biscuits",
+            "v": [
+                [
+                    400,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Biscuits",
+            "b": "Tiffany",
+            "n": "Tiffany Break Chocolate Wafer",
+            "v": [
+                [
+                    19,
+                    "g",
+                    24
+                ]
+            ]
+        },
+        {
+            "g": "Pasta",
+            "b": "Barilla",
+            "n": "Barilla Spaghetti No. 5",
+            "v": [
+                [
+                    500,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Pasta",
+            "b": "Barilla",
+            "n": "Barilla Penne Rigate",
+            "v": [
+                [
+                    500,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Pasta",
+            "b": "Al Alali",
+            "n": "Al Alali Spaghetti",
+            "v": [
+                [
+                    450,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Instant Noodles",
+            "b": "Indomie",
+            "n": "Indomie Chicken Flavour Noodles",
+            "v": [
+                [
+                    75,
+                    "g",
+                    5
+                ]
+            ]
+        },
+        {
+            "g": "Instant Noodles",
+            "b": "Maggi",
+            "n": "Maggi 2-Minute Masala Noodles",
+            "v": [
+                [
+                    77,
+                    "g",
+                    5
+                ]
+            ]
+        },
+        {
+            "g": "Dates",
+            "b": "Al Foah",
+            "n": "Al Foah Khalas Dates",
+            "v": [
+                [
+                    500,
+                    "g"
+                ],
+                [
+                    1,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Dates",
+            "n": "Medjool Dates",
+            "ar": "تمر مجهول",
+            "o": "Origin",
+            "v": [
+                [
+                    "Palestine",
+                    1,
+                    "kg",
+                    "PS"
+                ],
+                [
+                    "Jordan",
+                    1,
+                    "kg",
+                    "JO"
+                ]
+            ]
+        },
+        {
+            "g": "Ketchup",
+            "b": "Heinz",
+            "n": "Heinz Tomato Ketchup",
+            "v": [
+                [
+                    342,
+                    "g"
+                ],
+                [
+                    910,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Mayonnaise",
+            "b": "Hellmann's",
+            "n": "Hellmann's Real Mayonnaise",
+            "v": [
+                [
+                    400,
+                    "ml"
+                ],
+                [
+                    800,
+                    "ml"
+                ]
+            ]
+        },
+        {
+            "g": "Frozen Whole Chicken",
+            "b": "Sadia",
+            "n": "Sadia Frozen Whole Chicken",
+            "v": [
+                [
+                    1000,
+                    "g"
+                ],
+                [
+                    1200,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Frozen Whole Chicken",
+            "b": "Seara",
+            "n": "Seara Frozen Whole Chicken",
+            "v": [
+                [
+                    1000,
+                    "g"
+                ],
+                [
+                    1200,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Frozen Whole Chicken",
+            "b": "Al Kabeer",
+            "n": "Al Kabeer Frozen Whole Chicken",
+            "v": [
+                [
+                    1000,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Frozen Mixed Vegetables",
+            "b": "Al Kabeer",
+            "n": "Al Kabeer Mixed Vegetables",
+            "v": [
+                [
+                    400,
+                    "g"
+                ],
+                [
+                    1,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Frozen Mixed Vegetables",
+            "b": "Americana",
+            "n": "Americana Mixed Vegetables",
+            "v": [
+                [
+                    400,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "French Fries",
+            "b": "McCain",
+            "n": "McCain French Fries",
+            "v": [
+                [
+                    750,
+                    "g"
+                ],
+                [
+                    2.5,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "French Fries",
+            "b": "Al Kabeer",
+            "n": "Al Kabeer French Fries",
+            "v": [
+                [
+                    1,
+                    "kg"
+                ],
+                [
+                    2.5,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Ice Cream",
+            "b": "London Dairy",
+            "n": "London Dairy Vanilla Ice Cream",
+            "v": [
+                [
+                    500,
+                    "ml"
+                ],
+                [
+                    2,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Ice Cream",
+            "b": "Igloo",
+            "n": "Igloo Vanilla Ice Cream",
+            "v": [
+                [
+                    2,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Drinking Water",
+            "b": "Mai Dubai",
+            "n": "Mai Dubai Drinking Water",
+            "v": [
+                [
+                    500,
+                    "ml",
+                    12
+                ],
+                [
+                    1.5,
+                    "l",
+                    6
+                ]
+            ]
+        },
+        {
+            "g": "Drinking Water",
+            "b": "Masafi",
+            "n": "Masafi Mineral Water",
+            "v": [
+                [
+                    500,
+                    "ml",
+                    12
+                ],
+                [
+                    1.5,
+                    "l",
+                    6
+                ]
+            ]
+        },
+        {
+            "g": "Drinking Water",
+            "b": "Al Ain",
+            "n": "Al Ain Drinking Water",
+            "v": [
+                [
+                    500,
+                    "ml",
+                    12
+                ],
+                [
+                    1.5,
+                    "l",
+                    6
+                ]
+            ]
+        },
+        {
+            "g": "Drinking Water",
+            "b": "Arwa",
+            "n": "Arwa Drinking Water",
+            "v": [
+                [
+                    500,
+                    "ml",
+                    12
+                ],
+                [
+                    1.5,
+                    "l",
+                    6
+                ]
+            ]
+        },
+        {
+            "g": "Cola",
+            "b": "Pepsi",
+            "n": "Pepsi Cola",
+            "v": [
+                [
+                    330,
+                    "ml",
+                    6
+                ],
+                [
+                    2.25,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Cola",
+            "b": "Coca-Cola",
+            "n": "Coca-Cola Original",
+            "v": [
+                [
+                    330,
+                    "ml",
+                    6
+                ],
+                [
+                    2.25,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Lemon-Lime Soda",
+            "b": "7Up",
+            "n": "7Up",
+            "v": [
+                [
+                    330,
+                    "ml",
+                    6
+                ],
+                [
+                    2.25,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Lemon-Lime Soda",
+            "b": "Sprite",
+            "n": "Sprite",
+            "v": [
+                [
+                    330,
+                    "ml",
+                    6
+                ],
+                [
+                    2.25,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Orange Juice",
+            "b": "Almarai",
+            "n": "Almarai Orange Juice",
+            "v": [
+                [
+                    1,
+                    "l"
+                ],
+                [
+                    1.4,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Orange Juice",
+            "b": "Al Rawabi",
+            "n": "Al Rawabi Orange Juice",
+            "v": [
+                [
+                    1,
+                    "l"
+                ],
+                [
+                    2,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Orange Juice",
+            "b": "Tropicana",
+            "n": "Tropicana Orange Juice",
+            "v": [
+                [
+                    1,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Washing Powder",
+            "b": "Ariel",
+            "n": "Ariel Automatic Washing Powder",
+            "v": [
+                [
+                    2.5,
+                    "kg"
+                ],
+                [
+                    5,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Washing Powder",
+            "b": "Tide",
+            "n": "Tide Automatic Washing Powder",
+            "v": [
+                [
+                    2.5,
+                    "kg"
+                ],
+                [
+                    5,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Washing Powder",
+            "b": "Persil",
+            "n": "Persil Automatic Washing Powder",
+            "v": [
+                [
+                    2.5,
+                    "kg"
+                ],
+                [
+                    5,
+                    "kg"
+                ]
+            ]
+        },
+        {
+            "g": "Liquid Detergent",
+            "b": "Persil",
+            "n": "Persil Power Gel",
+            "v": [
+                [
+                    2,
+                    "l"
+                ],
+                [
+                    3,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Liquid Detergent",
+            "b": "Ariel",
+            "n": "Ariel Automatic Liquid Detergent",
+            "v": [
+                [
+                    2,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Dishwashing Liquid",
+            "b": "Fairy",
+            "n": "Fairy Original Dishwashing Liquid",
+            "v": [
+                [
+                    750,
+                    "ml"
+                ],
+                [
+                    1.5,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Dishwashing Liquid",
+            "b": "Pril",
+            "n": "Pril Dishwashing Liquid",
+            "v": [
+                [
+                    1,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Bleach",
+            "b": "Clorox",
+            "n": "Clorox Original Bleach",
+            "v": [
+                [
+                    1.89,
+                    "l"
+                ],
+                [
+                    3.78,
+                    "l"
+                ]
+            ]
+        },
+        {
+            "g": "Facial Tissue",
+            "b": "Fine",
+            "n": "Fine Facial Tissue",
+            "v": [
+                [
+                    200,
+                    "sheet",
+                    5
+                ]
+            ]
+        },
+        {
+            "g": "Facial Tissue",
+            "b": "Sanita",
+            "n": "Sanita Facial Tissue",
+            "v": [
+                [
+                    200,
+                    "sheet",
+                    5
+                ]
+            ]
+        },
+        {
+            "g": "Facial Tissue",
+            "b": "Kleenex",
+            "n": "Kleenex Facial Tissue",
+            "v": [
+                [
+                    100,
+                    "sheet",
+                    5
+                ]
+            ]
+        },
+        {
+            "g": "Toilet Paper",
+            "b": "Fine",
+            "n": "Fine Toilet Paper",
+            "v": [
+                [
+                    10,
+                    "pc"
+                ],
+                [
+                    20,
+                    "pc"
+                ]
+            ]
+        },
+        {
+            "g": "Toilet Paper",
+            "b": "Sanita",
+            "n": "Sanita Toilet Paper",
+            "v": [
+                [
+                    10,
+                    "pc"
+                ]
+            ]
+        },
+        {
+            "g": "Kitchen Towel",
+            "b": "Fine",
+            "n": "Fine Kitchen Towel",
+            "v": [
+                [
+                    4,
+                    "pc"
+                ],
+                [
+                    6,
+                    "pc"
+                ]
+            ]
+        },
+        {
+            "g": "Shampoo",
+            "b": "Head & Shoulders",
+            "n": "Head & Shoulders Classic Clean Shampoo",
+            "v": [
+                [
+                    400,
+                    "ml"
+                ],
+                [
+                    600,
+                    "ml"
+                ]
+            ]
+        },
+        {
+            "g": "Shampoo",
+            "b": "Pantene",
+            "n": "Pantene Pro-V Shampoo",
+            "v": [
+                [
+                    400,
+                    "ml"
+                ]
+            ]
+        },
+        {
+            "g": "Shampoo",
+            "b": "Sunsilk",
+            "n": "Sunsilk Shampoo",
+            "v": [
+                [
+                    400,
+                    "ml"
+                ]
+            ]
+        },
+        {
+            "g": "Bath Soap",
+            "b": "Lux",
+            "n": "Lux Soap Bar",
+            "v": [
+                [
+                    170,
+                    "g",
+                    6
+                ]
+            ]
+        },
+        {
+            "g": "Bath Soap",
+            "b": "Dettol",
+            "n": "Dettol Original Soap Bar",
+            "v": [
+                [
+                    165,
+                    "g",
+                    4
+                ]
+            ]
+        },
+        {
+            "g": "Hand Wash",
+            "b": "Dettol",
+            "n": "Dettol Original Hand Wash",
+            "v": [
+                [
+                    200,
+                    "ml"
+                ],
+                [
+                    500,
+                    "ml"
+                ]
+            ]
+        },
+        {
+            "g": "Hand Wash",
+            "b": "Lifebuoy",
+            "n": "Lifebuoy Hand Wash",
+            "v": [
+                [
+                    200,
+                    "ml"
+                ],
+                [
+                    500,
+                    "ml"
+                ]
+            ]
+        },
+        {
+            "g": "Toothpaste",
+            "b": "Colgate",
+            "n": "Colgate Maximum Cavity Protection Toothpaste",
+            "v": [
+                [
+                    100,
+                    "ml"
+                ],
+                [
+                    100,
+                    "ml",
+                    3
+                ]
+            ]
+        },
+        {
+            "g": "Toothpaste",
+            "b": "Signal",
+            "n": "Signal Cavity Fighter Toothpaste",
+            "v": [
+                [
+                    120,
+                    "ml"
+                ]
+            ]
+        },
+        {
+            "g": "Diapers",
+            "b": "Pampers",
+            "n": "Pampers Baby-Dry Size 4",
+            "v": [
+                [
+                    64,
+                    "pc"
+                ],
+                [
+                    128,
+                    "pc"
+                ]
+            ]
+        },
+        {
+            "g": "Diapers",
+            "b": "Huggies",
+            "n": "Huggies Extra Care Size 4",
+            "v": [
+                [
+                    66,
+                    "pc"
+                ]
+            ]
+        },
+        {
+            "g": "Infant Formula",
+            "b": "Nan",
+            "n": "Nan Optipro 1 Infant Formula",
+            "v": [
+                [
+                    400,
+                    "g"
+                ],
+                [
+                    800,
+                    "g"
+                ]
+            ]
+        },
+        {
+            "g": "Infant Formula",
+            "b": "Aptamil",
+            "n": "Aptamil 1 Infant Formula",
+            "v": [
+                [
+                    400,
+                    "g"
+                ],
+                [
+                    900,
+                    "g"
+                ]
+            ]
+        }
+    ],
+    "brands": {
+        "Almarai": [
+            "المراعي"
+        ],
+        "Al Rawabi": [
+            "الروابي"
+        ],
+        "Al Ain": [
+            "العين"
+        ],
+        "Marmum": [
+            "مرموم"
+        ],
+        "Lacnor": [
+            "لاكنور"
+        ],
+        "Al Jazira": [
+            "الجزيرة"
+        ],
+        "Al Rawdah": [
+            "الروضة"
+        ],
+        "Sadia": [
+            "ساديا"
+        ],
+        "Seara": [
+            "سيارا"
+        ],
+        "Al Kabeer": [
+            "الكبير"
+        ],
+        "Americana": [
+            "أمريكانا"
+        ],
+        "Puck": [
+            "بوك"
+        ],
+        "Kraft": [
+            "كرافت"
+        ],
+        "Lurpak": [
+            "لورباك"
+        ],
+        "President": [
+            "بريزيدنت",
+            "président"
+        ],
+        "Modern Bakery": [
+            "مودرن بيكري"
+        ],
+        "India Gate": [
+            "انديا جيت",
+            "ig"
+        ],
+        "Daawat": [
+            "dawat",
+            "دعوت"
+        ],
+        "Tilda": [
+            "تيلدا"
+        ],
+        "Abu Kass": [
+            "أبو كاس",
+            "abu kas"
+        ],
+        "Noor": [
+            "نور"
+        ],
+        "Afia": [
+            "عافية"
+        ],
+        "Mazola": [
+            "مازولا"
+        ],
+        "Al Khaleej": [
+            "الخليج"
+        ],
+        "Al Alali": [
+            "العلالي"
+        ],
+        "Goody": [
+            "قودي"
+        ],
+        "Luna": [
+            "لونا"
+        ],
+        "California Garden": [
+            "كاليفورنيا جاردن"
+        ],
+        "Al Shifa": [
+            "الشفاء"
+        ],
+        "Al Foah": [
+            "الفوعة"
+        ],
+        "Mai Dubai": [
+            "ماي دبي"
+        ],
+        "Masafi": [
+            "مسافي"
+        ],
+        "Arwa": [
+            "أروى"
+        ],
+        "Lipton": [
+            "ليبتون"
+        ],
+        "Nescafe": [
+            "نسكافيه",
+            "nescafé"
+        ],
+        "Pepsi": [
+            "بيبسي"
+        ],
+        "Coca-Cola": [
+            "كوكا كولا",
+            "coke"
+        ],
+        "Ariel": [
+            "أريال"
+        ],
+        "Tide": [
+            "تايد"
+        ],
+        "Persil": [
+            "بيرسيل"
+        ],
+        "Fairy": [
+            "فيري"
+        ],
+        "Clorox": [
+            "كلوركس"
+        ],
+        "Fine": [
+            "فاين"
+        ],
+        "Sanita": [
+            "سانيتا"
+        ],
+        "Dettol": [
+            "ديتول"
+        ],
+        "Pampers": [
+            "بامبرز"
+        ],
+        "Huggies": [
+            "هجيز"
+        ],
+        "Kellogg's": [
+            "kelloggs",
+            "كيلوجز"
+        ],
+        "Nutella": [
+            "نوتيلا"
+        ],
+        "Ferrero Rocher": [
+            "ferrero",
+            "فيريرو روشيه"
+        ]
+    },
+    "synonyms": [
+        [
+            "hammour",
+            "grouper",
+            "هامور"
+        ],
+        [
+            "kingfish",
+            "kanad",
+            "king mackerel",
+            "surmai",
+            "كنعد"
+        ],
+        [
+            "shrimp",
+            "shrimps",
+            "prawn",
+            "prawns",
+            "jhinga",
+            "روبيان",
+            "جمبري"
+        ],
+        [
+            "mutton",
+            "lamb",
+            "gosht",
+            "لحم ضأن",
+            "لحم غنم"
+        ],
+        [
+            "beef",
+            "لحم بقر"
+        ],
+        [
+            "salmon",
+            "سلمون"
+        ],
+        [
+            "sardine",
+            "sardines",
+            "mathi",
+            "سردين"
+        ],
+        [
+            "cucumber",
+            "cucumbers",
+            "kheera",
+            "خيار"
+        ],
+        [
+            "carrot",
+            "carrots",
+            "gajar",
+            "جزر"
+        ],
+        [
+            "lemon",
+            "lemons",
+            "nimbu",
+            "ليمون"
+        ],
+        [
+            "garlic",
+            "lahsun",
+            "ثوم"
+        ],
+        [
+            "ginger",
+            "adrak",
+            "زنجبيل"
+        ],
+        [
+            "green chilli",
+            "green chili",
+            "hari mirch",
+            "فلفل حار"
+        ],
+        [
+            "cabbage",
+            "patta gobi",
+            "ملفوف",
+            "كرنب"
+        ],
+        [
+            "cauliflower",
+            "phool gobi",
+            "قرنبيط",
+            "زهرة"
+        ],
+        [
+            "lettuce",
+            "خس"
+        ],
+        [
+            "watermelon",
+            "tarbooz",
+            "بطيخ"
+        ],
+        [
+            "mango",
+            "mangoes",
+            "aam",
+            "مانجو",
+            "منجا"
+        ],
+        [
+            "grapes",
+            "grape",
+            "angoor",
+            "عنب"
+        ],
+        [
+            "orange",
+            "oranges",
+            "santra",
+            "برتقال"
+        ],
+        [
+            "mint",
+            "pudina",
+            "نعناع"
+        ],
+        [
+            "turmeric",
+            "haldi",
+            "كركم"
+        ],
+        [
+            "chilli powder",
+            "chili powder",
+            "lal mirch",
+            "فلفل أحمر مطحون"
+        ],
+        [
+            "toor dal",
+            "tur dal",
+            "arhar dal",
+            "tuvar dal"
+        ],
+        [
+            "corn flakes",
+            "cornflakes",
+            "كورن فليكس"
+        ],
+        [
+            "oats",
+            "oatmeal",
+            "شوفان"
+        ],
+        [
+            "honey",
+            "shahad",
+            "عسل"
+        ],
+        [
+            "ketchup",
+            "catsup",
+            "كاتشب"
+        ],
+        [
+            "mayonnaise",
+            "mayo",
+            "مايونيز"
+        ],
+        [
+            "noodles",
+            "نودلز",
+            "اندومي"
+        ],
+        [
+            "pasta",
+            "macaroni",
+            "spaghetti",
+            "معكرونة",
+            "مكرونة"
+        ],
+        [
+            "tuna",
+            "تونة",
+            "تونا"
+        ],
+        [
+            "tomato paste",
+            "tomato puree",
+            "معجون طماطم"
+        ],
+        [
+            "foul",
+            "ful",
+            "fava beans",
+            "فول"
+        ],
+        [
+            "cheese",
+            "جبن",
+            "جبنة"
+        ],
+        [
+            "butter",
+            "makhan",
+            "زبدة"
+        ],
+        [
+            "labneh",
+            "labne",
+            "labna",
+            "لبنة"
+        ],
+        [
+            "ice cream",
+            "icecream",
+            "آيس كريم",
+            "ايسكريم"
+        ],
+        [
+            "french fries",
+            "fries",
+            "بطاطس مقلية"
+        ],
+        [
+            "shampoo",
+            "شامبو"
+        ],
+        [
+            "soap",
+            "sabun",
+            "صابون"
+        ],
+        [
+            "toothpaste",
+            "tooth paste",
+            "معجون أسنان"
+        ],
+        [
+            "hand wash",
+            "handwash",
+            "hand soap",
+            "غسول يدين"
+        ],
+        [
+            "infant formula",
+            "baby milk",
+            "formula milk",
+            "حليب أطفال"
+        ],
+        [
+            "toilet paper",
+            "toilet roll",
+            "tissue roll",
+            "ورق تواليت"
+        ],
+        [
+            "kitchen towel",
+            "kitchen roll",
+            "paper towel",
+            "مناديل مطبخ"
+        ],
+        [
+            "bleach",
+            "clorox",
+            "كلور",
+            "مبيض"
+        ],
+        [
+            "dishwashing liquid",
+            "dish soap",
+            "washing up liquid",
+            "سائل غسيل الصحون"
+        ],
+        [
+            "water",
+            "mineral water",
+            "drinking water",
+            "مياه",
+            "ماء"
+        ],
+        [
+            "juice",
+            "عصير"
+        ],
+        [
+            "chocolate",
+            "chocolates",
+            "شوكولاتة",
+            "شوكولاته"
+        ],
+        [
+            "chips",
+            "crisps",
+            "potato chips",
+            "شيبس"
+        ],
+        [
+            "ghee",
+            "desi ghee",
+            "سمن"
+        ],
+        [
+            "olive oil",
+            "زيت زيتون"
+        ]
+    ]
+}

@@ -2,6 +2,7 @@
 
 use App\Domain\Alerts\WeeklyDigest;
 use App\Domain\Catalog\EssentialGrades;
+use App\Domain\Catalog\ImportUaeCatalog;
 use App\Domain\Engagement\Counters;
 use App\Domain\Engagement\Likes;
 use App\Domain\Geo\ImportPlaceNames;
@@ -68,6 +69,13 @@ Artisan::command('retail:import {--force : Run even if the list has not changed}
         ? "Added {$result['groups']} groups and {$result['chains']} stores; filled gaps in {$result['filled']} existing ones."
         : 'The retailer list has not changed since it was last imported.');
 })->purpose('Add the UAE supermarket groups and stores from database/data/uae-retailers.json');
+
+Artisan::command('catalog:import-uae {--force : Run even if the catalogue has not changed}', function (ImportUaeCatalog $import) {
+    $result = $import((bool) $this->option('force'));
+    $this->info($result
+        ? "Added {$result['categories']} categories, {$result['groups']} product groups, {$result['products']} products, {$result['photos']} photos and {$result['synonyms']} search synonyms."
+        : 'The UAE catalogue has not changed since it was last imported.');
+})->purpose('Add the starter UAE catalogue from database/data/uae-catalog.json');
 
 Artisan::command('engagement:prune', function (Counters $counters) {
     $this->info("Removed {$counters->prune()} old count rows.");
