@@ -3,6 +3,7 @@
 use App\Domain\Brochures\Brochure;
 use App\Domain\Brochures\BrochureStatus;
 use App\Domain\Brochures\PublishBrochure;
+use App\Domain\Catalog\CompareAs;
 use App\Domain\Catalog\EssentialGrades;
 use App\Domain\Catalog\Product;
 use App\Domain\Catalog\ProductGroup;
@@ -14,6 +15,7 @@ use App\Domain\Offers\RegularPrice;
 use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
 use App\Domain\Search\RankSync;
+use App\Domain\Search\ReindexProductGroup;
 use App\Domain\Settings\HomeSettings;
 use Clickbar\Magellan\Data\Geometries\Point;
 use Database\Seeders\CatalogStructureSeeder;
@@ -21,6 +23,7 @@ use Database\Seeders\DemoCatalogSeeder;
 use Database\Seeders\GeoSeeder;
 use Database\Seeders\UnitSeeder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 
 use function Pest\Laravel\call;
@@ -308,4 +311,38 @@ it('reads settings over the defaults, and drops a setting saved back to its defa
     HomeSettings::save(['radius_default' => 10]);
     expect(HomeSettings::get('radius_default'))->toBe(10)
         ->and(DB::table('site_settings')->count())->toBe(0);
+});
+
+it('shows a whole group as one card with its cheapest offer per unit, and branded products each on their own', function () {
+    $group = $this->rice->productGroup;
+    $daawat = Product::create([
+        'product_group_id' => $group->id,
+        'category_id' => $this->rice->category_id,
+        'name' => ['en' => 'Daawat Basmati Rice'],
+        'slug' => 'daawat-basmati-rice',
+        'status' => 'active',
+    ]);
+    $daawatFiveKg = $daawat->variants()->create(['slug' => '5-kg', 'unit_qty' => '5', 'unit_code' => 'kg', 'is_default' => true]);
+    $this->rice->update(['grade' => 1]);
+
+    $brochure = brochure($this->chain, 'this-week', '2026-10-23', '2026-10-29');
+    Offer::create(['brochure_id' => $brochure->id, 'product_variant_id' => $this->riceFiveKg, 'price' => '45.95']);
+    Offer::create(['brochure_id' => $brochure->id, 'product_variant_id' => $daawatFiveKg->id, 'price' => '39.00']);
+    app(PublishBrochure::class)($brochure);
+    $cards = fn () => collect(Offer::search('*')->options([
+        'group_by' => 'compare_key', 'group_limit' => 1, 'sort_by' => 'compare_rank:desc,effective_unit_price:asc',
+    ])->raw()['grouped_hits'])->pluck('hits.0.document.product_slug')->all();
+
+    expect($group->compare_as)->toBe(CompareAs::Product);
+    app(RankSync::class)();
+    expect($cards())->toBe(['india-gate-classic-basmati-rice', 'daawat-basmati-rice']);
+
+    Bus::fake([ReindexProductGroup::class]);
+    $group->update(['compare_as' => CompareAs::Group]);
+    Bus::assertDispatched(ReindexProductGroup::class);
+    (new ReindexProductGroup($group->id))->handle(app(RankSync::class));
+
+    expect($cards())->toBe(['daawat-basmati-rice'])
+        ->and(ProductStat::find($daawat->id)->compare_rank)->toBe(ProductStat::find($this->rice->id)->compare_rank)
+        ->and(ProductStat::find($daawat->id)->compare_rank)->toBe(ProductStat::find($this->rice->id)->rank);
 });

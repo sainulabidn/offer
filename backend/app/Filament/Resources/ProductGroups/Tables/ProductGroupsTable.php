@@ -23,6 +23,7 @@ class ProductGroupsTable
                 TextColumn::make('compares')
                     ->label('Compared per')
                     ->state(fn (ProductGroup $group) => rtrim(rtrim((string) $group->comparison_quantity, '0'), '.').' '.$group->comparison_unit_code),
+                TextColumn::make('compare_as')->label('Home page card')->badge(),
                 TextColumn::make('products_count')->label('Products')->sortable(),
                 Review::column(),
             ])

@@ -157,12 +157,16 @@ export async function storeFocus(dir: Directory, store: StoreCard, limit = 40) {
   return { near, offers, found: rows.length, bestWalk: best ? { chain: best.store.chain, far: howFar(best.km, dir), saving: best.saving, items: best.items } : null };
 }
 
-/** What's good around the shopper: the cheapest offer of each product, the most useful products first. */
+/**
+ * What's good around the shopper: one card per item, the most useful first. An item is a whole group
+ * when any variety will do (the cheapest tomato per kg) or one product when the brand matters (the
+ * cheapest Ferrero Rocher box per 100 g); staff choose which on the product group.
+ */
 export function cheapestNearby(dir: Directory, prefs: Prefs, options: { page?: number; perPage?: number; filters?: string[] } = {}) {
   return searchOffers({
     filters: [...itemFilters(dir, prefs), ...(options.filters ?? [])],
     sort: 'rank',
-    groupBy: 'product_id',
+    groupBy: 'compare_key',
     page: options.page,
     perPage: options.perPage ?? 20,
   });

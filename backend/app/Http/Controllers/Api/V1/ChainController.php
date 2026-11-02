@@ -33,7 +33,7 @@ class ChainController extends Controller
         $chain = Chain::query()
             ->where('slug', $slug)
             ->where('is_active', true)
-            ->with(['retailGroup', 'branches' => fn ($q) => $q->where('is_active', true)->with(['region', 'hours'])])
+            ->with(['retailGroup', 'branches' => fn ($q) => $q->where('is_active', true)->with(['region.parent', 'hours'])])
             ->firstOrFail();
 
         return response()->json([
@@ -43,6 +43,12 @@ class ChainController extends Controller
             'format' => $chain->format->value,
             'logo' => $chain->logoUrl(),
             'website' => $chain->website,
+            'online_shop' => $chain->online_shop_url,
+            'phone' => $chain->customer_phone,
+            'offers_page' => $chain->brochure_page_url,
+            'brochure_frequency' => $chain->brochure_frequency?->value,
+            'emirates' => $chain->emirates(),
+            'verified_on' => $chain->is_verified ? $chain->verified_at?->toDateString() : null,
             'group' => $chain->retailGroup?->name,
             'branches' => $chain->branches->map(fn (Branch $branch) => [
                 'id' => $branch->id,

@@ -20,10 +20,13 @@ const chains = params.getAll('store');
 const brands = params.getAll('brand');
 const cardOnly = params.get('card') === '1';
 const minDiscount = Number(params.get('min_discount')) || 0;
+// From a home page card: every tomato, whatever the origin or variety.
+const groupId = Number(params.get('group')) || 0;
 
 const activeFilters = chains.length + brands.length + (cardOnly ? 1 : 0) + (minDiscount ? 1 : 0);
 
 const filters = [...baseFilters];
+if (groupId) filters.push(`product_group_id:=${groupId}`);
 if (chains.length) filters.push(`chain_name:[${chains.map(filterValue).join(',')}]`);
 if (brands.length) filters.push(`brand:[${brands.map(filterValue).join(',')}]`);
 if (cardOnly) filters.push('card_required:true');
@@ -41,7 +44,7 @@ const result = await searchOffers({ q, filters, sort, page, facets: ['chain_name
 const facet = (field: string) => result.facets.find((f) => f.field === field)?.values ?? [];
 ---
 
-<h1 class="mb-1 text-2xl font-bold">{title}</h1>
+<h1 class="mb-1 text-2xl font-bold">{groupId && result.hits[0] ? `All ${result.hits[0].product_group.toLowerCase()} offers` : title}</h1>
 <p class="mb-4 text-sm text-muted">
   {result.found} {result.found === 1 ? 'offer' : 'offers'}{radiusKm && place.name && ` within ${radiusKm} km of ${place.name}`}
 </p>
@@ -54,7 +57,7 @@ const facet = (field: string) => result.facets.find((f) => f.field === field)?.v
   <dialog id="filters" class="sheet filters" aria-label="Filters">
     <form method="get" class="space-y-5 p-5 text-sm lg:p-0">
       {q && <input type="hidden" name="q" value={q} />}
-      {['near', 'r', 'items'].map((k) => params.get(k) && <input type="hidden" name={k} value={params.get(k)!} />)}
+      {['near', 'r', 'items', 'group'].map((k) => params.get(k) && <input type="hidden" name={k} value={params.get(k)!} />)}
       <label class="block">
         <span class="font-semibold">Sort</span>
         <select name="sort" class="input mt-2">

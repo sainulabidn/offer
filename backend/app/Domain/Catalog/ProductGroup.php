@@ -5,6 +5,7 @@ namespace App\Domain\Catalog;
 use App\Domain\Access\Audited;
 use App\Domain\Access\NeedsReview;
 use App\Domain\Access\RecordsCreator;
+use App\Domain\Search\ReindexProductGroup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,8 +25,19 @@ class ProductGroup extends Model
     {
         return [
             'comparison_quantity' => 'decimal:3',
+            'compare_as' => CompareAs::class,
             'synonyms' => 'array',
         ];
+    }
+
+    /** Offers copy this into Typesense, where it decides which offers share a home page card. */
+    protected static function booted(): void
+    {
+        static::updated(function (ProductGroup $group) {
+            if ($group->wasChanged('compare_as')) {
+                ReindexProductGroup::dispatch($group->id);
+            }
+        });
     }
 
     public function category(): BelongsTo

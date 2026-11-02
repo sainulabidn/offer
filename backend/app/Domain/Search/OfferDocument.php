@@ -50,6 +50,8 @@ final class OfferDocument
                 ['name' => 'brand_id', 'type' => 'int32', 'facet' => true, 'optional' => true],
                 ['name' => 'product_group', 'type' => 'string', 'facet' => true],
                 ['name' => 'product_group_id', 'type' => 'int32', 'facet' => true],
+                // Offers on one home page card: "g12" for a whole group (tomatoes), "p55" for one product (Ferrero Rocher).
+                ['name' => 'compare_key', 'type' => 'string', 'facet' => true],
                 ['name' => 'category_ids', 'type' => 'int32[]', 'facet' => true],
                 ['name' => 'chain_id', 'type' => 'int32', 'facet' => true],
                 ['name' => 'chain_name', 'type' => 'string', 'facet' => true],
@@ -61,6 +63,8 @@ final class OfferDocument
                 // Same on every offer of a product (search:sync-rank), so sorting by it and then by
                 // unit price, grouped by product, gives each product's cheapest offer.
                 ['name' => 'product_rank', 'type' => 'int32'],
+                // The same for every offer with one compare_key, so sorting by it then by unit price finds each card's cheapest.
+                ['name' => 'compare_rank', 'type' => 'int32'],
                 // Every active branch where this offer applies; a radius filter matches any of them.
                 // Long, so search responses leave it out (SearchKeys).
                 ['name' => 'locations', 'type' => 'geopoint[]', 'optional' => true],
@@ -121,6 +125,7 @@ final class OfferDocument
             'brand_id' => $product->brand_id,
             'product_group' => $group->getTranslation('name', 'en'),
             'product_group_id' => $group->id,
+            'compare_key' => $group->compare_as->key($group->id, $product->id),
             // The category and all its ancestors, so filtering on a parent finds its children's offers.
             'category_ids' => array_map('intval', [...array_filter(explode('/', $category->path)), $category->id]),
             'chain_id' => $offer->chain_id,
@@ -129,6 +134,7 @@ final class OfferDocument
             'chain_grade' => (int) $offer->chain->grade,
             'item_grade' => (int) ($product->grade ?? $group->grade ?? 3),
             'product_rank' => (int) ($product->stats?->rank ?? 0),
+            'compare_rank' => (int) ($product->stats?->compare_rank ?? 0),
             'locations' => self::locations($offer) ?: null,
             'brochure_id' => $offer->brochure_id,
             'price' => (float) $offer->price,

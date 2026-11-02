@@ -54,6 +54,16 @@ export interface Chain {
   format: string;
   logo: string | null;
   website: string | null;
+  online_shop: string | null;
+  phone: string | null;
+  /** The store's own page with its brochures. */
+  offers_page: string | null;
+  brochure_frequency: 'weekly' | 'fortnightly' | 'monthly' | 'irregular' | null;
+  /** Emirates with a branch, in the usual order. */
+  emirates: string[];
+  /** When staff last checked these details, if they did. */
+  verified_on: string | null;
+  group: string | null;
   branches: { id: number; name: string; slug: string; area: string | null; address: string | null; lat: number; lng: number; phone: string | null; hours: { weekday: number; opens: string; closes: string }[] }[];
 }
 

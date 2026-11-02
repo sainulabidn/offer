@@ -22,6 +22,11 @@ interface Props {
 const { offer, nearest, compare = [], nearby } = Astro.props;
 const href = `/products/${offer.product_slug}?variant=${encodeURIComponent(offer.variant_slug)}`;
 const saving = offer.regular_price && offer.regular_price > offer.price ? offer.regular_price - offer.price : 0;
+// A whole-group card ("Tomato") names the group, with the variety that is cheapest underneath.
+const isGroup = offer.compare_key?.startsWith('g') ?? false;
+const title = isGroup ? offer.product_group : offer.product_name;
+const detail = isGroup && offer.product_name.toLowerCase() !== offer.product_group.toLowerCase() ? `${offer.product_name} · ${offer.variant_label}` : offer.variant_label;
+const options = offer.group_found ?? 1;
 ---
 
 <article class="card relative flex flex-col overflow-hidden transition hover:shadow-float">
@@ -46,9 +51,16 @@ const saving = offer.regular_price && offer.regular_price > offer.price ? offer.
       {nearest && <span class="ms-auto shrink-0">{distanceLabel(nearest.km)}</span>}
     </p>
     <h3 class="line-clamp-2 text-sm/snug font-semibold">
-      <a href={href} data-click={`product:${offer.product_id} chain:${offer.chain_id}`} class="after:absolute after:inset-0">{offer.product_name}</a>
+      <a href={href} data-click={`product:${offer.product_id} chain:${offer.chain_id}`} class="after:absolute after:inset-0">{title}</a>
     </h3>
-    <p class="mt-0.5 text-xs text-muted">{offer.variant_label}</p>
+    <p class="mt-0.5 text-xs text-muted">{detail}</p>
+    {options > 1 && (
+      isGroup ? (
+        <a href={`/search?group=${offer.product_group_id}&sort=unit`} class="relative z-10 mt-0.5 self-start text-xs font-semibold text-link hover:underline">Cheapest of {options} offers</a>
+      ) : (
+        <p class="mt-0.5 text-xs font-medium text-muted">Cheapest of {options} offers</p>
+      )
+    )}
 
     <div class="mt-auto pt-2">
       <div class="flex items-end justify-between gap-2">

@@ -15,6 +15,9 @@ export interface OfferHit {
   category_ids?: number[];
   product_group: string;
   product_group_id: number;
+  /** Offers on one home page card: "g12" for a whole group (tomatoes), "p55" for one product (Ferrero Rocher). */
+  compare_key: string;
+  compare_rank: number;
   chain_id: number;
   chain_name: string;
   chain_slug: string;
@@ -46,6 +49,8 @@ export interface OfferHit {
   image?: string;
   /** Emoji for the card when there's no photo. */
   icon?: string;
+  /** Grouped results only: how many offers this one was the pick of. */
+  group_found?: number;
 }
 
 export interface Facet {
@@ -67,7 +72,7 @@ export interface OfferSearch {
 }
 
 export const SORTS = {
-  rank: { label: 'Most useful', by: 'product_rank:desc,effective_unit_price:asc' },
+  rank: { label: 'Most useful', by: 'compare_rank:desc,effective_unit_price:asc' },
   deal: { label: 'Biggest discount', by: 'discount_pct:desc' },
   unit: { label: 'Cheapest per unit', by: 'effective_unit_price:asc' },
   price: { label: 'Lowest price', by: 'price:asc' },
@@ -123,7 +128,7 @@ export async function searchOffers({ q = '', filters = [], sort = 'deal', page =
   const body = (await response.json()) as {
     found: number;
     hits?: { document: OfferHit }[];
-    grouped_hits?: { hits: { document: OfferHit }[] }[];
+    grouped_hits?: { found?: number; hits: { document: OfferHit }[] }[];
     facet_counts?: { field_name: string; counts: { value: string; count: number }[] }[];
   };
 
@@ -131,7 +136,7 @@ export async function searchOffers({ q = '', filters = [], sort = 'deal', page =
     found: body.found,
     page,
     pages: Math.max(1, Math.ceil(body.found / perPage)),
-    hits: groupBy ? (body.grouped_hits ?? []).map((group) => group.hits[0].document) : (body.hits ?? []).map((hit) => hit.document),
+    hits: groupBy ? (body.grouped_hits ?? []).map((group) => ({ ...group.hits[0].document, group_found: group.found })) : (body.hits ?? []).map((hit) => hit.document),
     facets: (body.facet_counts ?? []).map((f) => ({ field: f.field_name, values: f.counts })) as Facet[],
   };
 }

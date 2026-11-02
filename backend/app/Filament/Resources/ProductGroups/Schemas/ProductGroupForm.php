@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\ProductGroups\Schemas;
 
+use App\Domain\Catalog\CompareAs;
 use App\Domain\Catalog\Unit;
 use App\Filament\Support\Fields;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
@@ -30,6 +32,12 @@ class ProductGroupForm
                     ->label('Compare per unit')
                     ->options(fn () => Unit::query()->orderBy('dimension')->orderBy('factor_to_base')->pluck('code', 'code'))
                     ->required(),
+                Radio::make('compare_as')
+                    ->label('On the home page, compare')
+                    ->options(CompareAs::class)
+                    ->default(CompareAs::Product)
+                    ->required()
+                    ->columnSpanFull(),
                 Fields::gradeInput(Fields::ITEM_GRADES)
                     ->placeholder('Not graded')
                     ->helperText('Daily essentials rank first. A product can override this.'),

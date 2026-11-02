@@ -5,15 +5,20 @@ use App\Domain\Access\UserStoreAccess;
 use App\Domain\Brochures\Brochure;
 use App\Domain\Brochures\PublishBrochure;
 use App\Domain\Catalog\CatalogRowImporter;
+use App\Domain\Catalog\CompareAs;
 use App\Domain\Catalog\Product;
 use App\Domain\Catalog\ProductGroup;
 use App\Domain\Geo\Country;
+use App\Domain\Geo\Region;
 use App\Domain\Offers\Offer;
 use App\Domain\Offers\RegularPrice;
 use App\Domain\Offers\ShelfPrices;
+use App\Domain\Retail\BrochureFrequency;
 use App\Domain\Retail\Chain;
 use App\Domain\Retail\ChainFormat;
+use App\Domain\Retail\ContentPermission;
 use App\Domain\Retail\RetailGroup;
+use App\Domain\Search\ReindexProductGroup;
 use App\Domain\Settings\HomeSettings;
 use App\Domain\Shopper\ShopperPreference;
 use App\Filament\Imports\CatalogImporter;
@@ -21,6 +26,7 @@ use App\Filament\Pages\ManageHomeSettings;
 use App\Filament\Pages\MissingShelfPrices;
 use App\Filament\Resources\Chains\Pages\EditChain;
 use App\Filament\Resources\Chains\Pages\ListChains;
+use App\Filament\Resources\ProductGroups\Pages\EditProductGroup;
 use App\Filament\Resources\ProductGroups\Pages\ListProductGroups;
 use App\Filament\Resources\RegularPrices\Pages\CreateRegularPrice;
 use App\Filament\Resources\Users\Pages\EditUser;
@@ -34,9 +40,11 @@ use Database\Seeders\UnitSeeder;
 use Filament\Actions\Imports\Models\Import;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Bus;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {
@@ -287,4 +295,80 @@ it('reports how many daily items have enough store prices', function () {
     app(ShelfPrices::class)->record($variant, $third->id, '53.00');
 
     expect(app(ShelfPrices::class)->coverage())->toBe(['items' => 1, 'covered' => 1, 'no_photo' => 1]);
+});
+
+it('lets staff choose whether a group shows as one card or one per product', function () {
+    Bus::fake([ReindexProductGroup::class]);
+    signInAdmin($this->admin);
+    $group = ProductGroup::where('slug', 'basmati-rice')->firstOrFail();
+
+    livewire(EditProductGroup::class, ['record' => $group->getRouteKey()])
+        ->assertSee('The whole group')
+        ->fillForm(['compare_as' => CompareAs::Group->value])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($group->fresh()->compare_as)->toBe(CompareAs::Group);
+    Bus::assertDispatched(ReindexProductGroup::class, fn ($job) => $job->groupId === $group->id);
+});
+
+it('works out UAE coverage from the branches, and flags a regular store with no brochure today', function () {
+    $this->nesto->branches()->first()->update(['region_id' => Region::where('slug', 'mussafah')->value('id')]);
+    $this->nesto->branches()->create(['name' => ['en' => 'Al Nuaimiya'], 'slug' => 'al-nuaimiya', 'location' => Point::makeGeodetic(25.39, 55.45), 'region_id' => Region::where('slug', 'al-nuaimiya')->value('id')]);
+    $this->nesto->branches()->create(['name' => ['en' => 'Closed'], 'slug' => 'closed', 'location' => Point::makeGeodetic(25.8, 55.97), 'region_id' => Region::where('slug', 'ras-al-khaimah')->value('id'), 'is_active' => false]);
+    $this->nesto->update(['brochure_frequency' => BrochureFrequency::Weekly]);
+    $today = now(config('app.market_timezone'));
+    $brochure = Brochure::create(['chain_id' => $this->nesto->id, 'title' => ['en' => 'Last week'], 'slug' => 'nesto-last-week', 'valid_from' => $today->copy()->subDays(8)->toDateString(), 'valid_to' => $today->copy()->subDay()->toDateString(), 'status' => 'published']);
+
+    $chain = fn () => Chain::withBrochuresUntil()->with('branches.region.parent')->findOrFail($this->nesto->id);
+    expect($chain()->emirates())->toBe(['Abu Dhabi', 'Ajman'])
+        ->and($chain()->brochureOverdue())->toBeTrue();
+
+    signInAdmin($this->admin);
+    livewire(ListChains::class)->filterTable('overdue')->assertCanSeeTableRecords([$this->nesto])->assertCanNotSeeTableRecords([$this->lulu]);
+
+    $brochure->update(['valid_to' => $today->copy()->addDays(3)->toDateString()]);
+    expect($chain()->brochureOverdue())->toBeFalse();
+
+    $this->nesto->update(['brochure_frequency' => BrochureFrequency::Irregular]);
+    $brochure->update(['valid_to' => $today->copy()->subDay()->toDateString()]);
+    expect($chain()->brochureOverdue())->toBeFalse();
+});
+
+it('records who verified a store and when, and keeps staff fields from store owners', function () {
+    signInAdmin($this->admin);
+    livewire(EditChain::class, ['record' => $this->nesto->id])
+        ->fillForm(['is_verified' => true, 'content_permission' => ContentPermission::Granted->value, 'brochure_pdf_url' => 'https://nesto.example/latest.pdf'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    $nesto = $this->nesto->fresh();
+    expect($nesto->verified_by)->toBe($this->admin->id)
+        ->and($nesto->verified_at)->not->toBeNull()
+        ->and($nesto->content_permission)->toBe(ContentPermission::Granted);
+
+    signInAdmin($this->owner);
+    livewire(EditChain::class, ['record' => $this->nesto->id])
+        ->assertFormFieldHidden('is_verified')
+        ->assertFormFieldHidden('brochure_pdf_url')
+        ->fillForm(['online_shop_url' => 'https://nesto.example/shop'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+    expect($this->nesto->fresh())->is_verified->toBeTrue()->online_shop_url->toBe('https://nesto.example/shop');
+});
+
+it('shows shoppers the public store details, never the staff ones', function () {
+    $this->nesto->update([
+        'online_shop_url' => 'https://nesto.example/shop',
+        'brochure_page_url' => 'https://nesto.example/offers',
+        'brochure_pdf_url' => 'https://nesto.example/latest.pdf',
+        'brochure_contact' => 'marketing@nesto.example',
+        'staff_notes' => 'Call before Thursday',
+        'brochure_frequency' => BrochureFrequency::Weekly,
+    ]);
+
+    $response = getJson('/api/v1/chains/nesto')->assertOk()
+        ->assertJson(['online_shop' => 'https://nesto.example/shop', 'offers_page' => 'https://nesto.example/offers', 'brochure_frequency' => 'weekly', 'verified_on' => null]);
+
+    expect($response->getContent())->not->toContain('latest.pdf')->not->toContain('marketing@')->not->toContain('Thursday');
 });
