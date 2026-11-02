@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { compare, type PlanItem } from '@offer/basket';
 import { isSignedIn, signInUrl } from '../lib/account';
 import { loadDirectory, loadPlan, nearbyStores, savePlan, searchHits, sharePlan, startNewPlan, switchPlan, syncPlan, toCandidate, type Hit, type Plan, type ServerPlan } from '../lib/plan';
+import { loadPlaces, type Place } from '../lib/places';
+import { readPrefs } from '../lib/prefs';
+import RadiusPicker from './RadiusPicker';
 
 const aed = (n: number) => `AED ${n.toFixed(2)}`;
 
@@ -12,7 +15,8 @@ export default function PlanBuilder() {
   const [suggestions, setSuggestions] = useState<Hit[]>([]);
   const [hits, setHits] = useState<Hit[] | null>(null);
   const [scope, setScope] = useState<ReturnType<typeof nearbyStores> | null>(null);
-  const [areas, setAreas] = useState<{ slug: string; name: string; lat: number; lng: number }[]>([]);
+  const [places, setPlaces] = useState<Place[]>([]);
+  const [radii, setRadii] = useState({ options: [5, 10, 25, 50], max: 100 });
   const [error, setError] = useState('');
   const [plans, setPlans] = useState<ServerPlan[]>([]);
   const [shareUrl, setShareUrl] = useState('');
@@ -56,7 +60,6 @@ export default function PlanBuilder() {
     (async () => {
       try {
         const dir = await loadDirectory();
-        setAreas(dir.areas);
         const near = nearbyStores(dir, plan.settings);
         setScope(near);
         if (!near.brochureIds.length) return alive && setHits([]);
@@ -75,8 +78,22 @@ export default function PlanBuilder() {
   }, [itemsKey, lat, lng, radiusKm]);
 
   useEffect(() => {
-    loadDirectory().then((d) => setAreas(d.areas)).catch(() => {});
+    setPlaces(loadPlaces());
+    loadDirectory().then((d) => setRadii({ options: d.settings.radius_options, max: d.settings.radius_max })).catch(() => {});
   }, []);
+
+  /** Planning for Home from the office: a plan keeps its own place, whatever the rest of the site shows. */
+  function planFor(id: string) {
+    if (id === 'all') return update({ ...plan, settings: { ...plan.settings, lat: null, lng: null, place: '' } });
+    if (id === 'here') {
+      const { at, label } = readPrefs();
+      return at && update({ ...plan, settings: { ...plan.settings, lat: at.lat, lng: at.lng, place: label ?? 'your area' } });
+    }
+    const place = places.find((p) => p.id === id);
+    if (place) update({ ...plan, settings: { ...plan.settings, lat: place.lat, lng: place.lng, place: place.label, radiusKm: place.radius_km ?? plan.settings.radiusKm } });
+  }
+
+  const chosenPlace = plan.settings.lat === null ? 'all' : (places.find((p) => p.label === plan.settings.place && p.lat === plan.settings.lat && p.lng === plan.settings.lng)?.id ?? 'here');
 
   const result = useMemo(() => {
     if (!hits || !scope) return null;
@@ -164,19 +181,15 @@ export default function PlanBuilder() {
 
         <fieldset className="space-y-2 rounded-xl border border-zinc-200 bg-white p-3 text-sm">
           <legend className="px-1 font-semibold">Where and how</legend>
-          <select className="w-full rounded-lg border border-zinc-300 px-2 py-1.5" value="" onChange={(e) => {
-            const a = areas.find((x) => x.slug === e.target.value);
-            if (a) update({ ...plan, settings: { ...plan.settings, lat: a.lat, lng: a.lng, place: a.name } });
-          }}>
-            <option value="">{plan.settings.place ? `Near ${plan.settings.place}` : 'All UAE: choose an area…'}</option>
-            {areas.map((a) => <option key={a.slug} value={a.slug}>{a.name}</option>)}
-          </select>
-          <button type="button" className="w-full rounded-lg border border-zinc-300 py-1.5" onClick={() => navigator.geolocation?.getCurrentPosition((p) => update({ ...plan, settings: { ...plan.settings, lat: Math.round(p.coords.latitude * 100) / 100, lng: Math.round(p.coords.longitude * 100) / 100, place: 'your location' } }))}>Use my location</button>
-          <label className="flex items-center justify-between">Radius
-            <select value={plan.settings.radiusKm} onChange={(e) => setSetting('radiusKm', Number(e.target.value))} className="rounded border px-2 py-1">
-              {[3, 5, 10, 20, 50].map((r) => <option key={r} value={r}>{r} km</option>)}
+          <label className="block">Plan for
+            <select aria-label="Plan for" className="input mt-1" value={chosenPlace} onChange={(e) => planFor(e.target.value)}>
+              <option value="here">{chosenPlace === 'here' && plan.settings.place ? `Near ${plan.settings.place}` : 'Where I am browsing'}</option>
+              {places.map((p) => <option key={p.id} value={p.id}>{p.label}{p.area ? ` (${p.area})` : ''}</option>)}
+              <option value="all">All of the UAE</option>
             </select>
           </label>
+          <button type="button" data-open-location className="text-sm font-semibold text-link">Add or change a place</button>
+          {plan.settings.lat !== null && <RadiusPicker legend="Stores within" value={plan.settings.radiusKm} options={radii.options} max={radii.max} onChange={(km) => setSetting('radiusKm', km)} />}
           <label className="flex items-center justify-between">Stores I'll visit
             <select value={plan.settings.maxStores} onChange={(e) => setSetting('maxStores', Number(e.target.value) as 1 | 2 | 3)} className="rounded border px-2 py-1">
               <option value={1}>1</option><option value={2}>Up to 2</option><option value={3}>Up to 3</option>

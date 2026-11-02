@@ -1,0 +1,58 @@
+---
+// The shopper's stores. Selecting one is a plain link, like the variant picker, so it works and
+// caches without JavaScript. Selected stores always show, so they can be deselected.
+import { Check, Store } from 'lucide-react';
+import StoreLogo from './StoreLogo.astro';
+import type { RankedCard } from '../lib/near';
+import { distanceLabel } from '../lib/format';
+
+interface Props {
+  stores: RankedCard[];
+  selected: number[];
+  radiusKm: number;
+  /** Distances mean nothing on a rough, emirate-level location. */
+  showDistance: boolean;
+}
+
+const { stores, selected, radiusKm, showDistance } = Astro.props;
+
+const toggled = (id: number) => {
+  const next = selected.includes(id) ? selected.filter((other) => other !== id) : [...selected, id].slice(-4);
+  return `/?stores=${next.join(',')}`;
+};
+---
+
+{stores.length ? (
+  <ul class="rail" aria-label="Stores">
+    {stores.map(({ store, km, selected: on }) => (
+      <li class="w-[11.5rem]">
+        <a
+          href={toggled(store.id)}
+          aria-pressed={on}
+          rel="nofollow"
+          class:list={['card relative flex h-full items-center gap-2.5 p-2.5 transition hover:border-primary', on && 'border-primary ring-2 ring-primary']}
+        >
+          {on && <span class="absolute end-1.5 top-1.5 grid size-5 place-items-center rounded-full bg-primary text-on-primary"><Check class="size-3.5" aria-hidden="true" /></span>}
+          <StoreLogo name={store.chain} logo={store.logo} class="size-11 text-xs" />
+          <span class="min-w-0">
+            <span class="line-clamp-2 text-sm/tight font-semibold">{store.chain}</span>
+            <span class="mt-0.5 block text-xs text-muted">
+              {showDistance && km !== null ? `${distanceLabel(km)} · ` : ''}{store.offers} {store.offers === 1 ? 'offer' : 'offers'}
+            </span>
+          </span>
+        </a>
+      </li>
+    ))}
+    <li class="w-[8rem] md:hidden">
+      <a href="/stores" class="flex h-full items-center justify-center gap-2 rounded-(--radius-card) border border-dashed border-line p-2.5 text-sm font-semibold text-link hover:border-primary">
+        <Store class="size-5" aria-hidden="true" /> All stores
+      </a>
+    </li>
+  </ul>
+) : (
+  <div class="card p-5 text-center">
+    <p class="font-semibold">No stores within {radiusKm} km</p>
+    <p class="mt-1 text-sm text-muted">Try a wider area to see more stores.</p>
+    <button type="button" data-open-location class="btn btn-quiet mt-3">Change area or distance</button>
+  </div>
+)}

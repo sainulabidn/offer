@@ -7,17 +7,20 @@ use App\Domain\Geo\Region;
 use App\Domain\Offers\DealScorer;
 use App\Domain\Offers\Offer;
 use App\Domain\Offers\OfferStatus;
+use App\Domain\Offers\RegularPrice;
 use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
 use App\Domain\Search\OfferDocument;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
  * Publishes a reviewed brochure: resolves its branch scope, publishes its draft/approved offers,
- * scores each deal against its 90-day history, marks the brochure published (or scheduled when it
- * starts later), indexes the offers in Typesense and queues alert matching.
+ * scores each deal against its 90-day history, keeps its "was" prices as the stores' usual prices,
+ * marks the brochure published (or scheduled when it starts later), indexes the offers that are
+ * valid today in Typesense and queues alert matching.
  */
 final class PublishBrochure
 {
@@ -40,6 +43,7 @@ final class PublishBrochure
                 $offer->forceFill(['status' => OfferStatus::Published, 'published_at' => now()])->saveQuietly();
             }
             $published = $pending->count();
+            $this->recordUsualPrices($pending);
 
             $brochure->forceFill([
                 'status' => $brochure->valid_from->isFuture() ? BrochureStatus::Scheduled : BrochureStatus::Published,
@@ -50,12 +54,11 @@ final class PublishBrochure
         });
 
         // Bulk updates skip model events, so push the live offers to Typesense explicitly.
-        Offer::query()
+        Offer::syncSearch(Offer::query()
             ->where('brochure_id', $brochure->id)
             ->where('status', OfferStatus::Published)
             ->with(OfferDocument::RELATIONS)
-            ->get()
-            ->searchable();
+            ->get());
 
         // Tell shoppers whose alerts or liked products just went on offer (queued; one email per person).
         if ($published > 0) {
@@ -63,6 +66,32 @@ final class PublishBrochure
         }
 
         return $published;
+    }
+
+    /**
+     * A "was" price is the store's usual price, so cards can show it after the offer ends. Inflated
+     * ones are skipped. Rows are keyed first: one upsert can't touch the same row twice, and a
+     * brochure may list a pack more than once.
+     *
+     * @param  Collection<int, Offer>  $offers
+     */
+    private function recordUsualPrices(Collection $offers): void
+    {
+        $rows = [];
+        foreach ($offers as $offer) {
+            if ($offer->regular_price !== null && ! $offer->was_price_suspicious) {
+                $day = $offer->valid_from->toDateString();
+                $rows["{$offer->product_variant_id}:{$offer->chain_id}:{$day}"] = [
+                    'product_variant_id' => $offer->product_variant_id,
+                    'chain_id' => $offer->chain_id,
+                    'price' => $offer->regular_price,
+                    'observed_at' => $day,
+                    'source' => RegularPrice::SOURCE_WAS_PRICE,
+                ];
+            }
+        }
+
+        RegularPrice::upsert(array_values($rows), ['product_variant_id', 'chain_id', 'observed_at'], ['price', 'source']);
     }
 
     /** Scope rules → active branch IDs. No rules means every branch of the brochure's chain. */

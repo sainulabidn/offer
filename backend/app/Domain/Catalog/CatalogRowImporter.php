@@ -11,7 +11,7 @@ use InvalidArgumentException;
  * option and option value, so the same file can be imported again to update it (no duplicates).
  *
  * Columns: category, product_group, brand, product_name, product_name_ar, description, option_name,
- * option_value, pack_count, unit_qty, unit, gtin, origin, sold_by_weight.
+ * option_value, pack_count, unit_qty, unit, gtin, origin, sold_by_weight, grade (of the product group).
  */
 final class CatalogRowImporter
 {
@@ -49,6 +49,9 @@ final class CatalogRowImporter
             ]);
             if ($group->comparisonUnit->dimension !== $unit->dimension) {
                 throw new InvalidArgumentException("Unit [{$unit->code}] does not match group [{$group->name}], which compares per {$group->comparison_unit_code}.");
+            }
+            if (filled($row['grade'] ?? null)) {
+                $group->update(['grade' => (int) $row['grade']]);
             }
 
             $brand = filled($row['brand'] ?? null)

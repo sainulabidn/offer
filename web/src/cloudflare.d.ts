@@ -1,3 +1,10 @@
+declare namespace App {
+  interface Locals {
+    /** Worked out once per request in middleware.ts. Pages read the shopper's area only from here. */
+    prefs: import('@offer/rank').Prefs;
+  }
+}
+
 // Worker bindings from wrangler.jsonc, read with `import { env } from 'cloudflare:workers'`.
 declare module 'cloudflare:workers' {
   interface MediaObject {

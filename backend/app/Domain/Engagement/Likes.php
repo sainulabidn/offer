@@ -62,7 +62,7 @@ final class Likes
             return 0;
         }
 
-        Offer::whereKey($ids)->with(OfferDocument::RELATIONS)->get()->searchable();
+        Offer::syncSearch(Offer::whereKey($ids)->with(OfferDocument::RELATIONS)->get());
 
         return count($ids);
     }

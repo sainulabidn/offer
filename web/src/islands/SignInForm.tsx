@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ApiError, call, markSignedIn } from '../lib/account';
 import { addPasskey, deviceCanCreatePasskey, listPasskeys, passkeyAutofillSupported, passkeyError, passkeysSupported, signInWithPasskey } from '../lib/passkeys';
+import { syncAccount } from '../lib/places';
 
 const OFFER_DISMISSED = 'offer:passkey-offer-dismissed';
 
@@ -15,8 +16,11 @@ export default function SignInForm({ next = '/' }: { next?: string }) {
   const [busy, setBusy] = useState(false);
   const [canPasskey, setCanPasskey] = useState(false);
 
-  // Only same-site paths, never an external redirect.
-  const done = () => (location.href = next.startsWith('/') && !next.startsWith('//') ? next : '/');
+  // Settings and places made as a guest join the account first. Only same-site paths, never an external redirect.
+  const done = async () => {
+    await syncAccount({ afterSignIn: true });
+    location.href = next.startsWith('/') && !next.startsWith('//') ? next : '/';
+  };
 
   useEffect(() => {
     setCanPasskey(passkeysSupported());

@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         if (app()->isLocal()) {
-            $this->call([DemoCatalogSeeder::class, DemoOffersSeeder::class]);
+            $this->call([DemoCatalogSeeder::class, DemoOffersSeeder::class, DemoNearbySeeder::class]);
         }
     }
 }

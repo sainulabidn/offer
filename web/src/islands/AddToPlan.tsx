@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { addToPlan } from '../lib/plan';
+import { count } from '../lib/track';
 
 /** "Add to plan" on product pages: this exact pack, or any brand of the product group. */
-export default function AddToPlan({ variantId, label, groupId, groupName }: { variantId: number; label: string; groupId: number; groupName: string }) {
+export default function AddToPlan({ productId, variantId, label, groupId, groupName }: { productId: number; variantId: number; label: string; groupId: number; groupName: string }) {
   const [added, setAdded] = useState('');
 
   const add = (any: boolean) => {
     addToPlan(any
       ? { key: `g:${groupId}`, name: `Any ${groupName}`, quantity: 1, match: { productGroupId: groupId } }
       : { key: `v:${variantId}`, name: label, quantity: 1, match: { variantId } });
+    count('plan', `product:${productId} group:${groupId}`);
     setAdded(any ? `Any ${groupName}` : label);
   };
 

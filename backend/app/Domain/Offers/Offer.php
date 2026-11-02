@@ -14,6 +14,7 @@ use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
 use App\Domain\Search\OfferDocument;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -65,15 +66,32 @@ class Offer extends Model
             ->whereDate('valid_to', '>=', $day);
     }
 
-    /** Only live offers are searchable; expired ones, and products not (yet) approved or active, drop out of Typesense. */
+    /**
+     * Only offers valid today are searchable, by the market's calendar: a scheduled offer joins on its
+     * first day (ExpireOffers), and expired ones and products not approved or active drop out of Typesense.
+     */
     public function shouldBeSearchable(): bool
     {
-        if ($this->status !== OfferStatus::Published || ! $this->valid_to?->endOfDay()->isFuture()) {
+        $today = now(config('app.market_timezone'))->toDateString();
+        if ($this->status !== OfferStatus::Published || $this->valid_from?->toDateString() > $today || $this->valid_to?->toDateString() < $today) {
             return false;
         }
         $product = $this->loadMissing('variant.product')->variant?->product;
 
         return $product !== null && $product->isApproved() && $product->status === ProductStatus::Active;
+    }
+
+    /**
+     * Sends these offers to Typesense and removes any that may no longer show. Collection::searchable()
+     * skips shouldBeSearchable(), so bulk indexing goes through here.
+     *
+     * @param  Collection<int, Offer>  $offers
+     */
+    public static function syncSearch(Collection $offers): void
+    {
+        [$shown, $hidden] = $offers->partition->shouldBeSearchable();
+        $shown->searchable();
+        $hidden->unsearchable();
     }
 
     public function toSearchableArray(): array

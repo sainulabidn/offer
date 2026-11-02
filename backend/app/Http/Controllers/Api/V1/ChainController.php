@@ -12,13 +12,19 @@ class ChainController extends Controller
 {
     public function index(): JsonResponse
     {
-        $chains = Chain::query()->where('is_active', true)->orderBy('slug')->get();
+        $chains = Chain::query()->where('is_active', true)
+            ->withCount(['branches' => fn ($q) => $q->where('is_active', true)])
+            ->orderBy('grade')->orderBy('slug')
+            ->get();
 
         return response()->json($chains->map(fn (Chain $chain) => [
             'id' => $chain->id,
             'name' => $chain->name,
             'slug' => $chain->slug,
             'format' => $chain->format->value,
+            'grade' => (int) $chain->grade,
+            'logo' => $chain->logoUrl(),
+            'branches' => $chain->branches_count,
         ]))->setCache(['public' => true, 'max_age' => 3600, 's_maxage' => 3600]);
     }
 
@@ -35,6 +41,7 @@ class ChainController extends Controller
             'name' => $chain->name,
             'slug' => $chain->slug,
             'format' => $chain->format->value,
+            'logo' => $chain->logoUrl(),
             'website' => $chain->website,
             'group' => $chain->retailGroup?->name,
             'branches' => $chain->branches->map(fn (Branch $branch) => [

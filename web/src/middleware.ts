@@ -1,6 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { PASS_TO_ORIGIN } from 'astro:env/server';
 import { env } from 'cloudflare:workers';
+import { NO_PREFS, PREFS_COOKIE, prefsKey, resolvePrefs, type Prefs } from '@offer/rank';
 
 /**
  * In production the Worker serves the whole of offer.emirait.com. Laravel's paths go straight to the
@@ -16,19 +17,25 @@ const ORIGIN_PATTERN = /^\/livewire(-[0-9a-f]+)?(\/|$)/;
 // (likes, plan, sign-in) lives in the browser, so the same HTML is right for everyone.
 const edgeCache = () => (globalThis as unknown as { caches: { default: Cache } }).caches.default;
 
+// Pages drawn for the shopper's area. Everything else gets NO_PREFS, so it can't vary by shopper and
+// keeps a single cached copy; a path missing here shows the plain page, never someone else's.
+const USES_PREFS = /^\/(search|stores|c\/[^/]+)?\/?$/;
+
 // Each deploy gets its own page cache: HTML cached before a deploy links /_astro files the deploy removed,
 // which shows the page without styles. CF_VERSION_METADATA changes with every deploy.
-const pageCacheKey = (url: URL) => {
+// The shopper's settings are in the key, so people in different areas never share a cached page.
+const pageCacheKey = (url: URL, prefs: Prefs) => {
   const key = new URL(url);
   key.searchParams.set('__build', env.CF_VERSION_METADATA?.id ?? 'dev');
+  key.searchParams.set('__prefs', prefsKey(prefs));
   return new Request(key.toString(), { method: 'GET' });
 };
 // Browsers re-check every page (answered from the edge cache in milliseconds). Without this, the cached
 // copy comes back with the zone's Browser Cache TTL (4 h) and a browser keeps showing pre-deploy HTML.
 const BROWSER_CACHE = 'public, max-age=0, must-revalidate';
 
-// Product photos live in the R2 bucket (binding MEDIA, production only) and are served here at
-// /media/products/…, so the bucket stays private and needs no domain of its own. Only image files
+// Product photos and store logos live in the R2 bucket (binding MEDIA, production only) and are served
+// here at /media/…, so the bucket stays private and needs no domain of its own. Only image files
 // are served, with the type taken from the extension, never from the stored object.
 const MEDIA_TYPES: Record<string, string> = { avif: 'image/avif', webp: 'image/webp', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
 
@@ -67,7 +74,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   const path = context.url.pathname;
-  if (path.startsWith('/media/products/') && context.request.method === 'GET' && env.MEDIA) return media(context.url);
+  context.locals.prefs = USES_PREFS.test(path)
+    ? resolvePrefs({
+        url: context.url,
+        cookie: context.cookies.get(PREFS_COOKIE)?.value,
+        regionCode: (context.request as Request & { cf?: { regionCode?: string } }).cf?.regionCode,
+      })
+    : NO_PREFS;
+
+  if ((path.startsWith('/media/products/') || path.startsWith('/media/logos/')) && context.request.method === 'GET' && env.MEDIA) return media(context.url);
   if (!PASS_TO_ORIGIN) return next();
 
   // Search-as-you-type: identical queries from many shoppers (the key is the same public scoped key),
@@ -90,7 +105,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
   if (context.request.method !== 'GET') return next();
 
-  const key = pageCacheKey(context.url);
+  const key = pageCacheKey(context.url, context.locals.prefs);
   const hit = await edgeCache().match(key);
   if (hit) {
     const cached = new Response(hit.body, hit);

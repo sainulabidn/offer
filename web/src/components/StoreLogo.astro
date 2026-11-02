@@ -1,0 +1,18 @@
+---
+// A store's logo, or its initials on a soft colour until staff upload one.
+import { tintFor, initials } from '../lib/format';
+
+interface Props {
+  name: string;
+  logo?: string | null;
+  class?: string;
+}
+
+const { name, logo, class: className = 'size-11 text-sm' } = Astro.props;
+---
+
+{logo ? (
+  <img src={logo} alt="" loading="lazy" decoding="async" class:list={['rounded-full bg-white object-contain', className]} />
+) : (
+  <span aria-hidden="true" class:list={['grid shrink-0 place-items-center rounded-full font-bold', tintFor(name), className]}>{initials(name)}</span>
+)}

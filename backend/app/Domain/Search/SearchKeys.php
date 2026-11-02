@@ -33,6 +33,8 @@ final class SearchKeys
 
         return Cache::remember('typesense:scoped-key', 3600, fn () => $this->client->keys->generateScopedSearchKey($parent, [
             'expires_at' => now()->addDay()->getTimestamp(),
+            // A chain's offers list every branch; no card needs that.
+            'exclude_fields' => 'locations',
         ]));
     }
 }

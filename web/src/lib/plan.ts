@@ -1,5 +1,6 @@
 import { PUBLIC_API_URL } from 'astro:env/client';
-import type { CandidateOffer, PlanItem, Store } from '@offer/basket';
+import { promoFrom, type CandidateOffer, type PlanItem, type Store } from '@offer/basket';
+import { distanceKm } from '@offer/rank';
 import { ApiError, call, isSignedIn } from './account';
 
 /**
@@ -154,6 +155,7 @@ interface Directory {
   branches: { id: number; chain_id: number; chain: string; name: string; lat: number; lng: number }[];
   brochures: { id: number; chain_id: number; valid_from: string; valid_to: string; branch_ids: number[] }[];
   areas: { slug: string; name: string; lat: number; lng: number }[];
+  settings: { radius_options: number[]; radius_default: number };
 }
 
 let directoryCache: Promise<Directory> | null = null;
@@ -193,19 +195,13 @@ export async function searchHits(params: Record<string, string>): Promise<Hit[]>
   return ((await response.json()) as { hits: { document: Hit }[] }).hits.map((h) => h.document);
 }
 
-const rad = Math.PI / 180;
-function km(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const h = Math.sin(((b.lat - a.lat) * rad) / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(((b.lng - a.lng) * rad) / 2) ** 2;
-  return 12_742 * Math.asin(Math.sqrt(h));
-}
-
 /** Stores (one per chain, its nearest branch) and the brochures live within the radius. */
 export function nearbyStores(dir: Directory, s: PlanSettings): { stores: Store[]; brochureIds: number[] } {
   const today = new Date().toISOString().slice(0, 10);
   const nearest = new Map<number, Store>();
   const branchIds = new Set<number>();
   for (const b of dir.branches) {
-    const d = s.lat === null || s.lng === null ? 0 : km({ lat: s.lat, lng: s.lng }, b);
+    const d = s.lat === null || s.lng === null ? 0 : distanceKm({ lat: s.lat, lng: s.lng }, b);
     if (s.lat !== null && d > s.radiusKm) continue;
     branchIds.add(b.id);
     if (!nearest.has(b.chain_id) || d < nearest.get(b.chain_id)!.distanceKm) {
@@ -229,10 +225,6 @@ export function toCandidate(hit: Hit): CandidateOffer {
     regularPrice: hit.regular_price,
     unitPrice: hit.effective_unit_price,
     maxPerCustomer: hit.max_per_customer,
-    promo: hit.promo_qty && hit.promo_total
-      ? { type: 'multibuy', qty: hit.promo_qty, total: hit.promo_total }
-      : hit.promo_buy && hit.promo_get
-        ? { type: 'bogo', buy: hit.promo_buy, get: hit.promo_get }
-        : undefined,
+    promo: promoFrom(hit),
   };
 }

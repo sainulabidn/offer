@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { Search } from 'lucide-react';
 import { clearRecentSearches, recentSearches, rememberSearch, suggest, type Suggestions } from '../lib/suggest';
 
 const aed = (n: number) => `AED ${n.toFixed(2)}`;
@@ -51,7 +52,7 @@ export default function SearchBox({ initial = '' }: { initial?: string }) {
   const options: Option[] = [];
 
   if (q.length >= 2) {
-    options.push({ id: 'all', href: searchUrl({ q }), label: q, render: () => <>Search for <strong>“{q}”</strong>{result ? <span className="text-zinc-500"> · {result.found} offers</span> : null}</> });
+    options.push({ id: 'all', href: searchUrl({ q }), label: q, render: () => <>Search for <strong>“{q}”</strong>{result ? <span className="text-muted"> · {result.found} offers</span> : null}</> });
     for (const p of result?.products ?? []) {
       options.push({
         id: `p:${p.href}`,
@@ -59,30 +60,30 @@ export default function SearchBox({ initial = '' }: { initial?: string }) {
         label: p.name,
         render: () => (
           <span className="flex items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded bg-zinc-100 text-zinc-400">
-              {p.image ? <img src={`${p.image}-160.webp`} alt="" width={40} height={40} loading="lazy" className="size-full object-contain" /> : p.name.charAt(0)}
+            <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-sunken text-muted">
+              {p.image ? <img src={`${p.image}-160.webp`} alt="" width={44} height={44} loading="lazy" className="size-full object-contain" /> : p.name.charAt(0)}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate" dangerouslySetInnerHTML={{ __html: p.highlighted }} />
-              <span className="block truncate text-xs text-zinc-500">
+              <span className="block truncate font-medium" dangerouslySetInnerHTML={{ __html: p.highlighted }} />
+              <span className="block truncate text-xs text-muted">
                 {p.variant} · {p.stores > 1 ? `${p.stores} offers, from ${p.chain}` : p.chain}
               </span>
             </span>
             <span className="shrink-0 text-end">
-              <span className="block text-sm font-semibold">{aed(p.price)}</span>
-              {p.unitPrice !== undefined && <span className="block text-xs text-zinc-500">{aed(p.unitPrice)} {p.unitLabel}</span>}
+              <span className="block text-sm font-bold tabular-nums">{aed(p.price)}</span>
+              {p.unitPrice !== undefined && <span className="block text-xs text-muted">{aed(p.unitPrice)} {p.unitLabel}</span>}
             </span>
           </span>
         ),
       });
     }
     const chips = (kind: string, values: string[], href: (v: string) => string) =>
-      values.forEach((v) => options.push({ id: `${kind}:${v}`, href: href(v), label: v, render: () => <><span className="text-zinc-500">{kind}:</span> {v}</> }));
+      values.forEach((v) => options.push({ id: `${kind}:${v}`, href: href(v), label: v, render: () => <><span className="text-muted">{kind}:</span> {v}</> }));
     chips('Brand', result?.brands ?? [], (v) => searchUrl({ brand: v }));
     chips('Store', result?.stores ?? [], (v) => searchUrl({ store: v }));
     chips('Type', (result?.groups ?? []).filter((g) => g.toLowerCase() !== q.toLowerCase()), (v) => searchUrl({ q: v }));
   } else {
-    recent.forEach((r) => options.push({ id: `r:${r}`, href: searchUrl({ q: r }), label: r, render: () => <><span aria-hidden="true" className="me-2 text-zinc-400">↺</span>{r}</> }));
+    recent.forEach((r) => options.push({ id: `r:${r}`, href: searchUrl({ q: r }), label: r, render: () => <><span aria-hidden="true" className="me-2 text-muted">↺</span>{r}</> }));
   }
 
   function go(option: Option) {
@@ -112,13 +113,14 @@ export default function SearchBox({ initial = '' }: { initial?: string }) {
   return (
     <form ref={box} action="/search" method="get" role="search" className="relative flex flex-1" onSubmit={() => rememberSearch(query)}>
       <label htmlFor="site-search" className="sr-only">Search offers</label>
+      <Search className="pointer-events-none absolute start-4 top-1/2 size-5 -translate-y-1/2 text-muted" aria-hidden="true" />
       <input
         id="site-search"
         name="q"
         type="search"
         value={query}
         autoComplete="off"
-        placeholder="Search rice, milk, Almarai…"
+        placeholder="Search milk, eggs, rice…"
         role="combobox"
         aria-expanded={showList}
         aria-controls={listId}
@@ -134,12 +136,11 @@ export default function SearchBox({ initial = '' }: { initial?: string }) {
           setOpen(true);
         }}
         onKeyDown={onKeyDown}
-        className="w-full rounded-s-lg border border-zinc-300 px-3 py-2 text-sm focus:border-brand-600 focus:outline-none"
+        className="input min-h-12 rounded-full ps-12 shadow-card"
       />
-      <button className="rounded-e-lg bg-brand-600 px-4 text-sm font-medium text-white">Search</button>
 
       {showList && (
-        <div className="absolute inset-x-0 top-full z-40 mt-1 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl">
+        <div className="absolute inset-x-0 top-full z-40 mt-2 overflow-hidden rounded-2xl border border-line bg-surface shadow-float">
           <ul id={listId} role="listbox" aria-label="Suggestions" className="max-h-[70vh] overflow-auto py-1 text-sm">
             {options.map((option, i) => (
               <li
@@ -152,14 +153,14 @@ export default function SearchBox({ initial = '' }: { initial?: string }) {
                   e.preventDefault();
                   go(option);
                 }}
-                className={`cursor-pointer px-3 py-2 ${i === active ? 'bg-brand-50' : ''}`}
+                className={`cursor-pointer px-4 py-2.5 ${i === active ? 'bg-primary-soft' : ''}`}
               >
                 {option.render()}
               </li>
             ))}
           </ul>
           {q.length < 2 && recent.length > 0 && (
-            <button type="button" onMouseDown={(e) => { e.preventDefault(); clearRecentSearches(); setRecent([]); }} className="w-full border-t border-zinc-100 px-3 py-2 text-start text-xs text-zinc-500 hover:bg-zinc-50">
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); clearRecentSearches(); setRecent([]); }} className="w-full border-t border-line px-4 py-2.5 text-start text-xs text-muted hover:bg-sunken">
               Clear recent searches
             </button>
           )}

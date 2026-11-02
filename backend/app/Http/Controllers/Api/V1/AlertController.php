@@ -6,6 +6,7 @@ use App\Domain\Alerts\Alert;
 use App\Domain\Catalog\Product;
 use App\Domain\Catalog\ProductGroup;
 use App\Domain\Catalog\ProductVariant;
+use App\Domain\Settings\HomeSettings;
 use App\Http\Controllers\Controller;
 use Clickbar\Magellan\Data\Geometries\Point;
 use Illuminate\Http\JsonResponse;
@@ -33,7 +34,7 @@ class AlertController extends Controller
             'min_discount' => ['nullable', 'integer', 'between:1,90'],
             'lat' => ['nullable', 'numeric', 'between:-90,90', 'required_with:lng'],
             'lng' => ['nullable', 'numeric', 'between:-180,180', 'required_with:lat'],
-            'radius_km' => ['nullable', 'integer', Rule::in([1, 3, 5, 10, 20, 50])],
+            'radius_km' => ['nullable', 'integer', 'between:1,'.HomeSettings::get('radius_max')],
             'place' => ['nullable', 'string', 'max:120'],
         ]);
         (self::MODELS[$data['type']])::query()->findOrFail($data['id']);

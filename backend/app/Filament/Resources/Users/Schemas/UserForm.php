@@ -6,6 +6,7 @@ use App\Domain\Access\Access;
 use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
 use App\Domain\Retail\RetailGroup;
+use App\Domain\Settings\HomeSettings;
 use App\Filament\Resources\Roles\RoleResource;
 use Closure;
 use Filament\Forms\Components\CheckboxList;
@@ -69,6 +70,15 @@ class UserForm
                                 }
                             })
                             ->columns(3),
+                    ]),
+                Section::make('Shopping')
+                    ->description('Overrides what this shopper chose on the website; their devices update the next time they open it. Leave empty for the site defaults.')
+                    ->columns(2)
+                    ->columnSpanFull()
+                    ->visibleOn('edit')
+                    ->schema([
+                        TextInput::make('shopper_radius_km')->label('Stores within (km)')->integer()->minValue(1)->maxValue(fn () => HomeSettings::get('radius_max')),
+                        TextInput::make('shopper_item_radius_km')->label('Items within (km)')->integer()->minValue(1)->maxValue(fn () => HomeSettings::get('radius_max')),
                     ]),
                 Section::make('Stores')
                     ->description('Where they work. Permissions set to "Their stores" apply to these. A group includes all its chains and branches; a chain includes all its branches.')

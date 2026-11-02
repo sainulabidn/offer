@@ -7,21 +7,32 @@ export interface OfferHit {
   product_id: number;
   product_slug: string;
   product_name: string;
+  variant_id: number;
   variant_slug: string;
   variant_label: string;
   brand?: string;
   product_group: string;
+  product_group_id: number;
   chain_id: number;
   chain_name: string;
   chain_slug: string;
+  chain_grade: number;
+  item_grade: number;
   brochure_id: number;
   price: number;
   regular_price?: number;
+  /** Other stores' usual prices, JSON: [[chain id, price, "2026-10-12"], …]. */
+  usual_prices?: string;
   effective_unit_price?: number;
   unit_label?: string;
   discount_pct?: number;
   promo_type: string;
   promo_label?: string;
+  promo_qty?: number;
+  promo_total?: number;
+  promo_buy?: number;
+  promo_get?: number;
+  card_required?: boolean;
   valid_to: number;
   like_count: number;
   under_review?: boolean;
@@ -30,6 +41,8 @@ export interface OfferHit {
   was_price_suspicious?: boolean;
   /** Base URL of the product photo; append "-{width}.avif|webp". */
   image?: string;
+  /** Emoji for the card when there's no photo. */
+  icon?: string;
 }
 
 export interface Facet {
@@ -44,9 +57,14 @@ export interface OfferSearch {
   page?: number;
   perPage?: number;
   facets?: string[];
+  /** One result per value of this field, the first by the sort order (the cheapest, sorting by rank). */
+  groupBy?: string;
+  /** Only these fields, to keep a large response small. */
+  fields?: string;
 }
 
 export const SORTS = {
+  rank: { label: 'Most useful', by: 'product_rank:desc,effective_unit_price:asc' },
   deal: { label: 'Biggest discount', by: 'discount_pct:desc' },
   unit: { label: 'Cheapest per unit', by: 'effective_unit_price:asc' },
   price: { label: 'Lowest price', by: 'price:asc' },
@@ -70,7 +88,7 @@ async function searchConfig() {
 /** Typesense filter values need backticks when they contain spaces or commas. */
 export const filterValue = (value: string) => '`' + value.replaceAll('`', '') + '`';
 
-export async function searchOffers({ q = '', filters = [], sort = 'deal', page = 1, perPage = 24, facets = [] }: OfferSearch) {
+export async function searchOffers({ q = '', filters = [], sort = 'deal', page = 1, perPage = 24, facets = [], groupBy, fields }: OfferSearch) {
   const { key, collection } = await searchConfig();
   const params = new URLSearchParams({
     q: q.trim() || '*',
@@ -87,14 +105,22 @@ export async function searchOffers({ q = '', filters = [], sort = 'deal', page =
     params.set('facet_by', facets.join(','));
     params.set('max_facet_values', '20');
   }
+  if (groupBy) {
+    params.set('group_by', groupBy);
+    params.set('group_limit', '1');
+  }
+  if (fields) params.set('include_fields', fields);
 
+  // cf: the same query from many shoppers near each other is answered by the edge for a minute.
   const response = await fetch(`${TYPESENSE_URL}/collections/${collection}/documents/search?${params}`, {
     headers: { 'X-TYPESENSE-API-KEY': key },
-  });
+    cf: { cacheEverything: true, cacheTtl: 60 },
+  } as RequestInit);
   if (!response.ok) throw new Error(`Search failed with ${response.status}`);
   const body = (await response.json()) as {
     found: number;
-    hits: { document: OfferHit }[];
+    hits?: { document: OfferHit }[];
+    grouped_hits?: { hits: { document: OfferHit }[] }[];
     facet_counts?: { field_name: string; counts: { value: string; count: number }[] }[];
   };
 
@@ -102,7 +128,7 @@ export async function searchOffers({ q = '', filters = [], sort = 'deal', page =
     found: body.found,
     page,
     pages: Math.max(1, Math.ceil(body.found / perPage)),
-    hits: body.hits.map((hit) => hit.document),
+    hits: groupBy ? (body.grouped_hits ?? []).map((group) => group.hits[0].document) : (body.hits ?? []).map((hit) => hit.document),
     facets: (body.facet_counts ?? []).map((f) => ({ field: f.field_name, values: f.counts })) as Facet[],
   };
 }

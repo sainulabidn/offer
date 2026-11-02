@@ -1,0 +1,14 @@
+---
+import type { Category } from '../lib/api';
+
+const { categories } = Astro.props as { categories: Category[] };
+---
+
+<nav class="rail gap-2" aria-label="Categories">
+  {categories.map((category) => (
+    <a href={`/c/${category.slug}`} class="group flex w-[4.75rem] flex-col items-center gap-1.5 text-center">
+      <span aria-hidden="true" class="card grid size-14 place-items-center rounded-2xl text-[1.625rem] transition group-hover:border-primary">{category.icon ?? category.name.charAt(0)}</span>
+      <span class="line-clamp-2 text-xs/tight font-medium">{category.name}</span>
+    </a>
+  ))}
+</nav>

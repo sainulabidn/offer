@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Chains\Tables;
 
 use App\Domain\Retail\ChainFormat;
 use App\Filament\Support\Fields;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -19,15 +20,22 @@ class ChainsTable
             ->columns([
                 Fields::nameColumn(),
                 TextColumn::make('format')->badge(),
+                Fields::gradeColumn(Fields::STORE_GRADES)->selectablePlaceholder(false),
                 TextColumn::make('retailGroup.name')->label('Group'),
                 TextColumn::make('branches_count')->label('Branches')->sortable(),
                 IconColumn::make('is_active')->boolean(),
             ])
             ->filters([
                 SelectFilter::make('format')->options(ChainFormat::class),
+                Fields::gradeFilter(Fields::STORE_GRADES),
             ])
             ->recordActions([
                 EditAction::make(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    Fields::gradeBulkAction(Fields::STORE_GRADES),
+                ]),
             ]);
     }
 }

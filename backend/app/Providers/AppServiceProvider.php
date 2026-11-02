@@ -10,10 +10,12 @@ use App\Domain\Catalog\Product;
 use App\Domain\Catalog\ProductGroup;
 use App\Domain\Catalog\ProductVariant;
 use App\Domain\Offers\Offer;
+use App\Domain\Offers\RegularPrice;
 use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
 use App\Domain\Retail\RetailGroup;
 use App\Domain\Search\Synonym;
+use App\Domain\Settings\SiteSetting;
 use App\Http\Responses\PasskeySignedIn;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -66,6 +68,8 @@ class AppServiceProvider extends ServiceProvider
             'brand' => Brand::class,
             'product_group' => ProductGroup::class,
             'synonym' => Synonym::class,
+            'site_setting' => SiteSetting::class,
+            'regular_price' => RegularPrice::class,
             'role' => Role::class,
         ]);
 
@@ -77,6 +81,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('login-verify', fn (Request $request) => Limit::perMinute(10)->by($request->ip()));
         RateLimiter::for('reports', fn (Request $request) => Limit::perHour(30)->by($request->user('sanctum')?->id ?: $request->ip()));
         RateLimiter::for('account', fn (Request $request) => Limit::perMinute(120)->by($request->user()?->id ?: $request->ip()));
+        RateLimiter::for('events', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
 
         // Catch lazy loading, silently discarded attributes and missing attributes while developing.
         Model::shouldBeStrict(! $this->app->isProduction());

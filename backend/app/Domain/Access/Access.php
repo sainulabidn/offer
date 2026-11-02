@@ -127,6 +127,7 @@ final class Access
             // Branch-only users see (not edit) their branches' chains, e.g. to add a brochure for their branch.
             'chains' => $query->whereIn("{$table}.id", $action === 'view' ? $stores->chainsToPick : $stores->chainIds),
             'branches' => $query->whereIn("{$table}.id", $stores->branchIds),
+            'shelf_prices' => $query->whereIn("{$table}.chain_id", $stores->chainIds),
             // A brochure of their chain, or one that covers one of their branches.
             'brochures' => $query->whereIn("{$table}.chain_id", $stores->chainIds)
                 ->orWhereHas('branches', fn (Builder $q) => $q->whereIn('branches.id', $stores->branchIds)),

@@ -1,11 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import { compare, lineCost, type CandidateOffer, type PlanItem, type Store } from './index';
+import { compare, lineCost, packPrice, promoFrom, type CandidateOffer, type PlanItem, type Store } from './index';
 
 const offer = (o: Partial<CandidateOffer> & Pick<CandidateOffer, 'id' | 'chainId' | 'price'>): CandidateOffer => ({
   variantId: 1,
   productGroupId: 10,
   label: 'Item',
   ...o,
+});
+
+describe('packPrice', () => {
+  it('is the price itself with no promotion', () => {
+    expect(packPrice({ price: 9.95 })).toBe(9.95);
+  });
+
+  it('spreads "2 for 10" over the packs, so it beats a 5.50 single price', () => {
+    expect(packPrice({ price: 6, promo: { type: 'multibuy', qty: 2, total: 10 } })).toBe(5);
+  });
+
+  it('spreads "buy 2 get 1 free" over all three', () => {
+    expect(packPrice({ price: 9, promo: { type: 'bogo', buy: 2, get: 1 } })).toBe(6);
+  });
+});
+
+describe('promoFrom', () => {
+  it('reads the promotion stored on a search result', () => {
+    expect(promoFrom({ promo_qty: 2, promo_total: 10 })).toEqual({ type: 'multibuy', qty: 2, total: 10 });
+    expect(promoFrom({ promo_buy: 2, promo_get: 1 })).toEqual({ type: 'bogo', buy: 2, get: 1 });
+    expect(promoFrom({})).toBeUndefined();
+  });
 });
 
 describe('lineCost', () => {

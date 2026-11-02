@@ -1,0 +1,9 @@
+---
+// The mark and wordmark. Swap this file and public/favicon.svg when a professional logo arrives.
+const { class: className = '' } = Astro.props;
+---
+
+<span class:list={['inline-flex items-center gap-2', className]}>
+  <img src="/favicon.svg" alt="" width="30" height="30" class="size-[1.875rem]" />
+  <span class="text-[1.4rem] leading-none font-extrabold tracking-tight text-primary">offer</span>
+</span>

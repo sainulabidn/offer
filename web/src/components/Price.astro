@@ -1,0 +1,11 @@
+---
+interface Props {
+  value: number;
+  class?: string;
+}
+
+const { value, class: className = '' } = Astro.props;
+const [dirhams, fils] = value.toFixed(2).split('.');
+---
+
+<span class:list={['price', className]}><span class="price-cur">AED</span>{dirhams}<span class="price-fils">.{fils}</span></span>

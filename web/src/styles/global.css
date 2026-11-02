@@ -1,8 +1,301 @@
 @import "tailwindcss";
+@import "@fontsource-variable/figtree";
 
+/* Fresh market: warm cream, deep green, coral for savings. Components use these names, never raw colours,
+   so light and dark share one set of classes. Text pairs meet WCAG AA (4.5:1). */
 @theme {
-  --color-brand-50: oklch(97% 0.03 150);
-  --color-brand-600: oklch(55% 0.15 150);
-  --color-brand-700: oklch(47% 0.14 150);
-  --color-deal: oklch(58% 0.21 27);
+  --font-sans: "Figtree Variable", "Figtree Fallback", ui-sans-serif, system-ui, sans-serif;
+
+  --color-canvas: #faf7f0;
+  --color-surface: #ffffff;
+  --color-sunken: #f3eee3;
+  --color-line: #e7e0d2;
+  --color-ink: #17231d;
+  --color-muted: #56635b;
+
+  --color-primary: #0f5c3f;
+  --color-primary-strong: #0a4630;
+  --color-on-primary: #fdfbf6;
+  --color-primary-soft: #e2f1e9;
+  --color-link: #0f6a48;
+
+  /* Coral #e8593c only reaches 3.6:1 under small white text, so small savings use this darker one. */
+  --color-save: #bb3d25;
+  --color-save-fill: #c8432b;
+  --color-on-save: #ffffff;
+  --color-save-soft: #fdebe5;
+
+  --color-warn: #8a5a0b;
+  --color-warn-soft: #fbf1da;
+
+  --shadow-card: 0 1px 2px rgb(38 44 34 / 0.04), 0 8px 24px -12px rgb(38 44 34 / 0.14);
+  --shadow-float: 0 2px 6px rgb(38 44 34 / 0.08), 0 16px 40px -16px rgb(38 44 34 / 0.28);
+
+  --radius-card: 1.25rem;
+
+  /* Older names, used by pages not yet moved to the new design. */
+  --color-brand-50: var(--color-primary-soft);
+  --color-brand-600: var(--color-primary);
+  --color-brand-700: var(--color-link);
+  --color-deal: var(--color-save);
+}
+
+/* Follows the phone's setting with CSS only, so edge-cached pages are right for everyone. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --color-canvas: #0d1512;
+    --color-surface: #16211c;
+    --color-sunken: #1d2b25;
+    --color-line: #2b3b33;
+    --color-ink: #eef2ec;
+    --color-muted: #a9b5ad;
+
+    --color-primary: #41c08c;
+    --color-primary-strong: #5ad2a0;
+    --color-on-primary: #06201a;
+    --color-primary-soft: #16362b;
+    --color-link: #74dbb0;
+
+    --color-save: #ff9d84;
+    --color-save-fill: #e8593c;
+    --color-on-save: #190704;
+    --color-save-soft: #3b1f18;
+
+    --color-warn: #f0c469;
+    --color-warn-soft: #36290f;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-float: 0 12px 32px -12px rgb(0 0 0 / 0.7);
+  }
+}
+
+/* Arial shaped like Figtree, so text doesn't jump when the font arrives. */
+@font-face {
+  font-family: "Figtree Fallback";
+  src: local("Arial");
+  size-adjust: 98%;
+  ascent-override: 95%;
+  descent-override: 25%;
+  line-gap-override: 0%;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+    scroll-padding-top: 6rem;
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-size: 0.9375rem;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.015em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  dialog {
+    color: inherit;
+  }
+}
+
+/* Shared by Astro pages and React islands, so both look the same without two sets of components. */
+@layer components {
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-[0.9375rem] font-semibold transition select-none active:scale-[0.98] disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-on-primary hover:bg-primary-strong;
+  }
+
+  .btn-quiet {
+    @apply border border-line bg-surface text-ink hover:bg-sunken;
+  }
+
+  .link {
+    @apply font-semibold text-link hover:underline;
+  }
+
+  .chip {
+    @apply inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 text-sm font-medium text-ink transition hover:border-primary;
+  }
+
+  .chip-on {
+    @apply border-primary bg-primary-soft font-semibold text-link;
+  }
+
+  .card {
+    @apply rounded-(--radius-card) border border-line/70 bg-surface shadow-card;
+  }
+
+  /* 16px text: iPhones zoom the whole page when focusing anything smaller. */
+  .input {
+    @apply min-h-11 w-full rounded-xl border border-line bg-surface px-3.5 text-base text-ink placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/25 focus:outline-none;
+  }
+
+  .rail {
+    @apply -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pt-1 pb-3;
+    scrollbar-width: none;
+    /* Without this, snapping hides the padding before the first item. */
+    scroll-padding-inline: 1rem;
+  }
+
+  .rail > * {
+    @apply shrink-0 snap-start;
+  }
+
+  /* Swiping is for phones; on a big screen everything fits by wrapping. */
+  @media (min-width: 48rem) {
+    .rail {
+      @apply mx-0 flex-wrap overflow-visible px-0;
+    }
+  }
+
+  .rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold;
+  }
+
+  .badge-save {
+    @apply bg-save-fill text-on-save;
+  }
+
+  .badge-good {
+    @apply bg-primary-soft text-link;
+  }
+
+  .badge-warn {
+    @apply bg-warn-soft text-warn;
+  }
+
+  /* AED small, dirhams big, fils small: the eye lands on the number. */
+  .price {
+    @apply inline-flex items-baseline font-bold tabular-nums;
+    font-feature-settings: "tnum";
+    letter-spacing: -0.02em;
+  }
+
+  .price-cur {
+    @apply me-[0.25em] text-[0.55em] font-semibold tracking-normal opacity-70;
+  }
+
+  .price-fils {
+    @apply text-[0.65em];
+  }
+
+  .hero {
+    background:
+      radial-gradient(70% 120% at 100% 0%, rgb(58 176 124 / 0.55) 0%, transparent 60%),
+      radial-gradient(60% 90% at 0% 100%, rgb(232 89 60 / 0.22) 0%, transparent 65%),
+      #0f5c3f;
+    color: #fdfbf6;
+  }
+
+  .sticker {
+    @apply grid place-items-center rounded-2xl bg-white/95 shadow-float;
+  }
+
+  /* Soft colours for store initials and photo-less products, picked by name. */
+  .tint-0 { background: #e2f1e9; color: #0f5c3f; }
+  .tint-1 { background: #fdebe5; color: #a83a22; }
+  .tint-2 { background: #fbf1da; color: #7a5208; }
+  .tint-3 { background: #e4eefa; color: #1f4f85; }
+  .tint-4 { background: #f0e8f7; color: #5f3a86; }
+  .tint-5 { background: #e3f3f4; color: #17666b; }
+
+  /* Native <dialog>, which gives focus handling and Esc for free: a sheet on phones, a panel on desktop. */
+  .sheet {
+    @apply fixed inset-x-0 top-auto bottom-0 m-0 max-h-[92dvh] w-full max-w-none overflow-y-auto rounded-t-3xl border-0 bg-surface p-0 text-ink shadow-float;
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s, overlay 0.28s allow-discrete, display 0.28s allow-discrete;
+    transform: translateY(100%);
+  }
+
+  .sheet[open] {
+    transform: none;
+  }
+
+  @starting-style {
+    .sheet[open] {
+      transform: translateY(100%);
+    }
+  }
+
+  .sheet::backdrop {
+    background: rgb(15 20 17 / 0.5);
+    backdrop-filter: blur(2px);
+  }
+
+  @media (min-width: 48rem) {
+    .sheet {
+      @apply inset-0 m-auto max-h-[85dvh] w-[min(30rem,92vw)] rounded-3xl;
+      transform: translateY(1rem);
+      opacity: 0;
+    }
+
+    .sheet[open] {
+      opacity: 1;
+    }
+
+    @starting-style {
+      .sheet[open] {
+        transform: translateY(1rem);
+        opacity: 0;
+      }
+    }
+  }
+
+  .skeleton {
+    @apply rounded-xl bg-sunken;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    50% {
+      opacity: 0.55;
+    }
+  }
+}
+
+/* Pages fade into each other without JavaScript where the browser supports it; others just navigate.
+   The top bar and bottom menu stay still. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.18s;
+  }
+}
+
+.app-bar {
+  view-transition-name: app-bar;
+}
+
+.tab-bar {
+  view-transition-name: tab-bar;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

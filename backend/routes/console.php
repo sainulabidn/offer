@@ -1,13 +1,18 @@
 <?php
 
 use App\Domain\Alerts\WeeklyDigest;
+use App\Domain\Catalog\EssentialGrades;
+use App\Domain\Engagement\Counters;
 use App\Domain\Engagement\Likes;
+use App\Domain\Geo\ImportPlaceNames;
 use App\Domain\Offers\ExpireOffers;
 use App\Domain\Offers\Offer;
 use App\Domain\Search\OfferDocument;
+use App\Domain\Search\RankSync;
 use App\Domain\Search\SearchKeys;
 use App\Domain\Search\Synonyms;
 use Database\Seeders\DemoCatalogSeeder;
+use Database\Seeders\DemoNearbySeeder;
 use Database\Seeders\DemoOffersSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -38,6 +43,30 @@ Artisan::command('search:sync-synonyms', function (Synonyms $synonyms) {
 // Saves sync straight away; this catches up after a search outage or a rebuilt collection.
 Schedule::command('search:sync-synonyms')->hourly()->withoutOverlapping();
 
+Artisan::command('search:sync-rank', function (RankSync $sync) {
+    $result = $sync();
+    $this->info("Ranked {$result['products']} products; {$result['offers']} offers updated in search.");
+})->purpose('Recompute product popularity and rank, and push changes to Typesense');
+
+Schedule::command('search:sync-rank')->everyThirtyMinutes()->withoutOverlapping();
+
+Artisan::command('catalog:grade-essentials', function (EssentialGrades $grades) {
+    $this->info("Graded {$grades()} product groups as daily essentials.");
+})->purpose('Give ungraded product groups for daily essentials grade 1');
+
+// New catalog imports leave groups ungraded; a grade set in the admin is never changed.
+Schedule::command('catalog:grade-essentials')->dailyAt('03:30')->timezone(config('app.market_timezone'))->withoutOverlapping();
+
+Artisan::command('places:import', function (ImportPlaceNames $import) {
+    $this->info("The location search now lists {$import()} places.");
+})->purpose('Load the UAE place list for the location search');
+
+Artisan::command('engagement:prune', function (Counters $counters) {
+    $this->info("Removed {$counters->prune()} old count rows.");
+})->purpose('Delete public view counts older than the retention period');
+
+Schedule::command('engagement:prune')->dailyAt('03:45')->timezone(config('app.market_timezone'))->withoutOverlapping();
+
 Artisan::command('digest:weekly', function (WeeklyDigest $digest) {
     $this->info('Sent '.$digest->send().' weekly digest emails.');
 })->purpose('Email each shopper this week\'s deals on products they like');
@@ -53,20 +82,21 @@ if (config('queue.cron_worker')) {
 Artisan::command('demo:seed', function () {
     $this->call('db:seed', ['--class' => DemoCatalogSeeder::class, '--force' => true]);
     $this->call('db:seed', ['--class' => DemoOffersSeeder::class, '--force' => true]);
-})->purpose('Load the demo catalog, store and offers (for staging servers)');
+    $this->call('db:seed', ['--class' => DemoNearbySeeder::class, '--force' => true]);
+})->purpose('Load the demo catalog, stores and offers (for staging servers)');
 
 Artisan::command('media:copy {from=public} {--to=}', function (string $from) {
     // Moving product photos between disks (e.g. local "public" → "r2"): copy, then re-index so cards get the new URLs.
     $source = Storage::disk($from);
     $target = Storage::disk($this->option('to') ?: config('filesystems.media_disk'));
     $copied = 0;
-    foreach ($source->allFiles('products') as $path) {
+    foreach ([...$source->allFiles('products'), ...$source->allFiles('logos')] as $path) {
         if (! $target->exists($path)) {
             $target->put($path, $source->get($path), ['visibility' => 'public', 'CacheControl' => 'public, max-age=31536000, immutable']);
             $copied++;
         }
     }
     $this->info("Copied {$copied} files.");
-    Offer::query()->live()->with(OfferDocument::RELATIONS)->chunkById(500, fn ($offers) => $offers->searchable());
+    Offer::query()->live()->with(OfferDocument::RELATIONS)->chunkById(500, fn ($offers) => Offer::syncSearch($offers));
     $this->info('Re-indexed live offers.');
 })->purpose('Copy product photos to the media disk (or --to) and re-index offers');

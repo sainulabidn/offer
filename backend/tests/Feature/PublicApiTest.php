@@ -68,5 +68,6 @@ it('hands out a scoped search key that can search but not write', function () {
         ->post('http://typesense:8108/collections/test_offers/documents', ['id' => '999']);
 
     expect($search->json('found'))->toBe(2)
+        ->and($search->json('hits.0.document'))->toHaveKey('product_name')->not->toHaveKey('locations')
         ->and($write->status())->toBe(401);
 });

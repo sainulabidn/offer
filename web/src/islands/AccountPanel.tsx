@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { call, isSignedIn, markSignedOut, signInUrl } from '../lib/account';
 import { addPasskey, listPasskeys, passkeyError, passkeysSupported, removePasskey, type PasskeyRow } from '../lib/passkeys';
+import { forgetThisDevice } from '../lib/places';
 
 interface AlertRow {
   id: number;
@@ -33,6 +34,7 @@ export default function AccountPanel() {
   async function signOut() {
     await call('POST', 'auth/logout').catch(() => null);
     markSignedOut();
+    forgetThisDevice();
     location.href = '/';
   }
 

@@ -6,12 +6,15 @@ use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\ChainController;
 use App\Http\Controllers\Api\V1\DirectoryController;
 use App\Http\Controllers\Api\V1\EngagementController;
+use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\PasskeyController;
 use App\Http\Controllers\Api\V1\PlanController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ShopperController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passkeys\Http\Controllers\PasskeyLoginController;
 use Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 Route::prefix('v1')->group(function () {
     // Public, cacheable reads. The website renders at the edge and caches these, so the limit is generous.
@@ -23,6 +26,7 @@ Route::prefix('v1')->group(function () {
         Route::get('products/{slug}', [ProductController::class, 'show']);
         Route::get('products/{slug}/history', [ProductController::class, 'history']);
         Route::get('directory', DirectoryController::class);
+        Route::get('places', [ShopperController::class, 'placeNames']);
         Route::get('sitemap', [CatalogController::class, 'sitemap']);
     });
 
@@ -43,6 +47,11 @@ Route::prefix('v1')->group(function () {
         });
     });
 
+    // Anonymous counts. Without the stateful middleware there is no session row, cookie or CSRF check per beacon.
+    Route::post('events', EventController::class)
+        ->withoutMiddleware(EnsureFrontendRequestsAreStateful::class)
+        ->middleware('throttle:events');
+
     // Reports are open to guests (Turnstile-checked), but rate limited.
     Route::post('reports', [EngagementController::class, 'report'])->middleware('throttle:reports');
 
@@ -62,5 +71,11 @@ Route::prefix('v1')->group(function () {
         Route::delete('plans/{plan}', [PlanController::class, 'destroy']);
         Route::post('plans/{plan}/share', [PlanController::class, 'share']);
         Route::post('shared-plans/{token}/join', [PlanController::class, 'join']);
+        Route::get('me/preferences', [ShopperController::class, 'preferences']);
+        Route::put('me/preferences', [ShopperController::class, 'savePreferences']);
+        Route::get('me/places', [ShopperController::class, 'places']);
+        Route::delete('me/places', [ShopperController::class, 'deletePlaces']);
+        Route::put('me/places/{id}', [ShopperController::class, 'savePlace']);
+        Route::delete('me/places/{id}', [ShopperController::class, 'deletePlace']);
     });
 });

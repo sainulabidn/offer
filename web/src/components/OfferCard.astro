@@ -1,45 +1,95 @@
 ---
-// One store's offer, shown like an online-shop product card. Plain HTML; only the like button hydrates.
+// One store's offer, shown like an online-shop product card. Plain HTML; the like button hydrates,
+// and "add to plan" is handled by one listener for the whole page (lib/quick-add.ts).
+import { Plus } from 'lucide-react';
 import LikeButton from '../islands/LikeButton';
+import Price from './Price.astro';
 import ResponsiveImage from './ResponsiveImage.astro';
+import StoreLogo from './StoreLogo.astro';
+import type { ComparePrice } from '../lib/feed';
 import type { OfferHit } from '../lib/search';
-import { aed, endsIn } from '../lib/format';
+import { aed, distanceLabel, endsIn, shortDate, tintFor } from '../lib/format';
 
-const { offer, nearest } = Astro.props as { offer: OfferHit; nearest?: { km: number; branch: string } };
+interface Props {
+  offer: OfferHit;
+  nearest?: { km: number; branch: string };
+  /** Other stores' prices for the same pack. */
+  compare?: ComparePrice[];
+}
+
+const { offer, nearest, compare = [] } = Astro.props;
 const href = `/products/${offer.product_slug}?variant=${encodeURIComponent(offer.variant_slug)}`;
+const saving = offer.regular_price && offer.regular_price > offer.price ? offer.regular_price - offer.price : 0;
 ---
 
-<article class="relative flex flex-col rounded-xl border border-zinc-200 bg-white p-3 shadow-xs transition hover:shadow-md">
-  <div class="relative mb-3 grid aspect-square place-items-center overflow-hidden rounded-lg bg-zinc-100 text-3xl text-zinc-300">
+<article class="card relative flex flex-col overflow-hidden transition hover:shadow-float">
+  <div class:list={['relative grid aspect-[3/2] place-items-center overflow-hidden', offer.image ? 'bg-white' : tintFor(offer.product_group)]}>
     {offer.image ? (
-      <ResponsiveImage base={offer.image} alt="" sizes="(min-width: 1280px) 15vw, (min-width: 1024px) 20vw, (min-width: 640px) 30vw, 45vw" class="size-full object-contain" />
+      <ResponsiveImage base={offer.image} alt="" sizes="(min-width: 1280px) 15vw, (min-width: 1024px) 20vw, (min-width: 640px) 30vw, 45vw" class="size-full object-contain p-2" />
     ) : (
-      <span aria-hidden="true">{offer.product_name.charAt(0)}</span>
+      <span aria-hidden="true" class="text-[3.25rem] leading-none drop-shadow-sm">{offer.icon ?? offer.product_name.charAt(0)}</span>
     )}
     {offer.discount_pct && offer.discount_pct >= 1 && (
-      <span class="absolute start-2 top-2 rounded-md bg-deal px-1.5 py-0.5 text-xs font-semibold text-white">-{Math.round(offer.discount_pct)}%</span>
+      <span class="badge badge-save absolute start-2 top-2">-{Math.round(offer.discount_pct)}%</span>
     )}
+    <div class="absolute end-2 top-2 z-10">
+      <LikeButton client:visible target={`offer:${offer.id}`} />
+    </div>
   </div>
-  <div class="absolute end-5 top-5 z-10">
-    <LikeButton client:visible target={`offer:${offer.id}`} />
-  </div>
-  <p class="text-xs font-medium text-brand-700">
-    {offer.chain_name}{nearest && <span class="font-normal text-zinc-500"> · {nearest.km < 1 ? '<1' : nearest.km.toFixed(1)} km, {nearest.branch}</span>}
-  </p>
-  <h3 class="line-clamp-2 text-sm font-medium">
-    <a href={href} class="after:absolute after:inset-0">{offer.product_name}</a>
-  </h3>
-  <p class="text-xs text-zinc-500">{offer.variant_label}</p>
-  <div class="mt-auto pt-2">
-    <p class="text-lg font-bold">
-      {aed(offer.price)}
-      {offer.regular_price && offer.regular_price > offer.price && <s class="ms-1 text-xs font-normal text-zinc-400">{offer.regular_price.toFixed(2)}</s>}
+
+  <div class="flex flex-1 flex-col p-3">
+    <p class="mb-1 flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted">
+      <StoreLogo name={offer.chain_name} class="size-5 text-[0.5rem]" />
+      <span class="min-w-0 truncate">{offer.chain_name}</span>
+      {nearest && <span class="ms-auto shrink-0">{distanceLabel(nearest.km)}</span>}
     </p>
-    {offer.promo_label && <p class="text-xs font-semibold text-deal">{offer.promo_label}</p>}
-    {offer.is_lowest_90d && <p class="text-xs font-semibold text-brand-700">Lowest in 90 days</p>}
-    {offer.under_review &&<p class="text-xs font-medium text-amber-700">Being checked: shoppers reported this price</p>}
-    <p class="text-xs text-zinc-600">
-      {offer.effective_unit_price && <>{aed(offer.effective_unit_price)} {offer.unit_label} · </>}{endsIn(offer.valid_to)}
-    </p>
+    <h3 class="line-clamp-2 text-sm/snug font-semibold">
+      <a href={href} data-click={`product:${offer.product_id} chain:${offer.chain_id}`} class="after:absolute after:inset-0">{offer.product_name}</a>
+    </h3>
+    <p class="mt-0.5 text-xs text-muted">{offer.variant_label}</p>
+
+    <div class="mt-auto pt-2">
+      <div class="flex items-end justify-between gap-2">
+        <div class="min-w-0">
+          <p class="flex flex-wrap items-baseline gap-x-1.5">
+            <Price value={offer.price} class="text-[1.375rem] leading-tight" />
+            {saving > 0 && <s class="text-xs text-muted">{offer.regular_price?.toFixed(2)}</s>}
+          </p>
+          {offer.effective_unit_price && <p class="text-xs text-muted tabular-nums">{aed(offer.effective_unit_price)} {offer.unit_label}</p>}
+        </div>
+        <button
+          type="button"
+          data-add-plan
+          data-variant={offer.variant_id}
+          data-product={offer.product_id}
+          data-group={offer.product_group_id}
+          data-label={`${offer.product_name} · ${offer.variant_label}`}
+          aria-label={`Add ${offer.product_name} to my plan`}
+          class="relative z-10 -mb-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-primary text-on-primary transition hover:bg-primary-strong active:scale-95"
+        >
+          <Plus class="size-5" aria-hidden="true" />
+        </button>
+      </div>
+
+      {offer.promo_label && <p class="mt-1 text-xs font-semibold text-save">{offer.promo_label}</p>}
+      {offer.card_required && <p class="mt-1 text-xs font-medium text-muted">With loyalty card</p>}
+      {offer.is_lowest_90d && <p class="mt-1 text-xs font-semibold text-link">Lowest in 90 days</p>}
+      {offer.under_review && <p class="mt-1 text-xs font-medium text-warn">Being checked: shoppers reported this price</p>}
+
+      {compare.length > 0 && (
+        <ul class="mt-2 space-y-0.5 border-t border-line/70 pt-2 text-xs text-muted">
+          {compare.map((other) => (
+            <li class="flex items-baseline justify-between gap-2">
+              <span class="truncate">{other.chain}{other.card && ' (card)'}</span>
+              <span class="shrink-0 font-semibold tabular-nums">
+                {other.usualOn && <span class="font-normal">usual {shortDate(other.usualOn)} · </span>}{other.price.toFixed(2)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+
+    <p class="mt-2 text-xs text-muted">{endsIn(offer.valid_to)}</p>
   </div>
 </article>

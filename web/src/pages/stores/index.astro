@@ -1,0 +1,37 @@
+---
+import { distanceKm } from '@offer/rank';
+import Base from '../../layouts/Base.astro';
+import StoreLogo from '../../components/StoreLogo.astro';
+import { directory, placeOf, storeCards } from '../../lib/near';
+import { cacheFor, distanceLabel } from '../../lib/format';
+
+const dir = await directory();
+const place = placeOf(dir, Astro.locals.prefs);
+const here = place.rough ? null : place.at;
+
+const stores = storeCards(dir)
+  .map((store) => ({ ...store, km: here ? distanceKm(here, store) : null }))
+  .sort((a, b) => (a.km ?? 0) - (b.km ?? 0) || a.grade - b.grade || a.chain.localeCompare(b.chain));
+
+cacheFor(Astro.response.headers);
+---
+
+<Base title="Stores near you · offer" description="Every supermarket on offer, with this week's deals at each branch.">
+  <h1 class="text-2xl font-bold">Stores{here && place.name ? ` near ${place.name}` : ''}</h1>
+  <p class="mt-1 mb-4 text-sm text-muted">{stores.length} stores{here ? ', nearest first' : ''}</p>
+
+  <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    {stores.map((store) => (
+      <li>
+        <a href={`/stores/${store.chainSlug}`} class="card flex items-center gap-3 p-3 transition hover:border-primary">
+          <StoreLogo name={store.chain} logo={store.logo} class="size-12 text-sm" />
+          <span class="min-w-0 flex-1">
+            <span class="block truncate font-semibold">{store.chain}</span>
+            <span class="block truncate text-sm text-muted">{store.name}{store.km !== null && ` · ${distanceLabel(store.km)}`}</span>
+          </span>
+          <span class="badge badge-good shrink-0">{store.offers} {store.offers === 1 ? 'offer' : 'offers'}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</Base>

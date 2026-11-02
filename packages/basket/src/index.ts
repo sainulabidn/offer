@@ -93,6 +93,20 @@ export function lineCost(offer: CandidateOffer, quantity: number): number {
   return money(cost);
 }
 
+/** What one pack really costs under the offer: "2 for AED 10" is AED 5 each, when buying the 2. */
+export function packPrice(offer: Pick<CandidateOffer, 'price' | 'promo'>): number {
+  const promo = offer.promo;
+  const qty = promo?.type === 'multibuy' ? promo.qty : promo?.type === 'bogo' ? promo.buy + promo.get : 1;
+  return money(lineCost(offer as CandidateOffer, Math.max(qty, 1)) / Math.max(qty, 1));
+}
+
+/** The promotion stored on a search result, if it has one the maths understands. */
+export function promoFrom(hit: { promo_qty?: number; promo_total?: number; promo_buy?: number; promo_get?: number }): Promo | undefined {
+  if (hit.promo_qty && hit.promo_total) return { type: 'multibuy', qty: hit.promo_qty, total: hit.promo_total };
+  if (hit.promo_buy && hit.promo_get) return { type: 'bogo', buy: hit.promo_buy, get: hit.promo_get };
+  return undefined;
+}
+
 function matches(item: PlanItem, offer: CandidateOffer): boolean {
   return 'variantId' in item.match ? offer.variantId === item.match.variantId : offer.productGroupId === item.match.productGroupId;
 }

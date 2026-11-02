@@ -3,8 +3,7 @@
 import OfferGrid from './OfferGrid.astro';
 import Pagination from './Pagination.astro';
 import { SORTS, filterValue, searchOffers, type SortKey } from '../lib/search';
-import { directory, nearbyBrochures, parseNear } from '../lib/near';
-import LocationPicker from '../islands/LocationPicker';
+import { directory, itemFilters, itemRadius, nearestBranches, placeOf } from '../lib/near';
 
 interface Props {
   title: string;
@@ -27,11 +26,13 @@ if (brands.length) filters.push(`brand:[${brands.map(filterValue).join(',')}]`);
 if (cardOnly) filters.push('card_required:true');
 if (minDiscount) filters.push(`discount_pct:>=${minDiscount}`);
 
-// "Near me": keep only brochures live at a branch inside the radius.
-const near = parseNear(Astro.url);
+// "Near me": keep only offers at a branch inside the shopper's item radius.
+const prefs = Astro.locals.prefs;
 const dir = await directory();
-const nearby = near ? nearbyBrochures(dir, near) : null;
-if (nearby) filters.push(nearby.size ? `brochure_id:[${[...nearby.keys()].join(',')}]` : 'brochure_id:=0');
+const place = placeOf(dir, prefs);
+const radiusKm = itemRadius(dir, prefs);
+filters.push(...itemFilters(dir, prefs));
+const nearby = place.at && !place.rough ? nearestBranches(dir, place.at, radiusKm) : undefined;
 
 const result = await searchOffers({ q, filters, sort, page, facets: ['chain_name', 'brand'] });
 const facet = (field: string) => result.facets.find((f) => f.field === field)?.values ?? [];
@@ -39,15 +40,14 @@ const facet = (field: string) => result.facets.find((f) => f.field === field)?.v
 
 <h1 class="mb-1 text-2xl font-bold">{title}</h1>
 <p class="mb-4 text-sm text-zinc-500">
-  {result.found} {result.found === 1 ? 'offer' : 'offers'}{near && ` within ${near.radiusKm} km of ${near.label}`}
+  {result.found} {result.found === 1 ? 'offer' : 'offers'}{radiusKm && place.name && ` within ${radiusKm} km of ${place.name}`}
 </p>
 
 <div class="grid gap-6 lg:grid-cols-[14rem_1fr]">
   <div class="space-y-5 text-sm">
-  <LocationPicker client:idle areas={dir.areas} current={near ? { label: near.label, radiusKm: near.radiusKm } : null} />
   <form method="get" class="space-y-5" aria-label="Filters">
     {q && <input type="hidden" name="q" value={q} />}
-    {near && ['near', 'r', 'place'].map((k) => params.get(k) && <input type="hidden" name={k} value={params.get(k)!} />)}
+    {['near', 'r', 'items'].map((k) => params.get(k) && <input type="hidden" name={k} value={params.get(k)!} />)}
     <details open class="lg:open">
       <summary class="cursor-pointer font-semibold">Sort</summary>
       <select name="sort" class="mt-2 w-full rounded-lg border border-zinc-300 bg-white px-2 py-1.5">
@@ -88,7 +88,7 @@ const facet = (field: string) => result.facets.find((f) => f.field === field)?.v
   </div>
 
   <div>
-    <OfferGrid offers={result.hits} distances={nearby ?? undefined} empty={near ? `No offers within ${near.radiusKm} km. Try a bigger radius.` : 'No offers match these filters.'} />
+    <OfferGrid offers={result.hits} distances={nearby} empty={radiusKm ? `No offers within ${radiusKm} km. Try a bigger radius.` : 'No offers match these filters.'} />
     <Pagination page={result.page} pages={result.pages} />
   </div>
 </div>

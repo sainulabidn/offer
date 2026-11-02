@@ -12,6 +12,8 @@ export default defineConfig({
   adapter: cloudflare({ imageService: 'passthrough' }),
   integrations: [react()],
   prefetch: { prefetchAll: false, defaultStrategy: 'viewport' },
+  // It sits on top of the phone menu.
+  devToolbar: { enabled: false },
   env: {
     schema: {
       // Server-side addresses; the defaults are the Docker service names for local development.
@@ -19,6 +21,8 @@ export default defineConfig({
       TYPESENSE_URL: envField.string({ context: 'server', access: 'public', default: 'http://typesense:8108' }),
       // The API as the shopper's browser reaches it (sign-in, likes, reports).
       PUBLIC_API_URL: envField.string({ context: 'client', access: 'public', default: 'http://localhost:8000' }),
+      // The map's look and data. Free OpenStreetMap tiles; point this elsewhere to host them ourselves.
+      PUBLIC_MAP_STYLE_URL: envField.string({ context: 'client', access: 'public', default: 'https://tiles.openfreemap.org/styles/positron' }),
       // Production only: send /admin, /api, /typesense… to the Laravel origin (src/middleware.ts).
       PASS_TO_ORIGIN: envField.boolean({ context: 'server', access: 'public', default: false }),
     },

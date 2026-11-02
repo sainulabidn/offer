@@ -1,0 +1,16 @@
+{
+  "name": "@offer/rank",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Distances and ranking for the home page: store order, fading activity scores and the personal value score.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.0"
+  }
+}

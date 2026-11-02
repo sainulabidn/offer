@@ -21,7 +21,7 @@ class DemoCatalogSeeder extends Seeder
     public function run(): void
     {
         $rice = $this->product(
-            group: ['Basmati Rice', 'rice-grains', 'kg', '1'],
+            group: ['Basmati Rice', 'rice-grains', 'kg', '1', '🍚'],
             brand: 'India Gate',
             name: 'India Gate Classic Basmati Rice',
             optionName: 'Size',
@@ -30,7 +30,7 @@ class DemoCatalogSeeder extends Seeder
         );
 
         $this->product(
-            group: ['Fresh Milk', 'dairy-eggs', 'l', '1'],
+            group: ['Fresh Milk', 'dairy-eggs', 'l', '1', '🥛'],
             brand: 'Almarai',
             name: 'Almarai Full Fat Fresh Milk',
             optionName: 'Size',
@@ -39,7 +39,7 @@ class DemoCatalogSeeder extends Seeder
         );
 
         $this->product(
-            group: ['Banana', 'fruits-vegetables', 'kg', '1'],
+            group: ['Banana', 'fruits-vegetables', 'kg', '1', '🍌'],
             brand: null,
             name: 'Banana',
             optionName: 'Origin',
@@ -64,8 +64,8 @@ class DemoCatalogSeeder extends Seeder
         $this->command?->info("Demo catalog ready: {$rice->name} and 2 more products, 1 chain with 1 branch.");
     }
 
-    /** @param  array{0: string, 1: string, 2: string, 3: string}  $group  name, category slug, comparison unit, quantity */
-    private function product(array $group, ?string $brand, string $name, string $optionName, array $variants, array $attributes, bool $variableWeight = false): Product
+    /** @param  array{0: string, 1: string, 2: string, 3: string, 4?: string}  $group  name, category slug, comparison unit, quantity, emoji */
+    protected function product(array $group, ?string $brand, string $name, string $optionName, array $variants, array $attributes, bool $variableWeight = false): Product
     {
         $category = Category::where('slug', $group[1])->firstOrFail();
         $productGroup = ProductGroup::updateOrCreate(['slug' => str($group[0])->slug()], [
@@ -73,6 +73,7 @@ class DemoCatalogSeeder extends Seeder
             'name' => ['en' => $group[0]],
             'comparison_unit_code' => $group[2],
             'comparison_quantity' => $group[3],
+            'icon' => $group[4] ?? null,
         ]);
 
         $product = Product::updateOrCreate(['slug' => str($name)->slug()], [

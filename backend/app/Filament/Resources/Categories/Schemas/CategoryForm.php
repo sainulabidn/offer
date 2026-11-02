@@ -18,7 +18,7 @@ class CategoryForm
                 Fields::slug(),
                 Fields::belongsTo('parent_id', 'parent', 'Parent category', section: 'categories')
                     ->helperText('Empty for a top-level category.'),
-                TextInput::make('icon')->helperText('Optional icon name for the website menu.'),
+                TextInput::make('icon')->label('Icon (emoji)')->maxLength(16)->helperText('Shown in the website menu, and on cards with no photo, e.g. 🥕'),
                 TextInput::make('sort')->numeric()->default(0),
                 Toggle::make('is_active')->default(true)->inline(false),
             ]);

@@ -1,21 +1,24 @@
 ---
 import OfferCard from './OfferCard.astro';
+import type { ComparePrice } from '../lib/feed';
 import type { OfferHit } from '../lib/search';
 
 interface Props {
   offers: OfferHit[];
   empty?: string;
-  /** brochure id → nearest branch, when the shopper filtered by location */
+  /** brochure id → nearest branch, when the shopper's location is known */
   distances?: Map<number, { km: number; branch: string }>;
+  /** offer id → other stores' prices for the same pack */
+  compare?: Map<string, ComparePrice[]>;
 }
 
-const { offers, empty = 'No offers right now.', distances } = Astro.props;
+const { offers, empty = 'No offers right now.', distances, compare } = Astro.props;
 ---
 
 {offers.length ? (
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-    {offers.map((offer) => <OfferCard offer={offer} nearest={distances?.get(offer.brochure_id)} />)}
+    {offers.map((offer) => <OfferCard offer={offer} nearest={distances?.get(offer.brochure_id)} compare={compare?.get(offer.id)} />)}
   </div>
 ) : (
-  <p class="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-zinc-500">{empty}</p>
+  <p class="rounded-(--radius-card) border border-dashed border-line p-8 text-center text-muted">{empty}</p>
 )}

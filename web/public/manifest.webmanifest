@@ -1,0 +1,14 @@
+{
+  "name": "offer: supermarket deals near you",
+  "short_name": "offer",
+  "description": "Compare supermarket offers across the UAE and pay less for your weekly shop.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF7F0",
+  "theme_color": "#0F5C3F",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -65,7 +65,7 @@ const jsonLd = {
 
 <Base title={`${product.name}${variant ? ` ${variant.label}` : ''} price comparison · offer`} description={best ? `${product.name} from ${aed(best.price)} at ${best.chain.name}. Compare every store's price.` : undefined}>
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd).replaceAll('<', '\\u003c')} />
-  <nav class="mb-4 text-sm text-zinc-500" aria-label="Breadcrumb">
+  <nav class="mb-4 text-sm text-zinc-500" aria-label="Breadcrumb" data-views={`product:${product.id} group:${product.product_group.id}`}>
     <a href={`/c/${product.category.slug}`} class="hover:underline">{product.category.name}</a> › {product.product_group.name}
   </nav>
 
@@ -106,7 +106,7 @@ const jsonLd = {
 
       {variant && (
         <div class="mt-4">
-          <AddToPlan client:visible variantId={variant.id} label={`${product.name} · ${variant.label}`} groupId={product.product_group.id} groupName={product.product_group.name} />
+          <AddToPlan client:visible productId={product.id} variantId={variant.id} label={`${product.name} · ${variant.label}`} groupId={product.product_group.id} groupName={product.product_group.name} />
         </div>
       )}
 

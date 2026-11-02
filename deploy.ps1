@@ -71,6 +71,7 @@ if ($behind -gt 0) {
 if (-not $SkipTests) {
     Invoke-Step "Running backend tests..." { docker compose run --rm app php artisan test --compact }
     Invoke-Step "Running price-comparison tests..." { docker compose run --rm --no-deps -w /repo web pnpm --filter "@offer/basket" test }
+    Invoke-Step "Running ranking tests..." { docker compose run --rm --no-deps -w /repo web pnpm --filter "@offer/rank" test }
 }
 
 # Production build: env "production" in web/wrangler.jsonc, browser code pointed at the live site.
@@ -119,9 +120,10 @@ if (-not $api.Content.TrimStart().StartsWith("[")) {
 }
 
 if ($envFile["CLOUDFLARE_API_TOKEN"]) {
-    $home_ = Get-Live "/"
-    if ($home_.Content -notmatch "Best deals this week") {
-        Write-Host "FAILED: the home page doesn't show the offers grid." -ForegroundColor Red
+    # Offers on the page prove the Worker, Laravel and Typesense all work, and the search index isn't empty.
+    $search = Get-Live "/search"
+    if ($search.Content -notmatch 'href="/products/') {
+        Write-Host "FAILED: /search shows no offers. Check the search index on the server." -ForegroundColor Red
         exit 1
     }
     # The JavaScript this build produced must be served as JavaScript, not an HTML error page.

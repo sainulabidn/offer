@@ -4,6 +4,8 @@ namespace App\Domain\Catalog;
 
 use App\Domain\Access\Audited;
 use App\Domain\Offers\Offer;
+use App\Domain\Offers\RegularPrice;
+use App\Domain\Settings\HomeSettings;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -84,6 +86,14 @@ class ProductVariant extends Model
     public function offers(): HasMany
     {
         return $this->hasMany(Offer::class);
+    }
+
+    /** Usual prices recent enough to show shoppers, newest first. */
+    public function recentRegularPrices(): HasMany
+    {
+        return $this->hasMany(RegularPrice::class)
+            ->whereDate('observed_at', '>=', now(config('app.market_timezone'))->subDays(HomeSettings::get('usual_price_max_days')))
+            ->orderByDesc('observed_at');
     }
 
     public function images(): HasMany

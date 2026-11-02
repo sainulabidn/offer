@@ -30,6 +30,13 @@ class ProductGroupForm
                     ->label('Compare per unit')
                     ->options(fn () => Unit::query()->orderBy('dimension')->orderBy('factor_to_base')->pluck('code', 'code'))
                     ->required(),
+                Fields::gradeInput(Fields::ITEM_GRADES)
+                    ->placeholder('Not graded')
+                    ->helperText('Daily essentials rank first. A product can override this.'),
+                TextInput::make('icon')
+                    ->label('Icon (emoji)')
+                    ->maxLength(16)
+                    ->helperText('Shown on the card when a product has no photo, e.g. 🍅'),
                 TagsInput::make('synonyms')
                     ->columnSpanFull()
                     ->helperText('Search words in any language, e.g. chawal, أرز.'),

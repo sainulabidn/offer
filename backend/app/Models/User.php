@@ -18,7 +18,7 @@ use Laravel\Passkeys\PasskeyAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'phone', 'locale', 'default_radius_km', 'all_stores', 'disabled_at'])]
+#[Fillable(['name', 'email', 'password', 'phone', 'locale', 'all_stores', 'disabled_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, PasskeyUser
 {

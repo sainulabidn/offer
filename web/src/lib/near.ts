@@ -1,20 +1,36 @@
 import { API_URL } from 'astro:env/server';
+import { distanceKm, nearest, rankStores, type Point, type Prefs, type RankedStore } from '@offer/rank';
 
-/** "Near me": radius filtering against the store directory, done in the Worker without any geo API. */
+/** "Near me": what the shopper's location means, worked out in the Worker from the store directory. */
 export interface Directory {
-  branches: { id: number; chain_id: number; chain: string; name: string; area: string | null; lat: number; lng: number }[];
-  brochures: { id: number; chain_id: number; valid_from: string; valid_to: string; branch_ids: number[] }[];
-  areas: { slug: string; name: string; lat: number; lng: number }[];
+  chains: { id: number; name: string; slug: string; grade: number; group_id: number | null; logo: string | null }[];
+  branches: { id: number; chain_id: number; chain: string; name: string; slug: string; area: string | null; emirate: string | null; lat: number; lng: number }[];
+  brochures: { id: number; chain_id: number; valid_from: string; valid_to: string; branch_ids: number[]; offers: number }[];
+  areas: { id: number; slug: string; name: string; lat: number; lng: number }[];
+  settings: Settings;
 }
 
-export interface Near {
-  lat: number;
-  lng: number;
-  radiusKm: number;
-  label: string;
+export interface Settings {
+  radius_options: number[];
+  radius_default: number;
+  item_radius_default: number;
+  radius_max: number;
+  usual_price_max_days: number;
+  walk_limit_m: number;
+  store_weights: { activity: number; near: number; grade: number; offers: number };
 }
 
-export const RADII = [1, 3, 5, 10, 20, 50];
+export type DirectoryBranch = Directory['branches'][number];
+
+export interface StoreCard extends DirectoryBranch {
+  chainId: number;
+  chainSlug: string;
+  grade: number;
+  logo: string | null;
+  offers: number;
+}
+
+export type RankedCard = RankedStore<StoreCard>;
 
 let cached: { at: number; directory: Directory } | null = null;
 
@@ -27,29 +43,79 @@ export async function directory(): Promise<Directory> {
   return cached.directory;
 }
 
-/** Great-circle distance in km. */
-export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
-  const rad = Math.PI / 180;
-  const dLat = (b.lat - a.lat) * rad;
-  const dLng = (b.lng - a.lng) * rad;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
-  return 12_742 * Math.asin(Math.sqrt(h));
+/** Where a page is drawn for: the shopper's point, or the middle of their emirate on a first visit. */
+export function placeOf(dir: Directory, prefs: Prefs): { at: Point | null; name: string | null; rough: boolean } {
+  if (prefs.at) return { at: prefs.at, name: nearest(dir.areas, prefs.at)?.name.split(',')[0] ?? null, rough: false };
+  const emirate = dir.areas.find((area) => area.slug === prefs.emirate);
+  return emirate ? { at: emirate, name: emirate.name, rough: true } : { at: null, name: null, rough: false };
 }
 
-/** Reads ?near=25.29,55.37&r=5&place=Al+Nahda (coordinates are rounded to ~1 km so pages cache well). */
-export function parseNear(url: URL): Near | null {
-  const [lat, lng] = (url.searchParams.get('near') ?? '').split(',').map(Number);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
-  const r = Number(url.searchParams.get('r'));
-  return { lat, lng, radiusKm: RADII.includes(r) ? r : 5, label: url.searchParams.get('place') || 'your location' };
+const clampRadius = (km: number, dir: Directory) => Math.min(km, dir.settings.radius_max);
+
+export const storeRadius = (dir: Directory, prefs: Prefs) => clampRadius(prefs.radiusKm ?? dir.settings.radius_default, dir);
+
+/** How far items may be from the shopper; null means all of the UAE. */
+export function itemRadius(dir: Directory, prefs: Prefs): number | null {
+  if (prefs.allUae || !placeOf(dir, prefs).at) return null;
+  return clampRadius(prefs.itemRadiusKm ?? dir.settings.item_radius_default, dir);
 }
 
-/** Brochures live at a branch within the radius → that brochure's nearest branch and distance. */
-export function nearbyBrochures(dir: Directory, near: Near) {
-  const inRange = new Map<number, { km: number; branch: Directory['branches'][number] }>();
+/**
+ * Typesense filter for a radius. A large circle barely changes for a shopper 5 km away, so its
+ * middle is rounded harder: more shoppers then ask the identical query and share the cached answer.
+ */
+export function radiusFilter(at: Point, km: number): string {
+  const decimals = km >= 25 ? 1 : 2;
+  return `locations:(${at.lat.toFixed(decimals)},${at.lng.toFixed(decimals)},${km} km)`;
+}
+
+/** The Typesense filters that keep items inside the shopper's radius. */
+export function itemFilters(dir: Directory, prefs: Prefs): string[] {
+  const { at } = placeOf(dir, prefs);
+  const km = itemRadius(dir, prefs);
+  return at && km ? [radiusFilter(at, km)] : [];
+}
+
+/** Live offers per branch, from the brochures that cover it. */
+function offersByBranch(dir: Directory): Map<number, number> {
+  const today = new Date().toISOString().slice(0, 10);
+  const counts = new Map<number, number>();
+  for (const brochure of dir.brochures) {
+    if (brochure.valid_from > today) continue;
+    for (const id of brochure.branch_ids) counts.set(id, (counts.get(id) ?? 0) + brochure.offers);
+  }
+  return counts;
+}
+
+/** Every branch with what a store card shows. */
+export function storeCards(dir: Directory): StoreCard[] {
+  const chains = new Map(dir.chains.map((chain) => [chain.id, chain]));
+  const offers = offersByBranch(dir);
+  return dir.branches.map((branch) => {
+    const chain = chains.get(branch.chain_id);
+    return { ...branch, chainId: branch.chain_id, chainSlug: chain?.slug ?? '', grade: chain?.grade ?? 3, logo: chain?.logo ?? null, offers: offers.get(branch.id) ?? 0 };
+  });
+}
+
+/** The stores to show for this shopper, before their personal order is applied in the browser. */
+export function storesFor(dir: Directory, prefs: Prefs): RankedCard[] {
+  const { at, rough } = placeOf(dir, prefs);
+  // A rough emirate-level location can't support a radius: the emirate's own stores are the honest answer.
+  const cards = storeCards(dir).filter((card) => !rough || card.emirate === prefs.emirate || prefs.stores.includes(card.id));
+  return rankStores(cards, {
+    at: rough ? null : at,
+    radiusKm: storeRadius(dir, prefs),
+    selected: prefs.stores,
+    weights: dir.settings.store_weights,
+  });
+}
+
+/** Brochures live within a distance → each one's nearest branch, for the distance shown on cards. */
+export function nearestBranches(dir: Directory, at: Point, radiusKm: number | null) {
+  const inRange = new Map<number, { km: number; branch: DirectoryBranch }>();
   for (const branch of dir.branches) {
-    const km = distanceKm(near, branch);
-    if (km <= near.radiusKm) inRange.set(branch.id, { km, branch });
+    const km = distanceKm(at, branch);
+    if (radiusKm === null || km <= radiusKm) inRange.set(branch.id, { km, branch });
   }
 
   const result = new Map<number, { km: number; branch: string }>();

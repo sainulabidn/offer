@@ -2,6 +2,7 @@
 
 namespace App\Filament\Imports;
 
+use App\Domain\Access\Access;
 use App\Domain\Catalog\CatalogRowImporter;
 use App\Domain\Catalog\ProductVariant;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
@@ -42,6 +43,7 @@ class CatalogImporter extends Importer
             $column('gtin', '8901234567890')->rules(['nullable', 'digits_between:8,14']),
             $column('origin', 'IN')->rules(['nullable', 'alpha', 'size:2']),
             $column('sold_by_weight', 'no'),
+            $column('grade', '1')->rules(['nullable', 'integer', 'between:1,4']),
         ];
     }
 
@@ -52,8 +54,11 @@ class CatalogImporter extends Importer
 
     public function saveRecord(): void
     {
+        // Runs in a queue job, where no admin is signed in: ask about the person who started the import.
+        $data = Access::allows($this->import->user, 'settings', 'edit') ? $this->data : array_diff_key($this->data, ['grade' => true]);
+
         try {
-            $this->record = app(CatalogRowImporter::class)->import($this->data);
+            $this->record = app(CatalogRowImporter::class)->import($data);
         } catch (InvalidArgumentException $e) {
             throw new RowImportFailedException($e->getMessage());
         }

@@ -23,6 +23,7 @@ class ProductsTable
                 TextColumn::make('brand.name')->placeholder('Unbranded'),
                 TextColumn::make('productGroup.name')->label('Group'),
                 TextColumn::make('category.name'),
+                Fields::gradeColumn(Fields::ITEM_GRADES)->placeholder('From group')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('variants_count')->label('Variants')->sortable(),
                 TextColumn::make('status')->badge()->sortable(),
                 Review::column(),
@@ -42,6 +43,7 @@ class ProductsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    Fields::gradeBulkAction(Fields::ITEM_GRADES),
                     DeleteBulkAction::make(),
                 ]),
             ]);

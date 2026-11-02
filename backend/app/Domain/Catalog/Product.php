@@ -10,6 +10,7 @@ use App\Domain\Engagement\Report;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\Translatable\HasTranslations;
 
@@ -60,6 +61,11 @@ class Product extends Model
     public function images(): HasMany
     {
         return $this->hasMany(ProductImage::class)->orderBy('sort');
+    }
+
+    public function stats(): HasOne
+    {
+        return $this->hasOne(ProductStat::class);
     }
 
     public function likes(): MorphMany

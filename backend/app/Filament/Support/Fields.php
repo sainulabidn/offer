@@ -3,19 +3,63 @@
 namespace App\Filament\Support;
 
 use App\Domain\Access\Access;
+use Filament\Actions\BulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-/** Reusable admin fields for translatable JSON columns ({"en": …, "ar": …}). */
+/** Reusable admin fields: translatable JSON columns ({"en": …, "ar": …}) and grades. */
 final class Fields
 {
+    public const array STORE_GRADES = [1 => '1 · Big', 2 => '2 · Medium', 3 => '3 · Small', 4 => '4 · Local shop'];
+
+    public const array ITEM_GRADES = [1 => '1 · Daily essential', 2 => '2 · Regular', 3 => '3 · Occasional', 4 => '4 · Rarely needed'];
+
+    /** Grades decide who ranks first, so a store owner editing their own chain doesn't get these. */
+    public static function canGrade(): bool
+    {
+        return Access::allows(Access::user(), 'settings', 'edit');
+    }
+
+    public static function gradeInput(array $grades): Select
+    {
+        return Select::make('grade')->options($grades)->visible(self::canGrade(...));
+    }
+
+    public static function gradeColumn(array $grades): SelectColumn
+    {
+        return SelectColumn::make('grade')->options($grades)->sortable()->visible(self::canGrade(...));
+    }
+
+    public static function gradeFilter(array $grades): SelectFilter
+    {
+        return SelectFilter::make('grade')->options($grades);
+    }
+
+    public static function gradeBulkAction(array $grades): BulkAction
+    {
+        return BulkAction::make('setGrade')
+            ->label('Set grade')
+            ->icon('heroicon-o-star')
+            ->visible(self::canGrade(...))
+            ->schema([Select::make('grade')->options($grades)->required()])
+            ->deselectRecordsAfterCompletion()
+            ->action(function (Collection $records, array $data) {
+                $records->each->update(['grade' => $data['grade']]);
+                Notification::make()->success()->title("Grade set on {$records->count()} items")->send();
+            });
+    }
+
     /** English + Arabic inputs for one translatable column. When $fillsSlug, typing English fills the slug on create. */
     public static function translatable(string $column, string $label, bool $required = true, bool $fillsSlug = false, bool $textarea = false): Grid
     {

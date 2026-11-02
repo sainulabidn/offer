@@ -35,6 +35,9 @@ class ProductForm
                             ->required()
                             ->helperText('The generic item shoppers compare across brands, e.g. "Basmati Rice".'),
                         Fields::belongsTo('category_id', 'category', 'Category', section: 'categories')->required(),
+                        Fields::gradeInput(Fields::ITEM_GRADES)
+                            ->placeholder('Same as its product group')
+                            ->helperText('Only set this when the product differs from its group.'),
                         Toggle::make('is_variable_weight')
                             ->label('Sold by weight (priced per kg)')
                             ->inline(false),

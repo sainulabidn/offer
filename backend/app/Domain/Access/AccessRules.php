@@ -8,10 +8,12 @@ use App\Domain\Catalog\Category;
 use App\Domain\Catalog\Product;
 use App\Domain\Catalog\ProductGroup;
 use App\Domain\Engagement\Report;
+use App\Domain\Offers\RegularPrice;
 use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
 use App\Domain\Retail\RetailGroup;
 use App\Domain\Search\Synonym;
+use App\Domain\Settings\SiteSetting;
 use App\Models\User;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
@@ -57,6 +59,7 @@ final class AccessRules
             'retail_groups' => $storeSection('Retail groups', RetailGroup::class),
             'chains' => $storeSection('Chains (stores)', Chain::class),
             'branches' => $storeSection('Branches', Branch::class),
+            'shelf_prices' => $storeSection('Shelf prices', RegularPrice::class),
             'brochures' => [
                 'label' => 'Brochures and offers', 'group' => 'Offers', 'model' => Brochure::class, 'owner' => 'created_by',
                 'actions' => ['view' => $stores, 'create' => $yes, 'edit' => $stores, 'delete' => $stores, 'publish' => $stores],
@@ -70,6 +73,11 @@ final class AccessRules
             'product_groups' => $catalogSection('Product groups', ProductGroup::class),
             'products' => $catalogSection('Products', Product::class),
             'synonyms' => $yesNo('Search synonyms', 'Catalog', Synonym::class),
+            // Grades decide who ranks first, so store owners don't get this by editing their own chain.
+            'settings' => [
+                'label' => 'Grades, home page and ranking', 'group' => 'Offers', 'model' => SiteSetting::class, 'owner' => null,
+                'actions' => ['view' => $yes, 'edit' => $yes],
+            ],
             'users' => $yesNo('Users', 'Access', User::class),
             'roles' => $yesNo('Roles and permissions', 'Access', Role::class),
             'activity' => [
