@@ -119,12 +119,12 @@
         "author": "Chris Woodrich",
         "licence": "Public domain"
     },
-    "hellmann-s-real-mayonnaise": {
+    "hellmanns-real-mayonnaise": {
         "source": "https://world.openfoodfacts.org/product/92000480012134800219",
         "author": "Open Food Facts contributors",
         "licence": "CC BY-SA 3.0"
     },
-    "kellogg-s-corn-flakes": {
+    "kelloggs-corn-flakes": {
         "source": "https://world.openfoodfacts.org/product/8901499008176",
         "author": "Open Food Facts contributors",
         "licence": "CC BY-SA 3.0"
@@ -179,7 +179,7 @@
         "author": "Open Food Facts contributors",
         "licence": "CC BY-SA 3.0"
     },
-    "mcvitie-s-digestive-biscuits": {
+    "mcvities-digestive-biscuits": {
         "source": "https://world.openfoodfacts.org/product/8906033740758",
         "author": "Open Food Facts contributors",
         "licence": "CC BY-SA 3.0"
