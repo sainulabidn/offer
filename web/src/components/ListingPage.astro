@@ -1,0 +1,239 @@
+---
+// Offers for one place, category, brand, or a staff landing page (/deals/…), with everything search engines
+// and social sites read: titles that name the place, breadcrumbs, schema.org data, and links to the same
+// list in each emirate and area, so every location page can be found.
+import { MapPin } from 'lucide-react';
+import Base from '../layouts/Base.astro';
+import SearchResults from './SearchResults.astro';
+import { brands as loadBrands, categoryTrail, type Brand, type Category } from '../lib/api';
+import { offerPath } from '../lib/format';
+import { runListing } from '../lib/listing';
+import { directory, regionId } from '../lib/near';
+import type { SortKey } from '../lib/search';
+import {
+  MIN_INDEXABLE_OFFERS, absoluteUrl, clip, en, geoMeta, listShareImage, placeName, placeSchema, regions, scopePath, seoPage,
+  type Crumb, type Region, type SeoPage,
+} from '../lib/seo';
+
+interface Props {
+  emirate?: Region | null;
+  area?: Region | null;
+  category?: Category | null;
+  /** The whole category tree, for breadcrumbs. */
+  categories: Category[];
+  brand?: Brand | null;
+  /** A staff landing page under /deals/. */
+  landing?: SeoPage | null;
+}
+
+const { emirate = null, area = null, category = null, categories, brand = null, landing = null } = Astro.props;
+const origin = (Astro.site ?? Astro.url).origin;
+const prefs = Astro.locals.prefs;
+const dir = await directory();
+const allRegions = regions(dir);
+const brandList = await loadBrands().catch(() => [] as Brand[]);
+
+const where = area ?? emirate;
+// Product links on a location page open the product's prices there.
+const placePath = where ? scopePath({ emirate, area }) : '';
+const baseFilters = [
+  ...(where ? [`region_ids:=${where.id}`] : []),
+  ...(category ? [`category_ids:=${category.id}`] : []),
+  ...(brand ? [`brand_id:=${brand.id}`] : []),
+];
+
+// A landing page lists what staff saved; its place, category and brand were resolved by the route.
+const saved = landing?.filters ?? {};
+if (saved.product_group_id) baseFilters.push(`product_group_id:=${saved.product_group_id}`);
+if (saved.brand_ids?.length && !brand) baseFilters.push(`brand_id:[${saved.brand_ids.join(',')}]`);
+if (saved.chain_ids?.length) baseFilters.push(`chain_id:[${saved.chain_ids.join(',')}]`);
+if (saved.min_discount) baseFilters.push(`discount_pct:>=${saved.min_discount}`);
+if (saved.card_only) baseFilters.push('card_required:true');
+
+const listing = await runListing(Astro.url, prefs, {
+  baseFilters,
+  q: saved.q,
+  sort: saved.sort as SortKey | undefined,
+  // Location and landing pages show the same offers to everyone, search engines included.
+  nearShopper: !where && !landing,
+  browse: true,
+});
+const { result, counts, page } = listing;
+
+const override = await seoPage(Astro.url.pathname);
+const what = category?.name ?? brand?.name ?? null;
+const place = placeName(emirate, area);
+const stores = listing.facet('chain_id').length;
+const top = listing.sort === 'deal' && page === 1 ? Math.round(result.hits[0]?.discount_pct ?? 0) : 0;
+
+const heading =
+  en(override?.heading) ??
+  en(landing?.heading) ??
+  (brand && !where ? `${brand.name} offers and prices in the UAE` : `${what ?? 'Supermarket'} offers in ${place}`);
+const title = en(landing?.title) ?? (where && !what ? `${heading} this week` : heading);
+const description =
+  en(landing?.description) ??
+  clip(
+    result.found
+      ? `This week's ${what ?? 'supermarket'} offers in ${place}: ${result.found} ${result.found === 1 ? 'deal' : 'deals'} from ${stores} ${stores === 1 ? 'store' : 'stores'}${top >= 5 ? `, up to ${top}% off` : ''}. Compared by true price per unit, with every store's price side by side.`
+      : `${what ?? 'Supermarket'} offers in ${place}, compared by true price per unit. New brochure deals every week.`,
+  );
+const intro = en(override?.intro) ?? en(landing?.intro);
+
+// A place with a category or brand, or an area, is a narrow page: list it only when it has enough offers.
+const narrow = Boolean((emirate && (category || brand)) || area);
+const noindex = result.found === 0 || (narrow && result.found < MIN_INDEXABLE_OFFERS);
+
+const trail = category ? categoryTrail(categories, (c) => c.id === category.id) : [];
+const breadcrumbs: Crumb[] = [
+  { name: 'Home', path: '/' },
+  ...(emirate ? [{ name: emirate.name, path: scopePath({ emirate }) }] : []),
+  ...(area ? [{ name: area.name, path: scopePath({ emirate, area }) }] : []),
+  ...trail.map((c) => ({ name: c.name, path: scopePath({ emirate, area, category: c }) })),
+  ...(brand ? [{ name: 'Brands', path: '/brands' }, { name: brand.name, path: scopePath({ emirate, area, brand }) }] : []),
+  ...(landing ? [{ name: heading, path: landing.path }] : []),
+];
+
+// The products on this page, once each (several stores' offers can be for one pack).
+const listed = [...new Map(result.hits.map((hit) => [offerPath(hit, placePath), hit])).entries()].slice(0, 12);
+const collection = {
+  '@type': 'CollectionPage',
+  name: heading,
+  description,
+  url: absoluteUrl(Astro.url.pathname, origin),
+  inLanguage: 'en-AE',
+  ...(emirate && { spatialCoverage: placeSchema(emirate, area, origin) }),
+  ...(brand && { about: { '@type': 'Brand', name: brand.name, ...(brand.logo && { logo: absoluteUrl(brand.logo, origin) }) } }),
+  ...(category && !brand && { about: { '@type': 'Thing', name: category.name } }),
+  mainEntity: {
+    '@type': 'ItemList',
+    numberOfItems: listed.length,
+    itemListElement: listed.map(([path, hit], index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: absoluteUrl(path, origin),
+      name: `${hit.product_name} ${hit.variant_label}`,
+    })),
+  },
+};
+
+// Links to the same list elsewhere, only where there are offers. Counts come from this page's own search.
+const regionCounts = counts('region_ids');
+const categoryCounts = counts('category_ids');
+const brandCounts = counts('brand_id');
+const counted = <T extends { id: number }>(items: T[], from: Map<number, number>) =>
+  items.filter((item) => (from.get(item.id) ?? 0) > 0).map((item) => ({ item, count: from.get(item.id)! }));
+
+const emirates = counted(allRegions.filter((r) => r.type === 'emirate'), regionCounts);
+const areas = emirate ? counted(allRegions.filter((r) => r.emirate?.id === emirate.id && r.id !== area?.id), regionCounts) : [];
+const categoryLinks = counted(category ? category.children : categories, categoryCounts);
+const brandLinks = brand ? [] : counted(brandList, brandCounts).sort((a, b) => b.count - a.count).slice(0, 16);
+
+// Stores here: each branch in an area, or each chain in an emirate.
+const branchesHere = where ? dir.branches.filter((b) => (area ? b.area === area.name && b.emirate === emirate!.slug : b.emirate === emirate!.slug)) : [];
+const chainSlugs = new Map(dir.chains.map((chain) => [chain.id, chain.slug]));
+const storesHere = area
+  ? branchesHere.map((b) => ({ name: `${b.chain}, ${b.name}`, href: `/stores/${chainSlugs.get(b.chain_id)}/${b.slug}` }))
+  : [...new Map(branchesHere.map((b) => [b.chain_id, b])).values()].map((b) => ({
+      name: `${b.chain} (${branchesHere.filter((x) => x.chain_id === b.chain_id).length})`,
+      href: `/stores/${chainSlugs.get(b.chain_id)}`,
+    }));
+
+// The shopper's own area, for a link from the "near me" lists to its location page (search engines have none).
+const shopperArea = !where && !landing && prefs.at ? allRegions.find((r) => r.id === regionId(dir, prefs)) : undefined;
+const shopperEmirate = shopperArea?.type === 'area' ? shopperArea.emirate : shopperArea;
+
+// On a location page, choosing another place in the location panel moves to that place's page (lib/prefs.ts).
+const locationScope = emirate && !landing ? JSON.stringify({ rest: scopePath({ category, brand }).replace(/^\/$/, '') }) : undefined;
+---
+
+<Base
+  title={title}
+  description={description}
+  region={where?.id ?? regionId(dir, prefs)}
+  noindex={noindex}
+  breadcrumbs={breadcrumbs}
+  jsonLd={[collection]}
+  geo={emirate ? geoMeta(emirate, area) : undefined}
+  image={listShareImage({ region: where, category, brand, deal: landing?.path.slice('/deals/'.length) }, heading, [result.found, stores, top])}
+>
+  <div data-location-scope={locationScope}>
+    {breadcrumbs.length > 2 && (
+      <nav class="mb-3 text-sm text-muted" aria-label="Breadcrumb">
+        {breadcrumbs.slice(0, -1).map((crumb) => (
+          <><a href={crumb.path} class="hover:underline">{crumb.name}</a> › </>
+        ))}
+        <span aria-current="page">{breadcrumbs.at(-1)!.name}</span>
+      </nav>
+    )}
+
+    <SearchResults title={heading} listing={listing} intro={intro} placePath={placePath || undefined}>
+      <Fragment slot="top">
+        {shopperArea && shopperEmirate && (
+          <a href={scopePath({ emirate: shopperEmirate, area: shopperArea.type === 'area' ? shopperArea : null, category, brand })} class="chip mb-3">
+            <MapPin class="size-4 text-primary" aria-hidden="true" /> All {what ?? ''} offers in {placeName(shopperEmirate, shopperArea.type === 'area' ? shopperArea : null)}
+          </a>
+        )}
+        {categoryLinks.length > 0 && category && (
+          <nav class="rail mb-2" aria-label="Subcategories">
+            {categoryLinks.map(({ item, count }) => (
+              <a href={scopePath({ emirate, area, category: item })} class="chip">{item.name} <span class="text-xs text-muted">{count}</span></a>
+            ))}
+          </nav>
+        )}
+      </Fragment>
+    </SearchResults>
+
+    <div class="mt-10 space-y-6 text-sm">
+      {!where && emirates.length > 0 && (
+        <section>
+          <h2 class="mb-2 text-base font-bold">{what ?? 'Offers'} by emirate</h2>
+          <ul class="flex flex-wrap gap-2">
+            {emirates.map(({ item, count }) => (
+              <li><a href={scopePath({ emirate: item, category, brand })} class="chip">{what ? `${what} in ${item.name}` : item.name} <span class="text-xs text-muted">{count}</span></a></li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {emirate && areas.length > 0 && (
+        <section>
+          <h2 class="mb-2 text-base font-bold">{area ? `Other areas in ${emirate.name}` : `${what ?? 'Offers'} by area in ${emirate.name}`}</h2>
+          <ul class="flex flex-wrap gap-2">
+            {area && <li><a href={scopePath({ emirate, category, brand })} class="chip">All of {emirate.name}</a></li>}
+            {areas.map(({ item, count }) => (
+              <li><a href={scopePath({ emirate, area: item, category, brand })} class="chip">{item.name} <span class="text-xs text-muted">{count}</span></a></li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {!category && !brand && categoryLinks.length > 0 && (
+        <section>
+          <h2 class="mb-2 text-base font-bold">Categories{where ? ` in ${place}` : ''}</h2>
+          <ul class="flex flex-wrap gap-2">
+            {categoryLinks.map(({ item, count }) => (
+              <li><a href={scopePath({ emirate, area, category: item })} class="chip">{item.name} <span class="text-xs text-muted">{count}</span></a></li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {brandLinks.length > 0 && (
+        <section>
+          <h2 class="mb-2 text-base font-bold">Popular brands{where ? ` in ${place}` : ''}</h2>
+          <ul class="flex flex-wrap gap-2">
+            {brandLinks.map(({ item }) => (
+              <li><a href={scopePath({ emirate, area, brand: item })} class="chip">{item.name}</a></li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {storesHere.length > 0 && (
+        <section>
+          <h2 class="mb-2 text-base font-bold">Supermarkets in {place}</h2>
+          <ul class="flex flex-wrap gap-2">
+            {storesHere.map((store) => <li><a href={store.href} class="chip">{store.name}</a></li>)}
+          </ul>
+        </section>
+      )}
+    </div>
+  </div>
+</Base>

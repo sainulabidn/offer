@@ -2,6 +2,7 @@ import { PUBLIC_API_URL } from 'astro:env/client';
 import { promoFrom, type CandidateOffer, type PlanItem, type Store } from '@offer/basket';
 import { distanceKm } from '@offer/rank';
 import { ApiError, call, isSignedIn } from './account';
+import type { AreaRow } from './locations';
 
 /**
  * Browser-side plan data: the plan lives in localStorage (no account needed), offers come straight
@@ -152,10 +153,10 @@ export function addToPlan(item: PlanItem) {
 }
 
 interface Directory {
-  branches: { id: number; chain_id: number; chain: string; name: string; lat: number; lng: number }[];
+  branches: { id: number; chain_id: number; chain: string; name: string; emirate: string | null; lat: number; lng: number }[];
   brochures: { id: number; chain_id: number; valid_from: string; valid_to: string; branch_ids: number[] }[];
   chains: { id: number; name: string; slug: string; grade: number; group_id: number | null; logo: string | null }[];
-  areas: { slug: string; name: string; lat: number; lng: number }[];
+  areas: AreaRow[];
   settings: { radius_options: number[]; radius_default: number; radius_max: number; walk_limit_m: number };
 }
 

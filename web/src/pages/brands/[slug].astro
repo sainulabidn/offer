@@ -1,0 +1,14 @@
+---
+// A brand's offers across the UAE (near the shopper, once they set a place); /dubai/brands/… is one emirate.
+import ListingPage from '../../components/ListingPage.astro';
+import { api, brands } from '../../lib/api';
+import { cacheFor } from '../../lib/format';
+
+const [categories, brandList] = await Promise.all([api.categories(), brands()]);
+const brand = brandList.find((candidate) => candidate.slug === Astro.params.slug);
+if (!brand) return Astro.rewrite('/404');
+
+cacheFor(Astro.response.headers);
+---
+
+<ListingPage brand={brand} categories={categories} />

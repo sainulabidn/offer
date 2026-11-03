@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { rerank, scoreOffer, type FeedLimits, type ValueWeights } from '@offer/rank';
-import { aed, tintFor } from '../lib/format';
+import { aed, offerPath, tintFor } from '../lib/format';
 import { forYouCandidates, type ForYouEntry } from '../lib/personal';
 import { loadDirectory } from '../lib/plan';
 import { activitySettings, loadProfile, markShown, personalOn, recordActivity, rememberSettings } from '../lib/profile';
@@ -57,7 +57,7 @@ export default function ForYouRail({ filters = [] }: { filters?: string[] }) {
               </button>
               <div className="p-2.5">
                 <p className="text-xs font-semibold text-link">{entry.reason}</p>
-                <a href={`/products/${hit.product_slug}?variant=${encodeURIComponent(hit.variant_slug)}`} data-click={`product:${hit.product_id} chain:${hit.chain_id}`} className="mt-0.5 line-clamp-2 text-sm/snug font-semibold after:absolute after:inset-0">{hit.product_name}</a>
+                <a href={offerPath(hit)} data-click={`product:${hit.product_id} chain:${hit.chain_id}`} className="mt-0.5 line-clamp-2 text-sm/snug font-semibold after:absolute after:inset-0">{hit.product_name}</a>
                 <p className="mt-1 font-bold tabular-nums">{aed(hit.price)}</p>
                 <p className="truncate text-xs text-muted">{hit.chain_name}</p>
               </div>

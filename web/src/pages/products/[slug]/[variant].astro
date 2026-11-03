@@ -1,0 +1,16 @@
+---
+// One pack of a product: /products/almarai-full-fat-fresh-milk/2-l.
+import ProductPage from '../../../components/ProductPage.astro';
+import { api } from '../../../lib/api';
+import { cacheFor, productPath } from '../../../lib/format';
+
+const product = await api.product(Astro.params.slug ?? '');
+if (!product) return Astro.rewrite('/404');
+const variant = product.variants.find((v) => v.slug === Astro.params.variant);
+// A pack that was merged away, or a product with one pack: its product page.
+if (!variant || product.variants.length === 1) return Astro.redirect(productPath(product.slug), 301);
+
+cacheFor(Astro.response.headers);
+---
+
+<ProductPage product={product} variant={variant} />

@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\PasskeyController;
 use App\Http\Controllers\Api\V1\PlanController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\SeoController;
+use App\Http\Controllers\Api\V1\ShareImageController;
 use App\Http\Controllers\Api\V1\ShopperController;
 use App\Http\Controllers\Api\V1\TrendingController;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +32,14 @@ Route::prefix('v1')->group(function () {
         Route::get('places', [ShopperController::class, 'placeNames']);
         Route::get('trending', TrendingController::class);
         Route::get('sitemap', [CatalogController::class, 'sitemap']);
+        Route::get('brands', [CatalogController::class, 'brands']);
+        Route::get('seo', SeoController::class);
+    });
+
+    // Social sharing pictures, drawn on request; each new address costs a render, so a tighter limit.
+    Route::middleware('throttle:share-images')->group(function () {
+        Route::get('og/product/{slug}.jpg', [ShareImageController::class, 'product'])->where('slug', '[a-z0-9-]+');
+        Route::get('og/list.jpg', [ShareImageController::class, 'listing']);
     });
 
     // Sign-in by emailed code.

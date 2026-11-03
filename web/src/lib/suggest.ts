@@ -1,3 +1,4 @@
+import { offerPath } from './format';
 import { searchConfig } from './plan';
 
 /**
@@ -53,7 +54,7 @@ export async function suggest(query: string, signal?: AbortSignal): Promise<Sugg
     facet_by: 'brand,chain_name,product_group',
     max_facet_values: '4',
     highlight_fields: 'product_name',
-    include_fields: 'product_name,product_slug,variant_slug,variant_label,brand,chain_name,price,effective_unit_price,unit_label,image',
+    include_fields: 'product_name,product_slug,variant_slug,pack_count,variant_label,brand,chain_name,price,effective_unit_price,unit_label,image',
   });
 
   const response = await fetch(`${url}/collections/${collection}/documents/search?${params}`, {
@@ -76,7 +77,7 @@ export async function suggest(query: string, signal?: AbortSignal): Promise<Sugg
       return {
         name: d.product_name,
         highlighted: highlightTokens(d.product_name, highlight?.product_name?.matched_tokens ?? []),
-        href: `/products/${d.product_slug}?variant=${encodeURIComponent(d.variant_slug)}`,
+        href: offerPath(d),
         variant: d.variant_label,
         chain: d.chain_name,
         price: d.price,

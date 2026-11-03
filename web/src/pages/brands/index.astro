@@ -1,0 +1,40 @@
+---
+import Base from '../../layouts/Base.astro';
+import { brands } from '../../lib/api';
+import { cacheFor } from '../../lib/format';
+
+const brandList = await brands();
+// A–Z, with a heading per letter; digits and other scripts under "#".
+const byLetter = new Map<string, typeof brandList>();
+for (const brand of brandList) {
+  const first = brand.name.charAt(0).toUpperCase();
+  const letter = /[A-Z]/.test(first) ? first : '#';
+  byLetter.set(letter, [...(byLetter.get(letter) ?? []), brand]);
+}
+const letters = [...byLetter.keys()].sort((a, b) => (a === '#' ? 1 : b === '#' ? -1 : a.localeCompare(b)));
+
+cacheFor(Astro.response.headers, 3600);
+---
+
+<Base
+  title="All brands on offer in the UAE"
+  description={`Offers from ${brandList.length} brands at UAE supermarkets, compared by true price per unit.`}
+  breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Brands', path: '/brands' }]}
+>
+  <h1 class="mb-4 text-2xl font-bold">Brands</h1>
+  <nav class="rail mb-6" aria-label="Letters">
+    {letters.map((letter) => <a href={`#letter-${letter}`} class="chip">{letter}</a>)}
+  </nav>
+  <div class="space-y-6">
+    {letters.map((letter) => (
+      <section id={`letter-${letter}`}>
+        <h2 class="mb-2 text-lg font-bold">{letter}</h2>
+        <ul class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3 lg:grid-cols-5">
+          {byLetter.get(letter)!.map((brand) => (
+            <li><a href={`/brands/${brand.slug}`} class="hover:underline">{brand.name}</a></li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </div>
+</Base>

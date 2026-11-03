@@ -1,0 +1,370 @@
+---
+// A product page (/products/almarai-milk) or one of its packs (/products/almarai-milk/2-l). Each pack has its
+// own address, title and schema.org Product, so "Almarai milk 2 L price" can find that pack's page.
+// Under a place (/dubai/products/…, /dubai/al-barsha/products/…) it lists only the stores with a branch there.
+import { MapPin } from 'lucide-react';
+import Base from '../layouts/Base.astro';
+import OfferGrid from './OfferGrid.astro';
+import Price from './Price.astro';
+import ResponsiveImage from './ResponsiveImage.astro';
+import StoreLogo from './StoreLogo.astro';
+import AddToPlan from '../islands/AddToPlan';
+import AlertButton from '../islands/AlertButton';
+import PriceChart from './PriceChart.astro';
+import LikeButton from '../islands/LikeButton';
+import PriceMap from '../islands/PriceMap';
+import ReportButton from '../islands/ReportButton';
+import ShareButton from '../islands/ShareButton';
+import { api, categoryTrail, type Product, type StoreOffer } from '../lib/api';
+import { directory, type DirectoryBranch } from '../lib/near';
+import { searchOffers } from '../lib/search';
+import { aed, endsIn, productPath, shortDate, timeLeft, tintFor } from '../lib/format';
+import { EMIRATE_CODES, absoluteUrl, clip, geoMeta, placeName, productShareImage, regions, scopePath, type Crumb, type Region } from '../lib/seo';
+
+interface Props {
+  product: Product;
+  /** The pack in the URL; the product page picks one itself. */
+  variant: Product['variants'][number] | null;
+  emirate?: Region | null;
+  area?: Region | null;
+}
+
+const { emirate = null, area = null } = Astro.props;
+const origin = (Astro.site ?? Astro.url).origin;
+const dir = await directory();
+const logoOf = (chainId: number) => dir.chains.find((chain) => chain.id === chainId)?.logo;
+
+// Which branches carry an offer: its brochure's. A place keeps the offers with a branch inside it.
+const where = area ?? emirate;
+const place = placeName(emirate, area);
+const placePath = where ? scopePath({ emirate, area }) : '';
+const brochureBranches = new Map(dir.brochures.map((brochure) => [brochure.id, brochure.branch_ids]));
+const branchById = new Map(dir.branches.map((branch) => [branch.id, branch]));
+const inRegion = (branch: DirectoryBranch, region: Region) => (region.type === 'area' ? branch.region_id === region.id : branch.emirate === region.slug);
+const branchesOf = (offer: StoreOffer, region: Region | null): DirectoryBranch[] =>
+  (brochureBranches.get(offer.brochure_id) ?? []).map((id) => branchById.get(id)).filter((b): b is DirectoryBranch => Boolean(b && (!region || inRegion(b, region))));
+const sold = (offers: StoreOffer[], region: Region | null) => (region ? offers.filter((offer) => branchesOf(offer, region).length > 0) : offers);
+
+const product: Product = where ? { ...Astro.props.product, variants: Astro.props.product.variants.map((v) => ({ ...v, offers: sold(v.offers, where) })) } : Astro.props.product;
+const chosen = Astro.props.variant ? product.variants.find((v) => v.id === Astro.props.variant!.id) : undefined;
+const variant =
+  chosen ??
+  product.variants.find((v) => v.offers.length > 0) ??
+  product.variants.find((v) => v.is_default) ??
+  product.variants[0];
+// With one pack, the product page is the pack's page.
+const packPages = product.variants.length > 1;
+const onPackPage = Boolean(chosen) && packPages;
+const pathFor = (packSlug: string | null, at = placePath) => productPath(product.slug, packPages ? packSlug : null, at);
+const pagePath = pathFor(onPackPage ? variant.slug : null);
+
+const [historyByVariant, similar, categories] = await Promise.all([
+  variant ? api.history(product.slug) : Promise.resolve({} as Awaited<ReturnType<typeof api.history>>),
+  searchOffers({
+    filters: [`product_group_id:=${product.product_group.id}`, `product_id:!=${product.id}`, ...(where ? [`region_ids:=${where.id}`] : [])],
+    sort: 'unit',
+    perPage: 5,
+  }),
+  api.categories(),
+]);
+const history = variant ? (historyByVariant[String(variant.id)] ?? []) : [];
+
+// The headline and "Cheapest" badge use prices shoppers can pay, not ones for the store's employees.
+const best = variant?.offers.find((offer) => !offer.staff_only);
+const activity = `product:${product.id} group:${product.product_group.id}${product.brand ? ` brand:${product.brand.id}` : ''} category:${product.category.id}`;
+
+const name = onPackPage ? `${product.name} ${variant.label}` : product.name;
+const shoppable = (offers: StoreOffer[]) => offers.filter((o) => !o.staff_only);
+// Texts for the pack on a pack page, for the cheapest of any pack on the product page.
+const offersOf = (p: Product) => shoppable(onPackPage ? (p.variants.find((v) => v.id === variant.id)?.offers ?? []) : p.variants.flatMap((v) => v.offers));
+const pageOffers = offersOf(product);
+const storeCount = new Set(pageOffers.map((o) => o.chain.id)).size;
+const lowest = pageOffers.length ? pageOffers.reduce((min, o) => (o.price < min.price ? o : min)) : null;
+const lowestPack = !onPackPage && packPages && lowest ? product.variants.find((v) => v.offers.includes(lowest))?.label : undefined;
+const otherStores = [...new Set(pageOffers.map((o) => o.chain.name))].filter((chain) => chain !== lowest?.chain.name);
+
+const title = lowest
+  ? `${name} price in ${place}: from ${aed(lowest.price)} at ${storeCount} ${storeCount === 1 ? 'store' : 'stores'}`
+  : `${name} price in ${place}`;
+const description = clip(
+  lowest
+    ? `${name}${lowestPack ? ` (${lowestPack})` : ''} from ${aed(lowest.price)} at ${lowest.chain.name}${where ? ` in ${place}` : ''}${lowest.discount_pct && lowest.discount_pct >= 5 ? `, ${Math.round(lowest.discount_pct)}% off` : ''}, until ${shortDate(lowest.valid_to)}.${otherStores.length ? ` Compare with ${otherStores.slice(0, 2).join(', ')}${otherStores.length > 2 ? ` and ${otherStores.length - 2} more` : ''}.` : ''} Price history and unit prices.`
+    : `${name}: compare prices across ${where ? `supermarkets in ${place}` : 'UAE supermarkets'}, see the price history and get an alert when it goes on offer.`,
+);
+// A place where nobody sells it says nothing new; an area with one store repeats its emirate's page.
+const noindex = Boolean(where) && (storeCount === 0 || (area !== null && storeCount < 2));
+
+const trail = categoryTrail(categories, (c) => c.id === product.category.id);
+const breadcrumbs: Crumb[] = [
+  { name: 'Home', path: '/' },
+  ...(emirate ? [{ name: emirate.name, path: scopePath({ emirate }) }] : []),
+  ...(area ? [{ name: area.name, path: scopePath({ emirate, area }) }] : []),
+  ...(trail.length ? trail : [product.category]).map((c) => ({ name: c.name, path: scopePath({ emirate, area, category: c }) })),
+  ...(product.brand ? [{ name: product.brand.name, path: scopePath({ emirate, area, brand: product.brand }) }] : []),
+  { name: product.name, path: pathFor(null) },
+  ...(onPackPage ? [{ name: variant.label, path: pagePath }] : []),
+];
+
+// The same product in each emirate, and in each area of this one, wherever a store has it.
+const allRegions = regions(dir);
+const placesWith = (candidates: Region[]) =>
+  candidates
+    .map((region) => ({ region, stores: new Set(offersOf(Astro.props.product).filter((o) => branchesOf(o, region).length).map((o) => o.chain.id)).size }))
+    .filter(({ stores }) => stores > 0);
+const emirateLinks = placesWith(allRegions.filter((r) => r.type === 'emirate'));
+const areaLinks = emirate ? placesWith(allRegions.filter((r) => r.emirate?.id === emirate.id)) : [];
+
+// schema.org: one Product per pack with its offers, grouped in a ProductGroup when there are several packs.
+const image = product.images[0] ? absoluteUrl(`${product.images[0].base}-350.webp`, origin) : undefined;
+const eligibleRegion = emirate
+  ? { '@type': 'AdministrativeArea', name: place, ...(EMIRATE_CODES[emirate.slug] && { identifier: EMIRATE_CODES[emirate.slug] }) }
+  : { '@type': 'Country', name: 'United Arab Emirates', identifier: 'AE' };
+const storeSchema = (branch: DirectoryBranch) => ({
+  '@type': 'GroceryStore',
+  name: `${branch.chain} ${branch.name}`,
+  url: absoluteUrl(`/stores/${dir.chains.find((c) => c.id === branch.chain_id)?.slug}/${branch.slug}`, origin),
+  geo: { '@type': 'GeoCoordinates', latitude: branch.lat, longitude: branch.lng },
+});
+const offersSchema = (offers: StoreOffer[], url: string) => {
+  const live = shoppable(offers);
+  if (!live.length) return {};
+  const prices = live.map((o) => o.price);
+  return {
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'AED',
+      lowPrice: Math.min(...prices).toFixed(2),
+      highPrice: Math.max(...prices).toFixed(2),
+      offerCount: live.length,
+      offers: live.slice(0, 20).map((o) => ({
+        '@type': 'Offer',
+        url,
+        price: o.price.toFixed(2),
+        priceCurrency: 'AED',
+        priceValidUntil: o.valid_to,
+        availability: 'https://schema.org/InStoreOnly',
+        itemCondition: 'https://schema.org/NewCondition',
+        eligibleRegion,
+        seller: { '@type': 'Organization', name: o.chain.name, url: absoluteUrl(`/stores/${o.chain.slug}`, origin) },
+        // Under a place, the branches there that have it.
+        ...(where && { availableAtOrFrom: branchesOf(o, where).slice(0, 5).map(storeSchema) }),
+      })),
+    },
+  };
+};
+const groupId = absoluteUrl(pathFor(null), origin);
+const packSchema = (v: Product['variants'][number]) => {
+  const url = absoluteUrl(pathFor(v.slug), origin);
+  return {
+    '@type': 'Product',
+    '@id': `${url}#product`,
+    name: `${product.name} ${v.label}`,
+    url,
+    sku: `${product.id}-${v.id}`,
+    ...(v.gtin && { gtin: v.gtin }),
+    ...(image && { image }),
+    ...(product.description && { description: product.description }),
+    ...(product.brand && { brand: { '@type': 'Brand', name: product.brand.name } }),
+    category: product.category.name,
+    size: v.label,
+    ...(packPages && { isVariantOf: { '@id': `${groupId}#group` } }),
+    ...offersSchema(v.offers, url),
+  };
+};
+const jsonLd = packPages
+  ? [
+      {
+        '@type': 'ProductGroup',
+        '@id': `${groupId}#group`,
+        name: product.name,
+        url: groupId,
+        productGroupID: String(product.id),
+        ...(image && { image }),
+        ...(product.description && { description: product.description }),
+        ...(product.brand && { brand: { '@type': 'Brand', name: product.brand.name } }),
+        category: product.category.name,
+        variesBy: 'https://schema.org/size',
+        hasVariant: product.variants.map(packSchema),
+      },
+    ]
+  : variant
+    ? [packSchema(variant)]
+    : [];
+
+// Choosing another place in the location panel moves to this product's prices there (lib/prefs.ts).
+const locationScope = JSON.stringify({ rest: pathFor(onPackPage ? variant.slug : null, '') });
+const shareImage = productShareImage(product, onPackPage ? variant.slug : null, where, [lowest?.price, lowest?.chain.id, storeCount, lowest?.valid_to]);
+---
+
+<Base
+  title={title}
+  description={description}
+  canonicalPath={pagePath}
+  ogType="product"
+  image={shareImage}
+  price={best ? { amount: best.price, currency: 'AED' } : null}
+  breadcrumbs={breadcrumbs}
+  jsonLd={jsonLd}
+  noindex={noindex}
+  geo={emirate ? geoMeta(emirate, area) : undefined}
+>
+  <nav class="mb-4 text-sm text-muted" aria-label="Breadcrumb" data-views={activity} data-location-scope={locationScope}>
+    {breadcrumbs.slice(1, -1).map((crumb) => (
+      <><a href={crumb.path} class="hover:underline">{crumb.name}</a> › </>
+    ))}
+    <span aria-current="page">{breadcrumbs.at(-1)!.name}</span>
+  </nav>
+
+  <div class="grid gap-6 md:grid-cols-[minmax(0,20rem)_1fr] lg:gap-10">
+    <div class="self-start">
+      <div class:list={['relative grid aspect-[3/2] place-items-center overflow-hidden rounded-(--radius-card) shadow-card md:aspect-square', product.images[0] ? 'photo' : tintFor(product.product_group.name)]}>
+        {product.images[0] ? (
+          <ResponsiveImage base={product.images[0].base} alt={product.images[0].alt ?? product.name} sizes="(min-width: 768px) 20rem, 100vw" priority class="size-full object-contain" />
+        ) : (
+          <span aria-hidden="true" class="text-7xl leading-none drop-shadow-sm">{product.icon ?? product.name.charAt(0)}</span>
+        )}
+        <div class="absolute end-3 top-3"><LikeButton client:visible target={`product:${product.id}`} /></div>
+      </div>
+      {product.images[0]?.credit && <p class="mt-1.5 text-xs text-muted">Photo: {product.images[0].credit}</p>}
+    </div>
+
+    <div class="min-w-0">
+      {product.brand && <p class="text-sm font-semibold text-link">{product.brand.name}</p>}
+      <h1 class="text-2xl font-bold sm:text-3xl">{product.name}{onPackPage && <span class="text-muted"> {variant.label}</span>}</h1>
+      {where && (
+        <p class="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted">
+          <MapPin class="size-4 text-primary" aria-hidden="true" /> Prices in {place}
+          <a href={pathFor(onPackPage ? variant.slug : null, '')} class="font-semibold text-link hover:underline">All of the UAE</a>
+        </p>
+      )}
+
+      {best && (
+        <p class="mt-3 flex flex-wrap items-baseline gap-x-2 text-muted">
+          <Price value={best.price} class="text-4xl text-ink" />
+          <span>at {best.chain.name}</span>
+          {best.discount_pct ? <span class="badge badge-save self-center">{Math.round(best.discount_pct)}% off</span> : null}
+        </p>
+      )}
+
+      {product.variants.length > 1 && (
+        <div class="mt-4 flex flex-wrap gap-2" role="group" aria-label="Choose a variant">
+          {product.variants.map((v) => (
+            <a href={pathFor(v.slug)} aria-current={v.id === variant?.id ? 'true' : undefined} class:list={['chip', v.id === variant?.id && 'chip-on']}>
+              {v.label}
+              {v.offers.length > 0 && <span class="text-xs text-muted">· {v.offers.length} {v.offers.length === 1 ? 'store' : 'stores'}</span>}
+            </a>
+          ))}
+        </div>
+      )}
+
+      {variant && (
+        <div class="mt-4">
+          <AddToPlan client:visible targets={activity} variantId={variant.id} label={`${product.name} · ${variant.label}`} groupId={product.product_group.id} groupName={product.product_group.name} />
+        </div>
+      )}
+
+      <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <ShareButton client:visible title={`${product.name}${variant ? ` ${variant.label}` : ''}${best ? ` from ${aed(best.price)} at ${best.chain.name}` : ''}`} path={variant ? pathFor(variant.slug) : pagePath} />
+        <AlertButton client:visible productId={product.id} groupId={product.product_group.id} groupName={product.product_group.name} unitLabel={product.product_group.unit_label} />
+        <ReportButton client:visible type="product" id={product.id} label="Report a problem" />
+      </div>
+      {product.description && <p class="mt-3 text-muted">{product.description}</p>}
+
+      <h2 class="mt-6 mb-2 text-lg font-bold">Prices today{variant ? ` for ${variant.label}` : ''}{where ? ` in ${place}` : ''}</h2>
+      {variant && variant.offers.length > 0 ? (
+        <ul class="divide-y divide-line/70 overflow-hidden card">
+          {variant.offers.map((offer) => (
+            <li class="flex items-center gap-3 p-3">
+              <StoreLogo name={offer.chain.name} logo={logoOf(offer.chain.id)} />
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-x-2">
+                  <a href={`/stores/${offer.chain.slug}`} class="font-semibold hover:underline">{offer.chain.name}</a>
+                  {offer === best && variant.offers.length > 1 && <span class="badge badge-good">Cheapest</span>}
+                </div>
+                {where && (
+                  <p class="text-xs text-muted">
+                    {branchesOf(offer, where).slice(0, 3).map((branch, index) => (
+                      <>{index > 0 && ', '}<a href={`/stores/${offer.chain.slug}/${branch.slug}`} class="hover:underline">{branch.name}</a></>
+                    ))}
+                    {branchesOf(offer, where).length > 3 && ` and ${branchesOf(offer, where).length - 3} more`}
+                  </p>
+                )}
+                {(offer.staff_only || offer.condition_label) && (
+                  <p class="text-xs font-medium">
+                    {offer.staff_only && <span class="text-warn">Store employees only</span>}
+                    {offer.staff_only && offer.condition_label && <span class="text-muted"> · </span>}
+                    {offer.condition_label && <span class="text-muted">{offer.condition_label}</span>}
+                  </p>
+                )}
+                <div class="text-xs text-muted">
+                  {offer.is_lowest_90d && <span class="font-semibold text-link">Lowest in 90 days · </span>}
+                  {offer.was_price_suspicious && <span class="text-warn" title="This 'was' price is higher than any price this store charged in the last 90 days">“Was” price unusually high · </span>}
+                  {offer.promo_label && <span class="font-semibold text-save">{offer.promo_label} · </span>}
+                  {offer.time_window && offer.window_ends_at && (
+                    <span data-timed class="font-semibold text-warn">{offer.time_window}, <span class="tabular-nums" data-ends-at={offer.window_ends_at}>{timeLeft(offer.window_ends_at)}</span> · </span>
+                  )}
+                  {endsIn(offer.valid_to)} ·{' '}
+                  <ReportButton client:visible type="offer" id={offer.id} label="Wrong price?" />
+                </div>
+              </div>
+              <div class="shrink-0 text-end">
+                <Price value={offer.price} class="text-lg" />
+                {offer.regular_price && offer.regular_price > offer.price && <s class="block text-xs text-muted">{offer.regular_price.toFixed(2)}</s>}
+                {offer.effective_unit_price && <p class="text-xs text-muted">{aed(offer.effective_unit_price)} {offer.unit_label}</p>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="rounded-(--radius-card) border border-dashed border-line p-4 text-sm text-muted">
+          {where ? <>No store in {place} has this on offer right now. <a href={pathFor(onPackPage ? variant.slug : null, '')} class="font-semibold text-link hover:underline">See all of the UAE</a></> : 'No store has this on offer right now.'}
+        </p>
+      )}
+
+      {variant && variant.offers.length > 0 && (
+        <div class="mt-3">
+          <PriceMap client:visible offers={variant.offers.map((offer) => ({ brochure_id: offer.brochure_id, chain: offer.chain.name, price: offer.price }))} />
+        </div>
+      )}
+    </div>
+  </div>
+
+  {history.length > 0 && variant && (
+    <section class="mt-8 max-w-3xl">
+      <PriceChart series={history} title={`Price history for ${variant.label} (AED)`} />
+    </section>
+  )}
+
+  {similar.hits.length > 0 && (
+    <section class="mt-10">
+      <h2 class="mb-3 text-xl font-bold">Other {product.product_group.name.toLowerCase()} on offer, cheapest {product.product_group.unit_label}</h2>
+      <OfferGrid offers={similar.hits} place={placePath || undefined} />
+    </section>
+  )}
+
+  {(emirateLinks.length > 0 || areaLinks.length > 0) && (
+    <div class="mt-10 space-y-6 text-sm">
+      {areaLinks.length > 0 && emirate && (
+        <section>
+          <h2 class="mb-2 text-base font-bold">{name} by area in {emirate.name}</h2>
+          <ul class="flex flex-wrap gap-2">
+            {area && <li><a href={pathFor(onPackPage ? variant.slug : null, scopePath({ emirate }))} class="chip">All of {emirate.name}</a></li>}
+            {areaLinks.filter(({ region }) => region.id !== area?.id).map(({ region, stores }) => (
+              <li><a href={pathFor(onPackPage ? variant.slug : null, scopePath({ emirate, area: region }))} class="chip">{region.name} <span class="text-xs text-muted">{stores} {stores === 1 ? 'store' : 'stores'}</span></a></li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {emirateLinks.length > 0 && (
+        <section>
+          <h2 class="mb-2 text-base font-bold">{name} prices by emirate</h2>
+          <ul class="flex flex-wrap gap-2">
+            {emirateLinks.filter(({ region }) => region.id !== emirate?.id).map(({ region, stores }) => (
+              <li><a href={pathFor(onPackPage ? variant.slug : null, scopePath({ emirate: region }))} class="chip">{region.name} <span class="text-xs text-muted">{stores} {stores === 1 ? 'store' : 'stores'}</span></a></li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  )}
+</Base>

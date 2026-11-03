@@ -1,0 +1,46 @@
+---
+/**
+ * Location pages, the same for every visitor so search engines see what shoppers see:
+ *   /dubai                                every offer in the emirate
+ *   /dubai/al-barsha                      in one area
+ *   /dubai[/al-barsha]/c/dairy            a category there
+ *   /dubai[/al-barsha]/brands/x           a brand there
+ *   /dubai[/al-barsha]/products/x[/pack]  a product's prices at the stores there
+ * Pages with a fixed first segment (/stores, /c, /products…) take precedence over this route.
+ */
+import ListingPage from '../../components/ListingPage.astro';
+import ProductPage from '../../components/ProductPage.astro';
+import { api, brands, findCategory } from '../../lib/api';
+import { cacheFor, productPath } from '../../lib/format';
+import { directory } from '../../lib/near';
+import { findLocation, regions, scopePath } from '../../lib/seo';
+
+const KINDS = ['c', 'brands', 'products'];
+const segments = (Astro.params.rest ?? '').split('/').filter(Boolean);
+const areaSlug = segments.length && !KINDS.includes(segments[0]) ? segments.shift() : undefined;
+const [kind, slug, pack] = segments;
+const valid = segments.length === 0 || (kind === 'products' ? segments.length === 2 || segments.length === 3 : KINDS.includes(kind) && segments.length === 2);
+if (!valid) return Astro.rewrite('/404');
+
+const location = findLocation(regions(await directory()), Astro.params.emirate ?? '', areaSlug);
+if (!location) return Astro.rewrite('/404');
+
+const product = kind === 'products' ? await api.product(slug) : null;
+if (kind === 'products' && !product) return Astro.rewrite('/404');
+const variant = product && pack ? (product.variants.find((v) => v.slug === pack) ?? null) : null;
+// As on /products/…: a pack that was merged away, or a product with one pack, is the product's page.
+if (product && pack && (!variant || product.variants.length === 1)) return Astro.redirect(productPath(product.slug, null, scopePath(location)), 301);
+
+const [categories, brandList] = await Promise.all([api.categories(), kind === 'brands' ? brands() : Promise.resolve([])]);
+const category = kind === 'c' ? findCategory(categories, slug) : null;
+const brand = kind === 'brands' ? brandList.find((candidate) => candidate.slug === slug) : null;
+if ((kind === 'c' && !category) || (kind === 'brands' && !brand)) return Astro.rewrite('/404');
+
+cacheFor(Astro.response.headers);
+---
+
+{product ? (
+  <ProductPage product={product} variant={variant} emirate={location.emirate} area={location.area} />
+) : (
+  <ListingPage emirate={location.emirate} area={location.area} category={category} brand={brand} categories={categories} />
+)}

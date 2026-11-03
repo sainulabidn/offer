@@ -56,6 +56,7 @@ class DirectoryController extends Controller
                 'name' => $b->name,
                 'slug' => $b->slug,
                 'area' => $b->region?->name,
+                'region_id' => $b->region_id,
                 'emirate' => ($b->region?->parent ?? $b->region)?->slug,
                 'lat' => round($b->location->getLatitude(), 5),
                 'lng' => round($b->location->getLongitude(), 5),
@@ -73,6 +74,10 @@ class DirectoryController extends Controller
                 'id' => $r->id,
                 'slug' => $r->slug,
                 'name' => $r->parent ? "{$r->name}, {$r->parent->name}" : $r->name,
+                'name_ar' => $r->getTranslation('name', 'ar', false) ?: null,
+                // emirate or area; an area's page lives under its emirate's (/dubai/al-barsha).
+                'type' => $r->type,
+                'parent_id' => $r->parent_id,
                 'lat' => round($r->centroid->getLatitude(), 4),
                 'lng' => round($r->centroid->getLongitude(), 4),
             ]),

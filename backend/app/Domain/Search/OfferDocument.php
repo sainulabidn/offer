@@ -19,10 +19,12 @@ final class OfferDocument
     public const array RELATIONS = [
         'chain',
         'brochure.branches.chain',
+        'brochure.branches.region',
         'variant.unit',
         'variant.optionValues',
         'variant.recentRegularPrices.chain',
         'variant.product.brand',
+        'variant.product.variants',
         'variant.product.category.parent',
         'variant.product.productGroup',
         'variant.product.images',
@@ -46,6 +48,8 @@ final class OfferDocument
                 ['name' => 'variant_id', 'type' => 'int32', 'facet' => true],
                 ['name' => 'variant_slug', 'type' => 'string', 'index' => false, 'optional' => true],
                 ['name' => 'variant_label', 'type' => 'string'],
+                // Packs of the product: with more than one, each has its own page (/products/{product}/{pack}).
+                ['name' => 'pack_count', 'type' => 'int32', 'index' => false, 'optional' => true],
                 ['name' => 'brand', 'type' => 'string', 'facet' => true, 'optional' => true],
                 ['name' => 'brand_id', 'type' => 'int32', 'facet' => true, 'optional' => true],
                 ['name' => 'product_group', 'type' => 'string', 'facet' => true],
@@ -68,6 +72,8 @@ final class OfferDocument
                 // Every active branch where this offer applies; a radius filter matches any of them.
                 // Long, so search responses leave it out (SearchKeys).
                 ['name' => 'locations', 'type' => 'geopoint[]', 'optional' => true],
+                // The areas and emirates of those branches, for the location pages (/dubai, /dubai/al-barsha).
+                ['name' => 'region_ids', 'type' => 'int32[]', 'facet' => true, 'optional' => true],
                 ['name' => 'brochure_id', 'type' => 'int32', 'facet' => true],
                 ['name' => 'price', 'type' => 'float'],
                 ['name' => 'regular_price', 'type' => 'float', 'optional' => true],
@@ -129,6 +135,7 @@ final class OfferDocument
             'variant_id' => $variant->id,
             'variant_slug' => $variant->slug,
             'variant_label' => $variant->optionValues->pluck('label')->implode(', ') ?: $variant->slug,
+            'pack_count' => $product->variants->whereNull('merged_into_id')->count(),
             'brand' => $product->brand?->getTranslation('name', 'en'),
             'brand_id' => $product->brand_id,
             'product_group' => $group->getTranslation('name', 'en'),
@@ -144,6 +151,7 @@ final class OfferDocument
             'product_rank' => (int) ($product->stats?->rank ?? 0),
             'compare_rank' => (int) ($product->stats?->compare_rank ?? 0),
             'locations' => self::locations($offer) ?: null,
+            'region_ids' => self::regionIds($offer) ?: null,
             'brochure_id' => $offer->brochure_id,
             'price' => (float) $offer->price,
             'regular_price' => $offer->regular_price !== null ? (float) $offer->regular_price : null,
@@ -186,6 +194,19 @@ final class OfferDocument
         return $offer->brochure->branches
             ->filter(fn (Branch $branch) => $branch->is_active && $branch->chain->is_active)
             ->map(fn (Branch $branch) => [$branch->location->getLatitude(), $branch->location->getLongitude()])
+            ->values()
+            ->all();
+    }
+
+    /** @return list<int> the region of each active branch this offer applies to, and the emirate above it */
+    private static function regionIds(Offer $offer): array
+    {
+        return $offer->brochure->branches
+            ->filter(fn (Branch $branch) => $branch->is_active && $branch->chain->is_active && $branch->region)
+            ->flatMap(fn (Branch $branch) => [$branch->region->id, $branch->region->parent_id])
+            ->filter()
+            ->unique()
+            ->sort()
             ->values()
             ->all();
     }

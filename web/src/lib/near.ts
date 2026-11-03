@@ -4,9 +4,11 @@ import { distanceKm, nearest, rankStores, type OpeningHours, type Point, type Pr
 /** "Near me": what the shopper's location means, worked out in the Worker from the store directory. */
 export interface Directory {
   chains: { id: number; name: string; slug: string; grade: number; group_id: number | null; logo: string | null }[];
-  branches: { id: number; chain_id: number; chain: string; name: string; slug: string; area: string | null; emirate: string | null; lat: number; lng: number; hours: OpeningHours[]; closed_today: boolean }[];
+  /** region_id is the branch's area, or its emirate when it has no listed area. */
+  branches: { id: number; chain_id: number; chain: string; name: string; slug: string; area: string | null; region_id: number | null; emirate: string | null; lat: number; lng: number; hours: OpeningHours[]; closed_today: boolean }[];
   brochures: { id: number; chain_id: number; valid_from: string; valid_to: string; branch_ids: number[]; offers: number }[];
-  areas: { id: number; slug: string; name: string; lat: number; lng: number }[];
+  /** Emirates and their areas; an area's name is "Al Barsha, Dubai". */
+  areas: { id: number; slug: string; name: string; name_ar: string | null; type: string; parent_id: number | null; lat: number; lng: number }[];
   settings: Settings;
 }
 

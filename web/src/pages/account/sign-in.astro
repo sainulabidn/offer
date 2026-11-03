@@ -6,7 +6,7 @@ const next = Astro.url.searchParams.get('next') ?? '/';
 Astro.response.headers.set('Cache-Control', 'private, no-store');
 ---
 
-<Base title="Sign in · offer">
+<Base title="Sign in" noindex>
   <div class="mx-auto max-w-sm card p-6">
     <h1 class="mb-1 text-xl font-bold">Sign in</h1>
     <p class="mb-5 text-sm text-muted">Like deals and get alerts. No password needed.</p>

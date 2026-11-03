@@ -51,7 +51,26 @@ export interface Product {
   icon: string | null;
   like_count: number;
   images: { base: string; alt: string | null; width: number; height: number; credit: string | null }[];
-  variants: { id: number; slug: string; label: string; is_default: boolean; offers: StoreOffer[] }[];
+  variants: { id: number; slug: string; label: string; is_default: boolean; gtin: string | null; offers: StoreOffer[] }[];
+}
+
+export interface Brand {
+  id: number;
+  name: string;
+  name_ar: string | null;
+  slug: string;
+  logo: string | null;
+  manufacturer: string | null;
+  private_label: boolean;
+}
+
+export interface Sitemap {
+  /** variants: empty when the product has one pack (no pack pages). */
+  products: { id: number; slug: string; updated: string; variants: { id: number; slug: string }[]; image: string | null }[];
+  chains: string[];
+  categories: string[];
+  /** "chain-slug/branch-slug" */
+  branches: string[];
 }
 
 export interface Chain {
@@ -78,7 +97,8 @@ export const api = {
   categories: () => get<Category[]>('categories').then((c) => c ?? []),
   product: (slug: string) => get<Product>(`products/${encodeURIComponent(slug)}`),
   chain: (slug: string) => get<Chain>(`chains/${encodeURIComponent(slug)}`),
-  sitemap: () => get<{ products: { slug: string; updated: string }[]; chains: string[]; categories: string[] }>('sitemap'),
+  sitemap: () => get<Sitemap>('sitemap'),
+  brands: () => get<Brand[]>('brands').then((b) => b ?? []),
   /** variant id → per-store series of offers in the last 120 days */
   history: (slug: string) => get<Record<string, { chain: string; points: { from: string; to: string; price: number; regular_price: number | null }[] }[]>>(`products/${encodeURIComponent(slug)}/history`).then((h) => h ?? {}),
   /** Product ids rising in this area, fastest first. */
@@ -93,4 +113,29 @@ export function findCategory(tree: Category[], slug: string): Category | undefin
     const found = findCategory(category.children, slug);
     if (found) return found;
   }
+}
+
+/** The categories from the top down to this one, for breadcrumbs. */
+export function categoryTrail(tree: Category[], match: (category: Category) => boolean): Category[] {
+  for (const category of tree) {
+    if (match(category)) return [category];
+    const below = categoryTrail(category.children, match);
+    if (below.length) return [category, ...below];
+  }
+  return [];
+}
+
+/** Brands change rarely; one copy per Worker isolate for 10 minutes. */
+let brandList: { at: number; brands: Promise<Brand[]> } | null = null;
+export function brands(): Promise<Brand[]> {
+  if (!brandList || Date.now() - brandList.at > 600_000) {
+    brandList = {
+      at: Date.now(),
+      brands: api.brands().catch((error) => {
+        brandList = null; // try again on the next page
+        throw error;
+      }),
+    };
+  }
+  return brandList.brands;
 }

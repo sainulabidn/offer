@@ -1,54 +1,36 @@
 ---
-// Shared by /search and /c/[slug]: filter sidebar (a plain GET form, works without JavaScript), sort and results.
+// Every list of offers (search, category, brand, location, landing pages): filter sidebar (a plain GET form,
+// works without JavaScript), sort and results. The search itself is run by the page (lib/listing.ts).
 import { SlidersHorizontal } from 'lucide-react';
 import OfferGrid from './OfferGrid.astro';
 import Pagination from './Pagination.astro';
-import { SORTS, filterValue, searchOffers, type SortKey } from '../lib/search';
-import { directory, itemFilters, itemRadius, nearestBranches, placeOf } from '../lib/near';
+import { SORTS } from '../lib/search';
+import type { Listing } from '../lib/listing';
 
 interface Props {
   title: string;
-  baseFilters?: string[];
+  listing: Listing;
+  /** Staff-written text under the heading (SEO pages). */
+  intro?: string;
+  /** On a location page ("/dubai"): cards open the product's prices there. */
+  placePath?: string;
 }
 
-const { title, baseFilters = [] } = Astro.props;
+const { title, listing, intro, placePath } = Astro.props;
 const params = Astro.url.searchParams;
-const q = params.get('q') ?? '';
-const sort = (params.get('sort') ?? (q ? 'unit' : 'deal')) as SortKey;
-const page = Math.max(1, Number(params.get('page')) || 1);
-const chains = params.getAll('store');
-const brands = params.getAll('brand');
-const cardOnly = params.get('card') === '1';
-const minDiscount = Number(params.get('min_discount')) || 0;
-// From a home page card: every tomato, whatever the origin or variety.
-const groupId = Number(params.get('group')) || 0;
-
-const hideStaffOnly = Astro.locals.prefs.hideStaffOnly;
-const activeFilters = chains.length + brands.length + (cardOnly ? 1 : 0) + (minDiscount ? 1 : 0) + (hideStaffOnly ? 1 : 0);
-
-const filters = [...baseFilters];
-if (groupId) filters.push(`product_group_id:=${groupId}`);
-if (chains.length) filters.push(`chain_name:[${chains.map(filterValue).join(',')}]`);
-if (brands.length) filters.push(`brand:[${brands.map(filterValue).join(',')}]`);
-if (cardOnly) filters.push('card_required:true');
-if (minDiscount) filters.push(`discount_pct:>=${minDiscount}`);
-
-// "Near me": keep only offers at a branch inside the shopper's item radius.
-const prefs = Astro.locals.prefs;
-const dir = await directory();
-const place = placeOf(dir, prefs);
-const radiusKm = itemRadius(dir, prefs);
-filters.push(...itemFilters(dir, prefs));
-const nearby = place.at && !place.rough ? nearestBranches(dir, place.at, radiusKm) : undefined;
-
-const result = await searchOffers({ q, filters, sort, page, facets: ['chain_name', 'brand'] });
-const facet = (field: string) => result.facets.find((f) => f.field === field)?.values ?? [];
+const { q, sort, chains, brands, cardOnly, minDiscount, groupId, hideStaffOnly, activeFilters, place, radiusKm, nearby, result } = listing;
+// The sidebar lists the 20 biggest; browse links may have asked for more.
+const facet = (field: string) => listing.facet(field).slice(0, 20);
+// A landing page's own search words stay in its URL, not in a hidden field.
+const ownQ = params.get('q');
 ---
 
 <h1 class="mb-1 text-2xl font-bold">{groupId && result.hits[0] ? `All ${result.hits[0].product_group.toLowerCase()} offers` : title}</h1>
 <p class="mb-4 text-sm text-muted">
   {result.found} {result.found === 1 ? 'offer' : 'offers'}{radiusKm && place.name && ` within ${radiusKm} km of ${place.name}`}
 </p>
+{intro && <p class="mb-4 max-w-3xl text-sm/relaxed text-muted">{intro}</p>}
+<slot name="top" />
 
 <button type="button" id="filters-open" class="btn btn-quiet mb-4 lg:hidden">
   <SlidersHorizontal class="size-4" aria-hidden="true" /> Filters{activeFilters > 0 && ` (${activeFilters})`}
@@ -57,7 +39,7 @@ const facet = (field: string) => result.facets.find((f) => f.field === field)?.v
 <div class="grid gap-6 lg:grid-cols-[14rem_1fr]">
   <dialog id="filters" class="sheet filters" aria-label="Filters">
     <form method="get" class="space-y-5 p-5 text-sm lg:p-0">
-      {q && <input type="hidden" name="q" value={q} />}
+      {ownQ && <input type="hidden" name="q" value={q} />}
       {['near', 'r', 'items', 'group'].map((k) => params.get(k) && <input type="hidden" name={k} value={params.get(k)!} />)}
       <label class="block">
         <span class="font-semibold">Sort</span>
@@ -103,7 +85,7 @@ const facet = (field: string) => result.facets.find((f) => f.field === field)?.v
   </dialog>
 
   <div class="min-w-0">
-    <OfferGrid offers={result.hits} distances={nearby} empty={radiusKm ? `No offers within ${radiusKm} km. Try a bigger radius.` : 'No offers match these filters.'} />
+    <OfferGrid offers={result.hits} distances={nearby} place={placePath} empty={radiusKm ? `No offers within ${radiusKm} km. Try a bigger radius.` : 'No offers match these filters.'} />
     <Pagination page={result.page} pages={result.pages} />
   </div>
 </div>

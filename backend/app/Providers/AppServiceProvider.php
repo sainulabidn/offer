@@ -15,6 +15,7 @@ use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
 use App\Domain\Retail\RetailGroup;
 use App\Domain\Search\Synonym;
+use App\Domain\Seo\SeoPage;
 use App\Domain\Settings\SiteSetting;
 use App\Http\Responses\PasskeySignedIn;
 use App\Models\User;
@@ -68,12 +69,14 @@ class AppServiceProvider extends ServiceProvider
             'brand' => Brand::class,
             'product_group' => ProductGroup::class,
             'synonym' => Synonym::class,
+            'seo_page' => SeoPage::class,
             'site_setting' => SiteSetting::class,
             'regular_price' => RegularPrice::class,
             'role' => Role::class,
         ]);
 
         RateLimiter::for('public-read', fn (Request $request) => Limit::perMinute(600)->by($request->ip()));
+        RateLimiter::for('share-images', fn (Request $request) => Limit::perMinute(60)->by($request->ip()));
         RateLimiter::for('login-code', fn (Request $request) => [
             Limit::perMinute(3)->by('email:'.mb_strtolower((string) $request->input('email'))),
             Limit::perHour(20)->by('ip:'.$request->ip()),

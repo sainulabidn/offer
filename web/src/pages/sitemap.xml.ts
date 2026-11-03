@@ -1,21 +1,13 @@
 import type { APIRoute } from 'astro';
-import { api } from '../lib/api';
+import { SITEMAPS } from '../lib/sitemap';
 
-/** One sitemap for now (fine up to 50,000 URLs); split into an index when the catalog grows past that. */
-export const GET: APIRoute = async ({ site, url }) => {
+/** The sitemap index: one file per kind of page (lib/sitemap.ts), each well under the 50,000-URL limit for now. */
+export const GET: APIRoute = ({ site, url }) => {
   const origin = (site ?? new URL(url.origin)).origin;
-  const data = await api.sitemap();
-  const entry = (path: string, lastmod?: string) =>
-    `<url><loc>${origin}${path}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}</url>`;
+  const today = new Date().toISOString().slice(0, 10);
+  const files = SITEMAPS.map((name) => `<sitemap><loc>${origin}/sitemaps/${name}.xml</loc><lastmod>${today}</lastmod></sitemap>`);
 
-  const urls = [
-    entry('/'),
-    ...(data?.categories ?? []).map((slug) => entry(`/c/${slug}`)),
-    ...(data?.chains ?? []).map((slug) => entry(`/stores/${slug}`)),
-    ...(data?.products ?? []).map((p) => entry(`/products/${p.slug}`, p.updated)),
-  ];
-
-  return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join('')}</urlset>`, {
+  return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${files.join('')}</sitemapindex>`, {
     headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, s-maxage=3600' },
   });
 };

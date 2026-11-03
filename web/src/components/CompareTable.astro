@@ -2,7 +2,7 @@
 // Two or more stores side by side: the same packs, cheapest highlighted, totals over packs every store has.
 import { ListPlus } from 'lucide-react';
 import { compareStores } from '../lib/feed';
-import { aed, offerTargets, shortDate } from '../lib/format';
+import { aed, offerPath, offerTargets, shortDate } from '../lib/format';
 import type { Directory, StoreCard } from '../lib/near';
 
 interface Props {
@@ -36,7 +36,7 @@ const planItems = rows.map(({ offer: { hit } }) => ({ variant: hit.variant_id, t
           {rows.map(({ offer: { hit }, cells, cheapest }) => (
             <tr class="border-b border-line/60 last:border-0">
               <th scope="row" class="sticky start-0 z-10 bg-surface p-3 text-start font-medium">
-                <a href={`/products/${hit.product_slug}?variant=${encodeURIComponent(hit.variant_slug)}`} data-click={`product:${hit.product_id} group:${hit.product_group_id}`} class="hover:underline">{hit.product_name}</a>
+                <a href={offerPath(hit)} data-click={`product:${hit.product_id} group:${hit.product_group_id}`} class="hover:underline">{hit.product_name}</a>
                 <span class="block text-xs font-normal text-muted">{hit.variant_label}</span>
               </th>
               {cells.map((cell, index) => (

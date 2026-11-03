@@ -29,7 +29,7 @@ const stores: ExplorerStore[] = (inRange.length >= AT_LEAST ? inRange : all.slic
 cacheFor(Astro.response.headers);
 ---
 
-<Base title="Stores near you · offer" description="Every supermarket on offer, with this week's deals at each branch.">
+<Base title="Stores near you" description="Every supermarket on offer, with this week's deals at each branch.">
   <h1 class="text-2xl font-bold">Stores{here && place.name ? ` near ${place.name}` : ''}</h1>
   <p class="mt-1 mb-4 text-sm text-muted">
     {inRange.length > stores.length && inRange.length >= AT_LEAST ? `The nearest ${stores.length} of ${inRange.length} stores` : `${stores.length} stores`}{here ? (inRange.length >= AT_LEAST ? ` within ${radiusKm} km, nearest first` : ', nearest first') : ''}. Tick up to 4 to compare their prices.

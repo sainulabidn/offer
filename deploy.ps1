@@ -1,10 +1,11 @@
-# Deploy offer.emirait.com.
+# Deploy lazyoffer.com.
 #
 #   .\deploy.ps1           test, build, commit, push to GitHub + live server, deploy the Cloudflare Worker, verify
 #   .\deploy.ps1 -Setup    one time: prepare the server account (bare repo, hook, Typesense, cron, docroot)
 #   .\deploy.ps1 -SkipTests
 #
-# Live = the cPanel account offeremirait on server.s26.96h.in (the "offeremirait" entry in ~/.ssh/config).
+# Live = the cPanel account offeremirait (domain lazyoffer.com) on server.s26.96h.in (the "offeremirait"
+# entry in ~/.ssh/config). The old offer.emirait.com only redirects, in the Worker (web/src/middleware.ts).
 # Its ~/deploy.git post-receive hook runs infra/server/after-deploy.sh: composer, migrations, caches,
 # search index. The website itself is a Cloudflare Worker (web/wrangler.jsonc, env "production"),
 # deployed with CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID from the root .env.
@@ -15,7 +16,7 @@ param([switch]$Setup, [switch]$SkipTests)
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
-$Site = "https://offer.emirait.com"
+$Site = "https://lazyoffer.com"
 $LiveRemote = "offeremirait:deploy.git"
 
 function Invoke-Step([string]$Label, [scriptblock]$Command) {

@@ -1,0 +1,29 @@
+---
+// Landing pages staff make in the admin (SEO pages) for one search: "/deals/basmati-rice-dubai".
+import ListingPage from '../../components/ListingPage.astro';
+import { api, brands, categoryTrail } from '../../lib/api';
+import { cacheFor } from '../../lib/format';
+import { directory } from '../../lib/near';
+import { regions, seoPage } from '../../lib/seo';
+
+const landing = await seoPage(`/deals/${Astro.params.slug ?? ''}`);
+if (!landing?.filters) return Astro.rewrite('/404');
+
+const filters = landing.filters;
+const [categories, brandList, dir] = await Promise.all([api.categories(), brands(), directory()]);
+const where = filters.region_id ? regions(dir).find((region) => region.id === filters.region_id) : undefined;
+const category = filters.category_id ? categoryTrail(categories, (c) => c.id === filters.category_id).at(-1) : undefined;
+// One brand names the page; several are a filter only.
+const brand = filters.brand_ids?.length === 1 ? brandList.find((candidate) => candidate.id === filters.brand_ids![0]) : undefined;
+
+cacheFor(Astro.response.headers);
+---
+
+<ListingPage
+  landing={landing}
+  emirate={where?.type === 'area' ? where.emirate : where}
+  area={where?.type === 'area' ? where : null}
+  category={category}
+  brand={brand}
+  categories={categories}
+/>

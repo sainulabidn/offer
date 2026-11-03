@@ -1,4 +1,6 @@
 import { PREFS_COOKIE, cookieLabel, resolvePrefs, serializePrefs, type Prefs } from '@offer/rank';
+import { locationPathFor } from './locations';
+import { loadDirectory } from './plan';
 
 /**
  * The shopper's saved settings, in the browser. One cookie for everyone, because the edge needs it
@@ -51,9 +53,26 @@ export function clearPrefs() {
   }
 }
 
-/** Reloads without the URL settings that the saved ones just replaced. */
+/**
+ * Reloads without the URL settings that the saved ones just replaced. A location page (/dubai/c/dairy-eggs)
+ * names its place in the URL, so there the shopper moves to the page for their new place instead
+ * (/sharjah/al-majaz/c/dairy-eggs), or to the all-UAE page when they cleared their place.
+ */
 export function reloadWithPrefs() {
   const url = new URL(location.href);
   ['near', 'r', 'place', 'page', 'items'].forEach((key) => url.searchParams.delete(key));
-  location.href = url.toString();
+
+  const scope = document.querySelector<HTMLElement>('[data-location-scope]')?.dataset.locationScope;
+  if (!scope) {
+    location.href = url.toString();
+    return;
+  }
+  const { rest } = JSON.parse(scope) as { rest: string };
+  const { at } = readPrefs();
+  (at ? loadDirectory().then((dir) => locationPathFor(at, rest, dir)) : Promise.resolve(rest || '/'))
+    .catch(() => url.pathname)
+    .then((path) => {
+      url.pathname = path;
+      location.href = url.toString();
+    });
 }

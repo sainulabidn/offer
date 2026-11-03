@@ -1,5 +1,13 @@
 export const aed = (value: number) => `AED ${value.toFixed(2)}`;
 
+/** A product's page, or one pack's: /products/almarai-milk/2-l; with a place first, its prices there (/dubai/products/…). */
+export const productPath = (productSlug: string, variantSlug?: string | null, place = '') =>
+  `${place}/products/${productSlug}${variantSlug ? `/${encodeURIComponent(variantSlug)}` : ''}`;
+
+/** The page an offer links to: its pack's, or the product's when the product has only one pack. */
+export const offerPath = (offer: { product_slug: string; variant_slug: string; pack_count?: number }, place = '') =>
+  productPath(offer.product_slug, offer.pack_count === 1 ? null : offer.variant_slug, place);
+
 /** "Lulu Hypermarket" → "LH". */
 export const initials = (name: string) =>
   name.split(/\s+/).slice(0, 2).map((word) => word.charAt(0)).join('').toUpperCase();

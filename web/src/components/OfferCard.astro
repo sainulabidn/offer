@@ -8,7 +8,7 @@ import ResponsiveImage from './ResponsiveImage.astro';
 import StoreLogo from './StoreLogo.astro';
 import type { ComparePrice, NearbyPrice } from '../lib/feed';
 import type { OfferHit } from '../lib/search';
-import { aed, distanceLabel, endsIn, offerTargets, shortDate, timeLeft, tintFor } from '../lib/format';
+import { aed, distanceLabel, endsIn, offerPath, offerTargets, shortDate, timeLeft, tintFor } from '../lib/format';
 
 interface Props {
   offer: OfferHit;
@@ -17,10 +17,12 @@ interface Props {
   compare?: ComparePrice[];
   /** With one store selected: the nearest other store's price for the same pack. */
   nearby?: NearbyPrice;
+  /** On a location page ("/dubai"): open the product's prices there. */
+  place?: string;
 }
 
-const { offer, nearest, compare = [], nearby } = Astro.props;
-const href = `/products/${offer.product_slug}?variant=${encodeURIComponent(offer.variant_slug)}`;
+const { offer, nearest, compare = [], nearby, place } = Astro.props;
+const href = offerPath(offer, place);
 const saving = offer.regular_price && offer.regular_price > offer.price ? offer.regular_price - offer.price : 0;
 // A whole-group card ("Tomato") names the group, with the variety that is cheapest underneath.
 const isGroup = offer.compare_key?.startsWith('g') ?? false;

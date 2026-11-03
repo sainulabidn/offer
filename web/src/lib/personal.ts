@@ -11,6 +11,8 @@ export interface ForYouHit {
   product_group_id: number;
   product_rank: number;
   variant_slug: string;
+  /** Packs of the product; with more than one, each has its own page. */
+  pack_count?: number;
   variant_label: string;
   chain_id: number;
   chain_name: string;

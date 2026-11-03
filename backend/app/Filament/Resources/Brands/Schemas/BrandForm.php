@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Brands\Schemas;
 
 use App\Filament\Support\Fields;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -28,6 +29,15 @@ class BrandForm
                 TagsInput::make('synonyms')
                     ->columnSpanFull()
                     ->helperText('Other spellings seen in brochures, e.g. "IG" for India Gate.'),
+                FileUpload::make('logo_path')
+                    ->label('Logo')
+                    ->image()
+                    ->disk(config('filesystems.media_disk'))
+                    ->visibility('public')
+                    ->directory('logos')
+                    ->maxSize(2048)
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->helperText('Shown on the brand\'s page and when it is shared. Square works best.'),
             ]);
     }
 }

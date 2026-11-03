@@ -2,11 +2,14 @@
 import Base from '../layouts/Base.astro';
 import SearchResults from '../components/SearchResults.astro';
 import { cacheFor } from '../lib/format';
+import { runListing } from '../lib/listing';
 
 const q = Astro.url.searchParams.get('q')?.trim() ?? '';
+const listing = await runListing(Astro.url, Astro.locals.prefs);
 cacheFor(Astro.response.headers, 120);
 ---
 
-<Base title={q ? `${q} offers · offer` : 'All offers · offer'}>
-  <SearchResults title={q ? `Offers for “${q}”` : 'All offers'} />
+{/* Endless combinations of words and filters: categories, brands, locations and landing pages are the indexed lists. */}
+<Base title={q ? `${q} offers` : 'All offers'} noindex>
+  <SearchResults title={q ? `Offers for “${q}”` : 'All offers'} listing={listing} />
 </Base>

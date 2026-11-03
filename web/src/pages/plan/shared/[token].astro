@@ -7,7 +7,7 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
 Astro.response.headers.set('X-Robots-Tag', 'noindex');
 ---
 
-<Base title="Shared shopping plan · offer">
+<Base title="Shared shopping plan" noindex>
   <h1 class="mb-4 text-2xl font-bold">Shared shopping plan</h1>
   <SharedPlan client:only="react" token={Astro.params.token ?? ''} />
 </Base>

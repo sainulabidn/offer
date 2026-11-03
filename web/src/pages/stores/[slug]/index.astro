@@ -7,6 +7,7 @@ import StoreLogo from '../../../components/StoreLogo.astro';
 import { api } from '../../../lib/api';
 import { searchOffers } from '../../../lib/search';
 import { cacheFor } from '../../../lib/format';
+import { absoluteUrl, clip } from '../../../lib/seo';
 
 const chain = await api.chain(Astro.params.slug ?? '');
 if (!chain) return Astro.rewrite('/404');
@@ -24,9 +25,37 @@ const links = [
   chain.offers_page && { href: chain.offers_page, label: 'Their brochure', Icon: ExternalLink },
   chain.phone && { href: `tel:${chain.phone.replace(/[^+\d]/g, '')}`, label: chain.phone, Icon: Phone },
 ].filter(Boolean) as { href: string; label: string; Icon: typeof Phone }[];
+
+// schema.org: the chain as an organisation with its branches as grocery stores.
+const origin = (Astro.site ?? Astro.url).origin;
+const chainSchema = {
+  '@type': 'Organization',
+  '@id': `${absoluteUrl(`/stores/${chain.slug}`, origin)}#chain`,
+  name: chain.name,
+  url: absoluteUrl(`/stores/${chain.slug}`, origin),
+  ...(chain.logo && { logo: absoluteUrl(chain.logo, origin) }),
+  ...(chain.website && { sameAs: [chain.website] }),
+  ...(chain.phone && { telephone: chain.phone }),
+  areaServed: chain.emirates.map((name) => ({ '@type': 'AdministrativeArea', name })),
+  subOrganization: chain.branches.slice(0, 50).map((b) => ({
+    '@type': 'GroceryStore',
+    name: `${chain.name} ${b.name}`,
+    url: absoluteUrl(`/stores/${chain.slug}/${b.slug}`, origin),
+    geo: { '@type': 'GeoCoordinates', latitude: b.lat, longitude: b.lng },
+    ...(b.address && { address: { '@type': 'PostalAddress', streetAddress: b.address, ...(b.area && { addressLocality: b.area }), addressCountry: 'AE' } }),
+  })),
+};
+const where = chain.emirates.length ? chain.emirates.join(', ') : 'the UAE';
 ---
 
-<Base title={`${chain.name} offers this week · offer`} description={`All current ${chain.name} offers and branches in the UAE.`}>
+<Base
+  title={`${chain.name} offers this week in ${chain.emirates.length === 1 ? chain.emirates[0] : 'the UAE'}`}
+  description={clip(`All ${offers.found} current ${chain.name} offers and ${chain.branches.length} ${chain.branches.length === 1 ? 'branch' : 'branches'} in ${where}, with opening hours, prices per unit and comparisons with other stores.`)}
+  image={chain.logo ? { url: chain.logo, alt: chain.name } : null}
+  breadcrumbs={[{ name: 'Home', path: '/' }, { name: 'Stores', path: '/stores' }, { name: chain.name, path: `/stores/${chain.slug}` }]}
+  jsonLd={[chainSchema]}
+  noindex={chain.branches.length === 0}
+>
   <div class="mb-4 flex items-center gap-3" data-views={`chain:${chain.id}`}>
     <StoreLogo name={chain.name} logo={chain.logo} class="size-14 text-base" />
     <div class="min-w-0">

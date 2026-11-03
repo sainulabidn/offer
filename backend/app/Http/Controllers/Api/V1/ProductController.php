@@ -77,6 +77,7 @@ class ProductController extends Controller
                 'slug' => $variant->slug,
                 'label' => $variant->optionValues->pluck('label')->implode(', ') ?: $variant->slug,
                 'is_default' => $variant->is_default,
+                'gtin' => $variant->gtin,
                 'offers' => $variant->offers->map(fn (Offer $offer) => [
                     'id' => $offer->id,
                     'brochure_id' => $offer->brochure_id,

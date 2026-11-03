@@ -12,6 +12,7 @@ import { cheapestNearby, comparePrices } from '../lib/feed';
 import { itemFilters, itemRadius, nearestBranches, placeOf, regionId, staffFilters, storeCards, storeRadius, storesFor, directory } from '../lib/near';
 import { cacheFor } from '../lib/format';
 import { searchOffers } from '../lib/search';
+import { seoData } from '../lib/seo';
 
 const prefs = Astro.locals.prefs;
 const dir = await directory();
@@ -33,11 +34,12 @@ const trending = trendingIds.length >= 4 ? await cheapestNearby(dir, prefs, { pe
 const compare = await comparePrices(cheapest.hits, dir, prefs);
 const distances = place.at && !place.rough ? nearestBranches(dir, place.at, itemKm) : undefined;
 const topSaving = Math.max(0, ...cheapest.hits.map((hit) => Math.round(hit.discount_pct ?? 0)));
+const { settings } = await seoData();
 
 cacheFor(Astro.response.headers);
 ---
 
-<Base title="offer · Supermarket deals near you" region={regionId(dir, prefs)}>
+<Base title={`${settings.site_name} · ${settings.tagline}`} fullTitle region={regionId(dir, prefs)}>
   {place.at && !place.rough ? (
     <p class="mb-4 text-sm text-muted">
       <strong class="font-semibold text-ink">{cheapest.found} products on offer</strong> near {place.name}

@@ -7,6 +7,7 @@ import OpenNow from '../../../islands/OpenNow';
 import { api } from '../../../lib/api';
 import { directory, storeCards } from '../../../lib/near';
 import { cacheFor } from '../../../lib/format';
+import { EMIRATE_CODES, absoluteUrl, regions } from '../../../lib/seo';
 
 const chain = await api.chain(Astro.params.slug ?? '');
 const branch = chain?.branches.find((candidate) => candidate.slug === Astro.params.branch);
@@ -17,14 +18,62 @@ const store = storeCards(dir).find((card) => card.id === branch.id);
 if (!store) return Astro.rewrite('/404');
 
 cacheFor(Astro.response.headers);
+
+const origin = (Astro.site ?? Astro.url).origin;
+const emirate = regions(dir).find((region) => region.type === 'emirate' && region.slug === store.emirate);
+const area = regions(dir).find((region) => region.type === 'area' && region.emirate?.id === emirate?.id && region.name === branch.area);
+const where = [branch.area, emirate?.name].filter(Boolean).join(', ');
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// schema.org GroceryStore: address, map position and opening hours for local search results.
+const storeSchema = {
+  '@type': 'GroceryStore',
+  '@id': `${absoluteUrl(Astro.url.pathname, origin)}#store`,
+  name: `${chain.name} ${branch.name}`,
+  url: absoluteUrl(Astro.url.pathname, origin),
+  ...(chain.logo && { logo: absoluteUrl(chain.logo, origin), image: absoluteUrl(chain.logo, origin) }),
+  ...(branch.phone && { telephone: branch.phone }),
+  address: {
+    '@type': 'PostalAddress',
+    ...(branch.address && { streetAddress: branch.address }),
+    ...(branch.area && { addressLocality: branch.area }),
+    ...(emirate && { addressRegion: EMIRATE_CODES[emirate.slug] ?? emirate.name }),
+    addressCountry: 'AE',
+  },
+  geo: { '@type': 'GeoCoordinates', latitude: branch.lat, longitude: branch.lng },
+  hasMap: `https://www.google.com/maps/search/?api=1&query=${branch.lat},${branch.lng}`,
+  ...(branch.hours.length && {
+    openingHoursSpecification: branch.hours.map((h) => ({ '@type': 'OpeningHoursSpecification', dayOfWeek: `https://schema.org/${DAYS[h.weekday]}`, opens: h.opens, closes: h.closes })),
+  }),
+  brand: { '@type': 'Brand', name: chain.name },
+  ...(chain.group && { parentOrganization: { '@type': 'Organization', name: chain.group } }),
+  currenciesAccepted: 'AED',
+};
 ---
 
-<Base title={`${chain.name} ${branch.name}: offers and nearby prices · offer`} description={`This week's offers at ${chain.name} ${branch.name}, beside the nearest other stores' prices.`}>
+<Base
+  title={`${chain.name} ${branch.name}${where ? `, ${where}` : ''}: offers and opening hours`}
+  description={`This week's offers at ${chain.name} ${branch.name}${where ? ` in ${where}` : ''}, beside the nearest other stores' prices. Address, opening hours and directions.`}
+  image={chain.logo ? { url: chain.logo, alt: chain.name } : null}
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Stores', path: '/stores' },
+    { name: chain.name, path: `/stores/${chain.slug}` },
+    { name: branch.name, path: Astro.url.pathname },
+  ]}
+  jsonLd={[storeSchema]}
+  geo={emirate ? { region: EMIRATE_CODES[emirate.slug] ?? 'AE', place: where, lat: branch.lat, lng: branch.lng } : undefined}
+>
   <div class="card mb-5 flex flex-wrap items-center gap-3 p-4" data-views={`branch:${branch.id} chain:${chain.id}`}>
     <StoreLogo name={chain.name} logo={chain.logo} class="size-14 text-base" />
     <div class="min-w-0 flex-1">
       <h1 class="text-xl font-bold"><a href={`/stores/${chain.slug}`} class="hover:underline">{chain.name}</a>, {branch.name}</h1>
-      <p class="text-sm text-muted">{branch.address ?? branch.area}</p>
+      <p class="text-sm text-muted">
+        {branch.address ?? branch.area}
+        {emirate && (
+          <> · <a href={area ? `/${emirate.slug}/${area.urlSlug}` : `/${emirate.slug}`} class="hover:underline">Offers in {area?.name ?? emirate.name}</a></>
+        )}
+      </p>
       <OpenNow client:idle hours={store.hours} closedToday={store.closed_today} />
     </div>
     <div class="flex w-full gap-2 sm:w-auto">

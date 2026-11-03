@@ -13,6 +13,7 @@ use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
 use App\Domain\Retail\RetailGroup;
 use App\Domain\Search\Synonym;
+use App\Domain\Seo\SeoPage;
 use App\Domain\Settings\SiteSetting;
 use App\Models\User;
 use Spatie\Activitylog\Models\Activity;
@@ -75,6 +76,7 @@ final class AccessRules
             'product_groups' => $catalogSection('Product groups', ProductGroup::class),
             'products' => $catalogSection('Products', Product::class),
             'synonyms' => $yesNo('Search synonyms', 'Catalog', Synonym::class),
+            'seo' => $yesNo('SEO pages and settings', 'Website', SeoPage::class),
             // Grades decide who ranks first, so store owners don't get this by editing their own chain.
             'settings' => [
                 'label' => 'Grades, home page and ranking', 'group' => 'Offers', 'model' => SiteSetting::class, 'owner' => null,

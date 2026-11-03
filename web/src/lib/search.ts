@@ -10,6 +10,8 @@ export interface OfferHit {
   variant_id: number;
   variant_slug: string;
   variant_label: string;
+  /** Packs of the product; with more than one, each has its own page. */
+  pack_count?: number;
   brand?: string;
   brand_id?: number;
   category_ids?: number[];
@@ -52,6 +54,8 @@ export interface OfferHit {
   deal_score?: number;
   is_lowest_90d?: boolean;
   was_price_suspicious?: boolean;
+  /** The areas and emirates of the branches this offer applies to. */
+  region_ids?: number[];
   /** Base URL of the product photo; append "-160.webp" or "-350.webp". */
   image?: string;
   /** Emoji for the card when there's no photo. */
@@ -72,6 +76,8 @@ export interface OfferSearch {
   page?: number;
   perPage?: number;
   facets?: string[];
+  /** Values per facet; the sidebar shows 20, the browse links want every emirate and category. */
+  maxFacetValues?: number;
   /** One result per value of this field, the first by the sort order (the cheapest, sorting by rank). */
   groupBy?: string;
   /** Only these fields, to keep a large response small. */
@@ -103,7 +109,7 @@ async function searchConfig() {
 /** Typesense filter values need backticks when they contain spaces or commas. */
 export const filterValue = (value: string) => '`' + value.replaceAll('`', '') + '`';
 
-export async function searchOffers({ q = '', filters = [], sort = 'deal', page = 1, perPage = 24, facets = [], groupBy, fields }: OfferSearch) {
+export async function searchOffers({ q = '', filters = [], sort = 'deal', page = 1, perPage = 24, facets = [], maxFacetValues = 20, groupBy, fields }: OfferSearch) {
   const { key, collection } = await searchConfig();
   const params = new URLSearchParams({
     q: q.trim() || '*',
@@ -118,7 +124,7 @@ export async function searchOffers({ q = '', filters = [], sort = 'deal', page =
   if (filters.length) params.set('filter_by', filters.join(' && '));
   if (facets.length) {
     params.set('facet_by', facets.join(','));
-    params.set('max_facet_values', '20');
+    params.set('max_facet_values', String(maxFacetValues));
   }
   if (groupBy) {
     params.set('group_by', groupBy);

@@ -6,17 +6,99 @@ import Logo from '../components/Logo.astro';
 import LocationSheet from '../islands/LocationSheet';
 import SearchBox from '../islands/SearchBox';
 import WelcomeBar from '../islands/WelcomeBar';
+import { directory } from '../lib/near';
+import { absoluteUrl, breadcrumbList, canonicalUrl, cleanPath, en, isFilteredUrl, jsonForScript, regions, seoData, type Crumb, type geoMeta } from '../lib/seo';
 
 interface Props {
+  /** Without the site name, which is added: "Dairy offers in Dubai" → "Dairy offers in Dubai · offer". */
   title: string;
+  /** The title as it is, site name included (the home page). */
+  fullTitle?: boolean;
   description?: string;
   /** The shopper's area, for counts by area ("trending near you"). */
   region?: number | null;
+  /** The picture for social sharing; the site's default share picture when left out. */
+  image?: { url: string; alt?: string; width?: number; height?: number } | null;
+  ogType?: 'website' | 'product';
+  /** Keep this page out of search engines (empty, too thin, or personal). Filtered URLs are kept out anyway. */
+  noindex?: boolean;
+  /** The path search engines should index instead of this URL's own. */
+  canonicalPath?: string;
+  breadcrumbs?: Crumb[];
+  /** schema.org nodes for this page; Base adds the breadcrumbs and, on the home page, the site and organisation. */
+  jsonLd?: Record<string, unknown>[];
+  geo?: ReturnType<typeof geoMeta>;
+  /** Facebook product tags, for product pages. */
+  price?: { amount: number; currency: string } | null;
 }
 
-const { title, description = 'Compare supermarket offers across the UAE by true unit price.', region } = Astro.props;
+const { title, fullTitle = false, region, image, ogType = 'website', noindex = false, canonicalPath, breadcrumbs = [], jsonLd = [], geo, price } = Astro.props;
 const q = Astro.url.searchParams.get('q') ?? '';
 const path = Astro.url.pathname;
+
+// Staff can replace any page's texts and picture in the admin (SEO pages); empty fields keep the page's own.
+const { settings, pages } = await seoData();
+const override = pages.get(cleanPath(path));
+const origin = (Astro.site ?? Astro.url).origin;
+const site = settings.site_name;
+
+const pageNumber = Number(Astro.url.searchParams.get('page')) || 1;
+const baseTitle = en(override?.title) ?? title;
+const fullText = fullTitle || baseTitle.endsWith(site) ? baseTitle : `${baseTitle} · ${site}`;
+const pageTitle = pageNumber > 1 ? `${fullText} (page ${pageNumber})` : fullText;
+const description = en(override?.description) ?? Astro.props.description ?? settings.description;
+const canonical = canonicalUrl(Astro.url, origin, canonicalPath);
+const hidden = noindex || override?.noindex || isFilteredUrl(Astro.url);
+const robots = hidden ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+
+// A staff picture or the site's share picture is a wide 1200 × 630; a product photo is a 350 px square.
+const wide = override?.image ?? (image ? null : settings.share_image);
+const share = wide ? { url: wide, width: 1200, height: 630, alt: baseTitle } : (image ?? { url: '/icon-512.png', width: 512, height: 512, alt: site });
+const shareUrl = absoluteUrl(share.url, origin);
+const twitterCard = (share.width ?? 0) >= 600 ? 'summary_large_image' : 'summary';
+
+const isHome = path === '/';
+const graph = [
+  ...(isHome
+    ? [
+        {
+          '@type': 'WebSite',
+          '@id': `${origin}/#website`,
+          name: site,
+          url: `${origin}/`,
+          description: settings.description,
+          inLanguage: 'en-AE',
+          publisher: { '@id': `${origin}/#organization` },
+          // Lets Google show a search box for the site in its results.
+          potentialAction: { '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: `${origin}/search?q={search_term_string}` }, 'query-input': 'required name=search_term_string' },
+        },
+        {
+          '@type': 'Organization',
+          '@id': `${origin}/#organization`,
+          name: site,
+          url: `${origin}/`,
+          logo: { '@type': 'ImageObject', url: `${origin}/icon-512.png`, width: 512, height: 512 },
+          areaServed: { '@type': 'Country', name: 'United Arab Emirates' },
+          ...(settings.social_profiles.length && { sameAs: settings.social_profiles }),
+        },
+      ]
+    : []),
+  ...(breadcrumbs.length > 1 ? [breadcrumbList(breadcrumbs, origin)] : []),
+  ...jsonLd,
+];
+
+// Every emirate's page is linked from every page, so search engines find the location pages.
+const emirates = await directory()
+  .then((dir) => regions(dir).filter((region) => region.type === 'emirate'))
+  .catch(() => []);
+
+const verifications = [
+  ['google-site-verification', settings.google_verification],
+  ['msvalidate.01', settings.bing_verification],
+  ['yandex-verification', settings.yandex_verification],
+  ['facebook-domain-verification', settings.facebook_verification],
+  ['p:domain_verify', settings.pinterest_verification],
+].filter(([, code]) => code) as [string, string][];
 
 const tabs = [
   { href: '/', label: 'Home', Icon: House, active: path === '/' },
@@ -31,17 +113,51 @@ const tabs = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    <meta name="robots" content={robots} />
+    <link rel="canonical" href={canonical} />
+    {/* One language for now, for shoppers in the UAE. */}
+    {!hidden && <link rel="alternate" hreflang="en-AE" href={canonical} />}
+    {!hidden && <link rel="alternate" hreflang="x-default" href={canonical} />}
     <meta name="theme-color" content="#FAF7F0" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0D1512" media="(prefers-color-scheme: dark)" />
-    <meta property="og:title" content={title} />
+
+    {/* Open Graph: Facebook, WhatsApp, LinkedIn, Telegram, Slack… */}
+    <meta property="og:site_name" content={site} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={baseTitle} />
     <meta property="og:description" content={description} />
-    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site ?? Astro.url).href} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="en_AE" />
+    <meta property="og:image" content={shareUrl} />
+    {shareUrl.startsWith('https:') && <meta property="og:image:secure_url" content={shareUrl} />}
+    {share.width && <meta property="og:image:width" content={String(share.width)} />}
+    {share.height && <meta property="og:image:height" content={String(share.height)} />}
+    <meta property="og:image:alt" content={share.alt ?? baseTitle} />
+    {price && <meta property="product:price:amount" content={price.amount.toFixed(2)} />}
+    {price && <meta property="product:price:currency" content={price.currency} />}
+    {settings.facebook_app_id && <meta property="fb:app_id" content={settings.facebook_app_id} />}
+
+    {/* X (Twitter) reads the Open Graph tags above for the rest. */}
+    <meta name="twitter:card" content={twitterCard} />
+    {settings.x_handle && <meta name="twitter:site" content={`@${settings.x_handle}`} />}
+    <meta name="twitter:title" content={baseTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={shareUrl} />
+
+    {geo && <meta name="geo.region" content={geo.region} />}
+    {geo && <meta name="geo.placename" content={geo.place} />}
+    {geo && <meta name="geo.position" content={`${geo.lat};${geo.lng}`} />}
+    {geo && <meta name="ICBM" content={`${geo.lat}, ${geo.lng}`} />}
+
+    {verifications.map(([name, code]) => <meta name={name} content={code} />)}
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
-    <title>{title}</title>
+    {graph.length > 0 && <script type="application/ld+json" set:html={jsonForScript({ '@context': 'https://schema.org', '@graph': graph })} />}
   </head>
   <body class="min-h-dvh" data-region={region ?? undefined}>
     <header class="app-bar sticky top-0 z-30 border-b border-line/70 bg-canvas/90 backdrop-blur-md">
@@ -80,6 +196,12 @@ const tabs = [
     </main>
 
     <footer class="mx-auto mb-20 max-w-7xl border-t border-line/70 px-4 py-6 text-center text-xs text-muted md:mb-0">
+      {emirates.length > 0 && (
+        <nav aria-label="Offers by emirate" class="mb-3 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-sm">
+          {emirates.map((emirate) => <a href={`/${emirate.slug}`} class="hover:text-ink hover:underline">Offers in {emirate.name}</a>)}
+          <a href="/brands" class="hover:text-ink hover:underline">All brands</a>
+        </nav>
+      )}
       Prices as published in store brochures; please confirm in store.
     </footer>
 

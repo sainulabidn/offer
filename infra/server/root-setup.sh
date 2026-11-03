@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-# root-setup.sh: one-time root steps for offer.emirait.com (cPanel account offeremirait) on server.s26.96h.in.
+# root-setup.sh: one-time root steps for lazyoffer.com (cPanel account offeremirait) on server.s26.96h.in.
 # Safe to run again: it only adds what is missing. Prints no passwords.
 #
-#   1. PHP 8.4 (ea-php84) for the offer.emirait.com vhost
+#   1. PHP 8.4 (ea-php84) for the lazyoffer.com vhost (the account's main domain)
 #   2. PostGIS for PostgreSQL 18, libvips (product image sizes) and poppler (brochure PDFs)
 #   3. PostgreSQL role + database with the postgis, pg_trgm, unaccent and btree_gist extensions
 #   4. ~offeremirait/.offer-db.env with the database credentials (mode 600), read by the deploy hook
@@ -16,7 +16,7 @@ set -u
 set -o pipefail
 
 ACCOUNT="offeremirait"
-VHOST="offer.emirait.com"
+VHOST="lazyoffer.com"
 DB="offeremirait_offer"
 ROLE="offeremirait"
 CRED_FILE="/home/${ACCOUNT}/.offer-db.env"
