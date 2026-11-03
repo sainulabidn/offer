@@ -20,6 +20,12 @@ class Brochure extends Model
     use Audited, RecordsCreator;
     use HasTranslations;
 
+    /**
+     * Not a real brochure: holds a store's offers added on the Offers page or by CSV, one per store and
+     * set of branches, so they reach the website the same way brochure offers do. See DirectOffers.
+     */
+    public const string TYPE_DIRECT = 'direct';
+
     protected $guarded = ['validity'];
 
     public array $translatable = ['title'];

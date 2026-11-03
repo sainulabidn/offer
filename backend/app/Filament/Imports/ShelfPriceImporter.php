@@ -3,8 +3,6 @@
 namespace App\Filament\Imports;
 
 use App\Domain\Access\Access;
-use App\Domain\Catalog\Product;
-use App\Domain\Catalog\ProductVariant;
 use App\Domain\Offers\RegularPrice;
 use App\Domain\Offers\ShelfPrices;
 use App\Domain\Retail\Chain;
@@ -17,6 +15,8 @@ use Illuminate\Support\Number;
 /** Shelf prices from a CSV, one row per price. A pack is found by barcode, or by product and pack slugs. */
 class ShelfPriceImporter extends Importer
 {
+    use FindsPack;
+
     protected static ?string $model = RegularPrice::class;
 
     public static function getColumns(): array
@@ -53,16 +53,6 @@ class ShelfPriceImporter extends Importer
         }
 
         $this->record = app(ShelfPrices::class)->record($this->variant()->id, $chain->id, (string) $this->data['price'], ($this->data['date'] ?? null) ?: null);
-    }
-
-    private function variant(): ProductVariant
-    {
-        $barcode = trim((string) ($this->data['barcode'] ?? ''));
-        $variant = $barcode !== ''
-            ? ProductVariant::where('gtin', $barcode)->first()
-            : Product::where('slug', trim((string) ($this->data['product'] ?? '')))->first()?->variants()->where('slug', trim((string) ($this->data['pack'] ?? '')))->first();
-
-        return $variant ?? throw new RowImportFailedException('Pack not found. Give its barcode, or the product and pack slugs.');
     }
 
     public static function getCompletedNotificationBody(Import $import): string

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Brochures\Tables;
 
+use App\Domain\Brochures\Brochure;
 use App\Domain\Brochures\BrochureStatus;
 use App\Filament\Support\Fields;
 use Filament\Actions\EditAction;
@@ -14,7 +15,8 @@ class BrochuresTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with('chain')->withCount('offers'))
+            // Direct offers have their own page (Offers); their hidden containers aren't brochures to manage.
+            ->modifyQueryUsing(fn ($query) => $query->where('type', '!=', Brochure::TYPE_DIRECT)->with('chain')->withCount('offers'))
             ->columns([
                 TextColumn::make('chain.name')->label('Chain'),
                 Fields::nameColumn('title'),

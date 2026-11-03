@@ -2,6 +2,7 @@
 
 namespace App\Domain\Offers;
 
+use App\Domain\Access\Access;
 use App\Domain\Access\Audited;
 use App\Domain\Access\RecordsCreator;
 use App\Domain\Brochures\Brochure;
@@ -53,7 +54,17 @@ class Offer extends Model
             'confidence' => 'decimal:3',
             'raw_text' => 'array',
             'published_at' => 'datetime',
+            'price_set_at' => 'datetime',
         ];
+    }
+
+    /** Changing these sets the price again, which store users may only do every few hours (PriceWait). */
+    public const array PRICE_FIELDS = ['product_variant_id', 'price', 'regular_price', 'promo_type', 'promo_params'];
+
+    /** Added on the Offers page or by CSV, rather than from a brochure. */
+    public function isDirect(): bool
+    {
+        return $this->brochure?->type === Brochure::TYPE_DIRECT;
     }
 
     /** Published offers valid on the given day (default: today in the market's timezone). */
@@ -124,6 +135,11 @@ class Offer extends Model
                 $offer->chain_id ??= $brochure->chain_id;
                 $offer->valid_from ??= $brochure->valid_from;
                 $offer->valid_to ??= $brochure->valid_to;
+            }
+            if (! $offer->exists || $offer->isDirty(self::PRICE_FIELDS)) {
+                // A backstop for every admin form: the forms and the CSV import check first, with a nicer message.
+                PriceWait::check(Access::user(), $offer->chain_id, $offer->product_variant_id);
+                $offer->price_set_at = now();
             }
             OfferPricer::apply($offer);
         });

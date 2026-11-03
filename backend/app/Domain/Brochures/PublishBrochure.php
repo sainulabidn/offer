@@ -33,25 +33,7 @@ final class PublishBrochure
             throw new RuntimeException('This brochure has no offers yet.');
         }
 
-        $published = DB::transaction(function () use ($brochure) {
-            $brochure->branches()->sync($this->branchIds($brochure));
-
-            $pending = $brochure->offers()->whereIn('status', [OfferStatus::Draft, OfferStatus::Approved])->get();
-            foreach ($pending as $offer) {
-                $this->scorer->score($offer);
-                // Quiet save: no Scout sync per offer; the whole brochure is indexed in one batch below.
-                $offer->forceFill(['status' => OfferStatus::Published, 'published_at' => now()])->saveQuietly();
-            }
-            $published = $pending->count();
-            $this->recordUsualPrices($pending);
-
-            $brochure->forceFill([
-                'status' => $brochure->valid_from->isFuture() ? BrochureStatus::Scheduled : BrochureStatus::Published,
-                'published_at' => $brochure->published_at ?? now(),
-            ])->save();
-
-            return $published;
-        });
+        $published = $this->publishOffers($brochure, $brochure->offers()->whereIn('status', [OfferStatus::Draft, OfferStatus::Approved])->get());
 
         // Bulk updates skip model events, so push the live offers to Typesense explicitly.
         Offer::syncSearch(Offer::query()
@@ -66,6 +48,34 @@ final class PublishBrochure
         }
 
         return $published;
+    }
+
+    /**
+     * The database half of publishing, for some of a brochure's offers: no search indexing or alerts,
+     * which the caller does (DirectOffers publishes one offer at a time this way).
+     *
+     * @param  Collection<int, Offer>  $pending
+     * @return int number of offers published
+     */
+    public function publishOffers(Brochure $brochure, Collection $pending): int
+    {
+        return DB::transaction(function () use ($brochure, $pending) {
+            $brochure->branches()->sync($this->branchIds($brochure));
+
+            foreach ($pending as $offer) {
+                $this->scorer->score($offer);
+                // Quiet save: no Scout sync per offer; the caller indexes them in one batch.
+                $offer->forceFill(['status' => OfferStatus::Published, 'published_at' => now()])->saveQuietly();
+            }
+            $this->recordUsualPrices($pending);
+
+            $brochure->forceFill([
+                'status' => $brochure->valid_from->isFuture() ? BrochureStatus::Scheduled : BrochureStatus::Published,
+                'published_at' => $brochure->published_at ?? now(),
+            ])->save();
+
+            return $pending->count();
+        });
     }
 
     /**

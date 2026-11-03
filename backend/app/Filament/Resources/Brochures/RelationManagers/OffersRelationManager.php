@@ -4,19 +4,15 @@ namespace App\Filament\Resources\Brochures\RelationManagers;
 
 use App\Domain\Access\Access;
 use App\Domain\Brochures\BrochureStatus;
-use App\Domain\Catalog\ProductVariant;
 use App\Domain\Offers\Offer;
 use App\Domain\Offers\OfferStatus;
-use App\Domain\Offers\PromoType;
+use App\Filament\Support\OfferFields;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -50,31 +46,8 @@ class OffersRelationManager extends RelationManager
         return $schema
             ->columns(4)
             ->components([
-                Select::make('product_variant_id')
-                    ->label('Product and variant')
-                    ->required()
-                    ->searchable()
-                    ->columnSpanFull()
-                    // Only products the person can see: approved ones, plus their own waiting for review.
-                    ->getSearchResultsUsing(fn (string $search) => ProductVariant::query()
-                        ->with(['product', 'optionValues'])
-                        ->whereHas('product', fn (Builder $q) => Access::scope($q, Access::user(), 'products'))
-                        ->where(fn (Builder $q) => $q
-                            ->whereHas('product', fn (Builder $q) => $q->whereRaw("name->>'en' ilike ?", ['%'.$search.'%']))
-                            ->orWhere('gtin', $search))
-                        ->limit(30)
-                        ->get()
-                        ->mapWithKeys(fn (ProductVariant $v) => [$v->id => $v->label()]))
-                    ->getOptionLabelUsing(fn ($value) => ProductVariant::with(['product', 'optionValues'])->find($value)?->label())
-                    ->helperText('Search by product name or barcode. Missing? Add it under Catalog → Products first.'),
-                TextInput::make('price')->label('Offer price (AED)')->numeric()->gt(0)->required(),
-                TextInput::make('regular_price')->label('Was price')->numeric()->gt(0),
-                Select::make('promo_type')
-                    ->label('Promotion')
-                    ->options(PromoType::class)
-                    ->default(PromoType::Price)
-                    ->required()
-                    ->live(),
+                OfferFields::variant(),
+                ...OfferFields::prices(fn () => $this->getOwnerRecord()->chain_id),
                 // Publishing is a permission: others leave offers as draft/approved and submit the brochure.
                 Select::make('status')
                     ->options(fn () => collect(OfferStatus::cases())
@@ -82,22 +55,7 @@ class OffersRelationManager extends RelationManager
                         ->mapWithKeys(fn (OfferStatus $s) => [$s->value => $s->getLabel()]))
                     ->default(OfferStatus::Draft)
                     ->required(),
-                TextInput::make('promo_params.qty')->label('Buy quantity (n for X)')->integer()->minValue(2)
-                    ->visible(fn (Get $get) => self::is($get('promo_type'), PromoType::Multibuy))->required(fn (Get $get) => self::is($get('promo_type'), PromoType::Multibuy)),
-                TextInput::make('promo_params.total')->label('For total (AED)')->numeric()->gt(0)
-                    ->visible(fn (Get $get) => self::is($get('promo_type'), PromoType::Multibuy))->required(fn (Get $get) => self::is($get('promo_type'), PromoType::Multibuy)),
-                TextInput::make('promo_params.buy')->label('Buy')->integer()->minValue(1)
-                    ->visible(fn (Get $get) => self::is($get('promo_type'), PromoType::Bogo))->required(fn (Get $get) => self::is($get('promo_type'), PromoType::Bogo)),
-                TextInput::make('promo_params.get')->label('Get free')->integer()->minValue(1)
-                    ->visible(fn (Get $get) => self::is($get('promo_type'), PromoType::Bogo))->required(fn (Get $get) => self::is($get('promo_type'), PromoType::Bogo)),
-                TextInput::make('promo_label.en')->label('Promotion text')->placeholder('e.g. 2 for 10')->columnSpan(2),
-                TextInput::make('conditions.max_per_customer')->label('Max per customer')->integer()->minValue(1),
-                Toggle::make('conditions.card_required')->label('Loyalty card price')->inline(false),
-                // Shown with a label; shoppers can hide these, and they never count in comparisons, scores or alerts.
-                Toggle::make('conditions.staff_only')->label('Store employees only')->inline(false),
-                TextInput::make('condition_label.en')->label('Limit text')->placeholder('e.g. Max 3 kg per customer')->columnSpan(2)
-                    ->helperText('As the brochure words it: "Min 2 pcs", "Max 2 per customer"…'),
-                TextInput::make('condition_label.ar')->label('Limit text (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->columnSpan(2),
+                ...OfferFields::promotion(),
                 DatePicker::make('valid_from')->native(false)->helperText('Empty = brochure dates'),
                 DatePicker::make('valid_to')->native(false)->afterOrEqual('valid_from'),
             ]);
@@ -140,10 +98,5 @@ class OffersRelationManager extends RelationManager
                 EditAction::make(),
                 DeleteAction::make(),
             ]);
-    }
-
-    private static function is(mixed $state, PromoType $type): bool
-    {
-        return $state === $type || $state === $type->value;
     }
 }

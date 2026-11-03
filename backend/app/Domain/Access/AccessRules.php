@@ -33,6 +33,7 @@ final class AccessRules
         'publish' => 'Publish',
         'approve' => 'Approve',
         'resolve' => 'Resolve',
+        'skip_wait' => 'Skip price wait',
     ];
 
     /** @return array<string, array{label: string, group: string, model: class-string, owner: ?string, actions: array<string, list<Level>>}> */
@@ -62,7 +63,8 @@ final class AccessRules
             'shelf_prices' => $storeSection('Shelf prices', RegularPrice::class),
             'brochures' => [
                 'label' => 'Brochures and offers', 'group' => 'Offers', 'model' => Brochure::class, 'owner' => 'created_by',
-                'actions' => ['view' => $stores, 'create' => $yes, 'edit' => $stores, 'delete' => $stores, 'publish' => $stores],
+                // skip_wait: may set a pack's price again before config('offers.price_wait_hours') have passed.
+                'actions' => ['view' => $stores, 'create' => $yes, 'edit' => $stores, 'delete' => $stores, 'publish' => $stores, 'skip_wait' => $yes],
             ],
             'reports' => [
                 'label' => 'Shopper reports', 'group' => 'Offers', 'model' => Report::class, 'owner' => null,
