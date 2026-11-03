@@ -28,35 +28,36 @@ class OfferImporter extends Importer
 
     public static function getColumns(): array
     {
-        $column = fn (string $name, string $example, array $rules = ['nullable'], bool $required = false) => ImportColumn::make($name)
-            ->example($example)
+        // Examples are filled in when downloaded, from the person's own store and real packs (OfferImportGuide).
+        $column = fn (string $name, array $rules = ['nullable'], bool $required = false) => ImportColumn::make($name)
+            ->examples(fn () => OfferImportGuide::examples($name))
+            ->helperText(OfferImportGuide::COLUMNS[$name])
             ->requiredMapping($required)
             ->rules($rules)
             ->fillRecordUsing(fn () => null); // saveRecord() does the work
         $yesNo = ['nullable', Rule::in(['yes', 'no', 'Yes', 'No', 'YES', 'NO', '1', '0', 'true', 'false'])];
 
         return [
-            $column('store', 'lulu-hypermarket', ['required'], true),
-            // Branch slugs, separated by "|". Empty = every branch of the store.
-            $column('branches', ''),
-            $column('barcode', '8901234567890'),
-            $column('product', 'india-gate-classic-basmati-rice'),
-            $column('pack', '5-kg'),
-            $column('price', '45.95', ['required', 'numeric', 'gt:0', 'max:99999'], true),
-            $column('was_price', '54.50', ['nullable', 'numeric', 'gt:0', 'max:99999']),
-            $column('promotion', 'price', ['nullable', Rule::enum(PromoType::class)]),
-            $column('multibuy_qty', '', ['nullable', 'integer', 'min:2', 'required_if:promotion,multibuy']),
-            $column('multibuy_total', '', ['nullable', 'numeric', 'gt:0', 'required_if:promotion,multibuy']),
-            $column('buy', '', ['nullable', 'integer', 'min:1', 'required_if:promotion,bogo']),
-            $column('get_free', '', ['nullable', 'integer', 'min:1', 'required_if:promotion,bogo']),
-            $column('promotion_text', ''),
-            $column('max_per_customer', '', ['nullable', 'integer', 'min:1']),
-            $column('loyalty_card', 'no', $yesNo),
-            $column('employees_only', 'no', $yesNo),
-            $column('limit_text', 'Max 3 kg per customer'),
-            $column('limit_text_ar', ''),
-            $column('from', '', ['nullable', 'date']),
-            $column('until', '2026-11-30', ['required', 'date', 'after_or_equal:today'], true),
+            $column('store', ['required'], true),
+            $column('branches'),
+            $column('barcode'),
+            $column('product'),
+            $column('pack'),
+            $column('price', ['required', 'numeric', 'gt:0', 'max:99999'], true),
+            $column('was_price', ['nullable', 'numeric', 'gt:0', 'max:99999']),
+            $column('promotion', ['nullable', Rule::enum(PromoType::class)]),
+            $column('multibuy_qty', ['nullable', 'integer', 'min:2', 'required_if:promotion,multibuy']),
+            $column('multibuy_total', ['nullable', 'numeric', 'gt:0', 'required_if:promotion,multibuy']),
+            $column('buy', ['nullable', 'integer', 'min:1', 'required_if:promotion,bogo']),
+            $column('get_free', ['nullable', 'integer', 'min:1', 'required_if:promotion,bogo']),
+            $column('promotion_text'),
+            $column('max_per_customer', ['nullable', 'integer', 'min:1']),
+            $column('loyalty_card', $yesNo),
+            $column('employees_only', $yesNo),
+            $column('limit_text'),
+            $column('limit_text_ar'),
+            $column('from', ['nullable', 'date']),
+            $column('until', ['required', 'date', 'after_or_equal:today'], true),
         ];
     }
 

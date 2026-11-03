@@ -9,6 +9,7 @@ use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\ImportAction;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Support\HtmlString;
 
 class ListRegularPrices extends ListRecords
 {
@@ -24,7 +25,11 @@ class ListRegularPrices extends ListRecords
                 ->label('Import prices (CSV)')
                 ->importer(ShelfPriceImporter::class)
                 ->visible(fn () => RegularPriceResource::canCreate())
-                ->modalDescription('One row per price. Excel: File → Save as → CSV UTF-8. Download the example file for the columns.'),
+                // Keeps Filament's "Download example CSV" link, which a plain text description would replace.
+                ->modalDescription(fn (ImportAction $action) => new HtmlString(
+                    'One row per price. Excel: File → Save as → CSV UTF-8. Download the example file for the columns.<br>'
+                    .$action->getModalAction('downloadExample')->toHtml()
+                )),
             CreateAction::make(),
         ];
     }

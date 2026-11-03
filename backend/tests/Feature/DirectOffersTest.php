@@ -8,6 +8,7 @@ use App\Domain\Offers\Offer;
 use App\Domain\Offers\OfferStatus;
 use App\Domain\Retail\Chain;
 use App\Filament\Imports\OfferImporter;
+use App\Filament\Imports\OfferImportGuide;
 use App\Filament\Resources\Brochures\Pages\EditBrochure;
 use App\Filament\Resources\Brochures\Pages\ListBrochures;
 use App\Filament\Resources\Brochures\RelationManagers\OffersRelationManager;
@@ -152,6 +153,31 @@ it('keeps an offer for chosen branches apart, and makes branch staff choose thei
     livewire(EditOffer::class, ['record' => $offer->id])->fillForm(['valid_to' => '2026-11-02'])->call('save')->assertHasNoFormErrors();
     expect($offer->fresh()->valid_to->toDateString())->toBe('2026-11-02')
         ->and($offer->brochure->fresh()->valid_to->toDateString())->toBe('2026-11-02');
+});
+
+it('guides the CSV import, with a sample from the person’s own store that imports as it is', function () {
+    asOfferAdmin($this->owner);
+
+    livewire(ListOffers::class)->mountAction('importHelp')
+        ->assertMountedActionModalSee(['lulu-hypermarket', 'once every 6 hours', 'Pack not found']);
+    foreach (['sample' => 'offers-sample.csv', 'stores' => 'stores-and-branches.csv', 'packs' => 'pack-list.csv'] as $action => $file) {
+        livewire(ListOffers::class)->callAction([TestAction::make('importHelp'), TestAction::make($action)])->assertFileDownloaded($file);
+    }
+    // The import window still offers Filament's example file.
+    livewire(ListOffers::class)->mountAction('import')->assertMountedActionModalSee('Download example');
+
+    $sample = OfferImportGuide::sample($this->owner);
+    expect($sample[0]['store'])->toBe('lulu-hypermarket')
+        ->and($sample[2]['branches'])->toBe("{$this->barsha->slug}|lulu-marina");
+
+    $import = Import::create(['user_id' => $this->owner->id, 'file_name' => 'offers.csv', 'file_path' => 'offers.csv', 'importer' => OfferImporter::class, 'total_rows' => 3]);
+    $columns = array_combine(array_keys(OfferImportGuide::COLUMNS), array_keys(OfferImportGuide::COLUMNS));
+    foreach ($sample as $row) {
+        (new OfferImporter($import, $columns, []))($row);
+    }
+
+    expect(Offer::where('status', OfferStatus::Published)->count())->toBe(3)
+        ->and(Offer::get()->filter->isStaffOnly())->toHaveCount(1);
 });
 
 it('imports offers from a CSV, one live offer per row', function () {
