@@ -1,4 +1,4 @@
-import { API_URL } from 'astro:env/server';
+import { apiUrl } from './api';
 import { distanceKm, nearest, rankStores, type OpeningHours, type Point, type Prefs, type RankedStore } from '@offer/rank';
 
 /** "Near me": what the shopper's location means, worked out in the Worker from the store directory. */
@@ -39,7 +39,7 @@ let cached: { at: number; directory: Directory } | null = null;
 
 export async function directory(): Promise<Directory> {
   if (!cached || Date.now() - cached.at > 300_000) {
-    const response = await fetch(`${API_URL}/api/v1/directory`, { headers: { Accept: 'application/json' } });
+    const response = await fetch(apiUrl('directory'), { headers: { Accept: 'application/json' } });
     if (!response.ok) throw new Error(`Directory failed with ${response.status}`);
     cached = { at: Date.now(), directory: (await response.json()) as Directory };
   }

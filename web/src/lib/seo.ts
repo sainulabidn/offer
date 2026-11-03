@@ -1,4 +1,4 @@
-import { API_URL } from 'astro:env/server';
+import { apiUrl } from './api';
 import { EMIRATE_CODES, placeName, type Region } from './locations';
 
 // Location helpers live in ./locations (the browser uses them too); server code may import them from here.
@@ -78,7 +78,7 @@ let cached: { at: number; settings: SeoSettings; pages: Map<string, SeoPage> } |
 export async function seoData() {
   if (!cached || Date.now() - cached.at > 300_000) {
     try {
-      const response = await fetch(`${API_URL}/api/v1/seo`, { headers: { Accept: 'application/json' } });
+      const response = await fetch(apiUrl('seo'), { headers: { Accept: 'application/json' } });
       if (!response.ok) throw new Error(`SEO failed with ${response.status}`);
       const body = (await response.json()) as { settings: SeoSettings; pages: SeoPage[] };
       cached = { at: Date.now(), settings: { ...DEFAULT_SETTINGS, ...body.settings }, pages: new Map(body.pages.map((page) => [page.path, page])) };

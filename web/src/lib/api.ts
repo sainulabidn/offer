@@ -1,8 +1,20 @@
 import { API_URL } from 'astro:env/server';
+import { env } from 'cloudflare:workers';
+
+/**
+ * An /api/v1 address for the Worker's own reads. Cloudflare caches these responses, and a copy from before
+ * a deploy can lack what the new code reads (a new field, a new shape); each Worker deploy has its own
+ * version id, so after a deploy every read starts fresh. Laravel ignores the extra parameter.
+ */
+export function apiUrl(path: string): string {
+  const url = new URL(`${API_URL}/api/v1/${path}`);
+  url.searchParams.set('__build', env.CF_VERSION_METADATA?.id ?? 'dev');
+  return url.toString();
+}
 
 /** Reads from the Laravel /api/v1 read endpoints (cached at the edge; only cache misses reach the server). */
 async function get<T>(path: string): Promise<T | null> {
-  const response = await fetch(`${API_URL}/api/v1/${path}`, { headers: { Accept: 'application/json' } });
+  const response = await fetch(apiUrl(path), { headers: { Accept: 'application/json' } });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`API ${path} failed with ${response.status}`);
   return (await response.json()) as T;

@@ -63,7 +63,7 @@ export async function sitemapEntries(name: SitemapName): Promise<Entry[]> {
       const data = await api.sitemap();
       return (data?.products ?? []).flatMap((product) => [
         { path: `/products/${product.slug}`, lastmod: product.updated, image: product.image },
-        ...product.variants.map((variant) => ({ path: productPath(product.slug, variant.slug), lastmod: product.updated, image: product.image })),
+        ...(product.variants ?? []).map((variant) => ({ path: productPath(product.slug, variant.slug), lastmod: product.updated, image: product.image })),
       ]);
     }
     case 'product-locations': {
@@ -83,7 +83,7 @@ export async function sitemapEntries(name: SitemapName): Promise<Entry[]> {
           .filter((product) => products.has(product.id))
           .flatMap((product) => [
             { path: productPath(product.slug, null, `/${emirate.slug}`), lastmod: today, image: product.image },
-            ...product.variants.filter((variant) => variants.has(variant.id)).map((variant) => ({ path: productPath(product.slug, variant.slug, `/${emirate.slug}`), lastmod: today })),
+            ...(product.variants ?? []).filter((variant) => variants.has(variant.id)).map((variant) => ({ path: productPath(product.slug, variant.slug, `/${emirate.slug}`), lastmod: today })),
           ]),
       );
     }
