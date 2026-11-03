@@ -8,10 +8,12 @@ use App\Domain\Offers\Offer;
 use App\Domain\Offers\PromoType;
 use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
+use Carbon\Exceptions\InvalidFormatException;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Number;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -25,6 +27,9 @@ class OfferImporter extends Importer
     use FindsPack;
 
     protected static ?string $model = Offer::class;
+
+    /** 8:00, 08:00, 8:00 AM, 8 AM. */
+    private const string CLOCK = '/^\s*\d{1,2}(:\d{2})?\s*([AaPp]\.?[Mm]\.?)?\s*$/';
 
     public static function getColumns(): array
     {
@@ -58,12 +63,15 @@ class OfferImporter extends Importer
             $column('limit_text_ar'),
             $column('from', ['nullable', 'date']),
             $column('until', ['required', 'date', 'after_or_equal:today'], true),
+            $column('from_time', ['nullable', 'required_with:until_time', 'regex:'.self::CLOCK]),
+            $column('until_time', ['nullable', 'required_with:from_time', 'regex:'.self::CLOCK]),
         ];
     }
 
-    public function resolveRecord(): Offer
+    /** A row without a price (an offer sheet's packs that aren't on offer) is skipped, not failed. */
+    public function resolveRecord(): ?Offer
     {
-        return new Offer;
+        return trim((string) ($this->data['price'] ?? '')) === '' ? null : new Offer;
     }
 
     public function saveRecord(): void
@@ -83,6 +91,10 @@ class OfferImporter extends Importer
         $from = $text('from') ?? now(config('app.market_timezone'))->toDateString();
         if ($from > $this->data['until']) {
             throw new RowImportFailedException('"from" is after "until".');
+        }
+        [$startTime, $endTime] = [$this->clock('from_time'), $this->clock('until_time')];
+        if ($startTime !== null && $endTime <= $startTime) {
+            throw new RowImportFailedException('"until_time" must be later than "from_time" on the same day.');
         }
 
         $attributes = [
@@ -105,12 +117,31 @@ class OfferImporter extends Importer
             ]),
             'valid_from' => $from,
             'valid_to' => (string) $this->data['until'],
+            'start_time' => $startTime,
+            'end_time' => $endTime,
         ];
 
         try {
             $this->record = app(DirectOffers::class)->add($attributes, $this->branchIds($chain), $user);
         } catch (ValidationException $e) {
             throw new RowImportFailedException(collect($e->errors())->flatten()->first() ?? $e->getMessage());
+        }
+    }
+
+    /** "8 AM", "8:00 am", "08:00" → "08:00"; empty → null. */
+    private function clock(string $column): ?string
+    {
+        $value = strtoupper(str_replace('.', '', trim((string) ($this->data[$column] ?? ''))));
+        if ($value === '') {
+            return null;
+        }
+        if (! str_contains($value, ':')) {
+            $value = preg_replace('/^(\d{1,2})/', '$1:00', $value);
+        }
+        try {
+            return Carbon::parse($value)->format('H:i');
+        } catch (InvalidFormatException) {
+            throw new RowImportFailedException("Can't read the time \"{$this->data[$column]}\" in {$column}. Use 08:00 or 8:00 AM.");
         }
     }
 
@@ -141,8 +172,17 @@ class OfferImporter extends Importer
 
     public static function getCompletedNotificationBody(Import $import): string
     {
-        $body = 'Offer import finished: '.Number::format($import->successful_rows).' '.str('offer')->plural($import->successful_rows).' live.';
+        // Skipped rows (no price) count as successful in Filament, so count the offers this import added.
+        $added = Offer::query()
+            ->where('created_by', $import->user_id)
+            // Filament casts completed_at to a unix timestamp.
+            ->whereBetween('created_at', [$import->created_at, $import->completed_at ? Carbon::createFromTimestamp($import->completed_at) : now()])
+            ->count();
+        $body = 'Offer import finished: '.Number::format($added).' '.str('offer')->plural($added).' added.';
 
+        if ($skipped = max(0, $import->successful_rows - $added)) {
+            $body .= ' '.Number::format($skipped).' '.str('row')->plural($skipped).' without a price skipped.';
+        }
         if ($failed = $import->getFailedRowsCount()) {
             $body .= ' '.Number::format($failed).' '.str('row')->plural($failed).' failed; download them to see why.';
         }

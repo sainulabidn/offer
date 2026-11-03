@@ -44,6 +44,9 @@ export interface OfferHit {
   /** "Max 3 kg per customer", as the brochure words it. */
   condition_label?: string;
   valid_to: number;
+  /** Timed offers: the daily window, "8:00 AM – 11:00 AM", and when today's closes (unix seconds). */
+  time_window?: string;
+  window_ends_at?: number;
   like_count: number;
   under_review?: boolean;
   deal_score?: number;

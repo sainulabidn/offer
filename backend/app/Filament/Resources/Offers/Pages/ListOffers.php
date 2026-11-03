@@ -6,6 +6,7 @@ use App\Domain\Access\Access;
 use App\Domain\Offers\PriceWait;
 use App\Filament\Imports\OfferImporter;
 use App\Filament\Imports\OfferImportGuide;
+use App\Filament\Resources\Offers\Actions\OfferSheetAction;
 use App\Filament\Resources\Offers\OfferResource;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
@@ -23,6 +24,7 @@ class ListOffers extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            OfferSheetAction::make(),
             Action::make('importHelp')
                 ->label('How to import')
                 ->icon(Heroicon::OutlinedQuestionMarkCircle)

@@ -58,6 +58,7 @@ class OffersRelationManager extends RelationManager
                 ...OfferFields::promotion(),
                 DatePicker::make('valid_from')->native(false)->helperText('Empty = brochure dates'),
                 DatePicker::make('valid_to')->native(false)->afterOrEqual('valid_from'),
+                ...OfferFields::times(),
             ]);
     }
 

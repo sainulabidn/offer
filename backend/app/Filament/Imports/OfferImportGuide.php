@@ -27,7 +27,9 @@ final class OfferImportGuide
         'barcode' => 'The pack\'s barcode. Or leave it empty and fill "product" and "pack".',
         'product' => 'The product\'s code, when there is no barcode. See "Pack list".',
         'pack' => 'The pack\'s code within that product, e.g. 5-kg.',
-        'price' => 'Required. The offer price in AED, e.g. 45.95. For "2 for 18", the price of one.',
+        'name' => 'For reading only: the product and pack. The import ignores it.',
+        'usual_price' => 'For reading only, in an offer sheet: the store\'s last known shelf price. The import ignores it.',
+        'price' => 'The offer price in AED, e.g. 45.95. For "2 for 18", the price of one. Rows without a price are skipped.',
         'was_price' => 'The usual price, when the brochure shows one.',
         'promotion' => 'Empty or price, was_now, multibuy (n for X), bogo (buy n get m free), percent_off, card_price, bundle, gift or coupon.',
         'multibuy_qty' => 'For multibuy: how many, e.g. 2 in "2 for 18".',
@@ -42,6 +44,8 @@ final class OfferImportGuide
         'limit_text_ar' => 'The same in Arabic.',
         'from' => 'First day, as YYYY-MM-DD. Empty = today.',
         'until' => 'Required. Last day, as YYYY-MM-DD.',
+        'from_time' => 'For an offer at certain times only, on each of its days: the start, e.g. 08:00 or 8:00 AM. Empty = all day.',
+        'until_time' => 'With from_time: the end, e.g. 11:00 or 11:00 AM. Shoppers see a countdown to it.',
     ];
 
     /** @var array<int, list<array<string, string>>> sample rows per user id, for one request */
@@ -73,7 +77,7 @@ final class OfferImportGuide
         $packs = self::packs()->limit(3)->get()->values();
 
         $pack = fn (int $i, bool $barcode = false) => isset($packs[$i])
-            ? ($barcode && $packs[$i]->gtin ? ['barcode' => $packs[$i]->gtin] : ['product' => $packs[$i]->product->slug, 'pack' => $packs[$i]->slug])
+            ? [...($barcode && $packs[$i]->gtin ? ['barcode' => $packs[$i]->gtin] : ['product' => $packs[$i]->product->slug, 'pack' => $packs[$i]->slug]), 'name' => $packs[$i]->label()]
             : ['product' => 'product-code', 'pack' => 'pack-code'];
         $store = ['store' => $chain?->slug ?? 'your-store-code'];
         $someBranches = implode('|', array_slice($branches, 0, 2)) ?: 'branch-code';
@@ -124,17 +128,17 @@ final class OfferImportGuide
         return self::download('pack-list.csv', ['barcode', 'product', 'pack', 'name'], $rows);
     }
 
-    private static function chains(User $user): Builder
+    public static function chains(User $user): Builder
     {
         return Access::scope(Chain::query()->where('is_active', true), $user, 'chains');
     }
 
-    private static function branches(User $user, Chain $chain): Builder
+    public static function branches(User $user, Chain $chain): Builder
     {
         return Access::scope(Branch::query()->where('chain_id', $chain->id)->where('is_active', true), $user, 'branches')->orderBy('slug');
     }
 
-    private static function packs(): Builder
+    public static function packs(): Builder
     {
         return ProductVariant::query()
             ->whereNull('merged_into_id')
@@ -145,7 +149,7 @@ final class OfferImportGuide
     }
 
     /** UTF-8 with a BOM, so Excel shows Arabic correctly. */
-    private static function download(string $name, array $header, array $rows): StreamedResponse
+    public static function download(string $name, array $header, array $rows): StreamedResponse
     {
         $csv = Writer::createFromFileObject(new SplTempFileObject);
         $csv->insertOne($header);

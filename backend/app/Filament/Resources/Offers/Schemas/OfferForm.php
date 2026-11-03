@@ -47,6 +47,7 @@ class OfferForm
                 ...OfferFields::promotion(),
                 DatePicker::make('valid_to')->label('Until')->native(false)->required()->afterOrEqual('valid_from')
                     ->helperText($hours ? "Goes live straight away. Store users can set a pack's price once every {$hours} hours." : 'Goes live straight away.'),
+                ...OfferFields::times(),
             ]);
     }
 }

@@ -2,7 +2,8 @@
 <div style="display: grid; gap: 1.25rem; font-size: 0.875rem; line-height: 1.5">
     <x-filament::section heading="Steps">
         <ol style="list-style: decimal; padding-inline-start: 1.25rem; display: grid; gap: 0.35rem">
-            <li><strong>Download the sample</strong> (button below). It is made from your own store, branches and real packs, so you can edit it and import it straight back.</li>
+            <li><strong>Easiest: Prepare offer sheet.</strong> Choose your stores and branches, the dates (and times), shared texts and which products. You get a CSV with a row for every store and pack, filled in except the price. Type the prices; rows you leave without a price are skipped.</li>
+            <li>Or <strong>download the sample</strong> (button below). It is made from your own store, branches and real packs, so you can edit it and import it straight back.</li>
             <li>Keep the first row (the column names). Add <strong>one row per offer</strong>. Only <strong>store</strong>, <strong>price</strong>, <strong>until</strong> and the pack (barcode, or product and pack) are required.</li>
             <li>In Excel: <em>File → Save as → CSV UTF-8 (comma delimited)</em>. Plain "CSV" can break Arabic text.</li>
             <li>Click <strong>Import offers (CSV)</strong>, choose the file, check that each column is matched, then <strong>Import</strong>.</li>
@@ -18,6 +19,7 @@
             @endif
             <li>A new price for a pack <strong>replaces</strong> your earlier added offer for that pack at the same branches.</li>
             <li>Codes: use <strong>Your stores and branches</strong> for store and branch codes, and <strong>Pack list</strong> for barcodes and product and pack codes. A pack that isn't in the list must be added under <em>Catalog → Products</em> first.</li>
+            <li>An offer at certain times only (e.g. 8:00 AM – 11:00 AM): fill <code>from_time</code> and <code>until_time</code>. It shows only inside that window on each of its days, with a countdown, and is hidden the rest of the time. Leave both empty for all day.</li>
             <li>Dates are <code>YYYY-MM-DD</code>, e.g. {{ now(config('app.market_timezone'))->toDateString() }}. Numbers use a dot: <code>45.95</code>, no "AED".</li>
         </ul>
     </x-filament::section>

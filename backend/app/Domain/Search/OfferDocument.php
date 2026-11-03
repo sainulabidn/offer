@@ -96,6 +96,10 @@ final class OfferDocument
                 ['name' => 'origin', 'type' => 'string', 'facet' => true, 'optional' => true],
                 ['name' => 'valid_from', 'type' => 'int64'],
                 ['name' => 'valid_to', 'type' => 'int64'],
+                // Timed offers: the daily window ("8:00 AM – 11:00 AM") and when today's closes, for the countdown.
+                // Re-indexed each time the window opens (SyncTimedOffers).
+                ['name' => 'time_window', 'type' => 'string', 'index' => false, 'optional' => true],
+                ['name' => 'window_ends_at', 'type' => 'int64', 'index' => false, 'optional' => true],
                 ['name' => 'like_count', 'type' => 'int32'],
                 ['name' => 'image', 'type' => 'string', 'index' => false, 'optional' => true],
                 // Emoji for the card when there's no photo.
@@ -165,6 +169,8 @@ final class OfferDocument
             'origin' => $variant->attributes['origin'] ?? $product->attributes['origin'] ?? null,
             'valid_from' => $offer->valid_from->startOfDay()->getTimestamp(),
             'valid_to' => $offer->valid_to->endOfDay()->getTimestamp(),
+            'time_window' => $offer->windowLabel(),
+            'window_ends_at' => $offer->windowEndsAt()?->getTimestamp(),
             'like_count' => (int) $offer->like_count,
             // Base URL of the first processed image; the site appends "-{width}.avif|webp".
             'image' => ($image = $product->images->whereNotNull('width')->first()) ? GenerateImageSizes::baseUrl($image->path) : null,

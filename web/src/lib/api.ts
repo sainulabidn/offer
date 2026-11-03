@@ -34,6 +34,9 @@ export interface StoreOffer {
   condition_label: string | null;
   /** Only the store's own employees get this price. */
   staff_only: boolean;
+  /** Timed offers: the daily window, "8:00 AM – 11:00 AM", and when today's closes (unix seconds). */
+  time_window: string | null;
+  window_ends_at: number | null;
   valid_to: string;
 }
 

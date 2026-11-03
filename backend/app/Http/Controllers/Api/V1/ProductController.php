@@ -50,7 +50,8 @@ class ProductController extends Controller
                 'brand', 'category', 'productGroup', 'images',
                 'variants' => fn ($q) => $q->whereNull('merged_into_id')->orderBy('sort'),
                 'variants.optionValues',
-                'variants.offers' => fn ($q) => $q->live()->with('chain')->orderBy('effective_unit_price'),
+                // Timed offers only inside today's window, like search.
+                'variants.offers' => fn ($q) => $q->onNow()->with('chain')->orderBy('effective_unit_price'),
             ])
             ->firstOrFail();
 
@@ -92,6 +93,8 @@ class ProductController extends Controller
                     'promo_label' => $offer->getTranslation('promo_label', 'en', false) ?: null,
                     'condition_label' => $offer->getTranslation('condition_label', 'en', false) ?: null,
                     'staff_only' => $offer->isStaffOnly(),
+                    'time_window' => $offer->windowLabel(),
+                    'window_ends_at' => $offer->windowEndsAt()?->getTimestamp(),
                     'valid_to' => $offer->valid_to->toDateString(),
                 ]),
             ]),

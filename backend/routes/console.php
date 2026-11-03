@@ -10,6 +10,7 @@ use App\Domain\Engagement\Likes;
 use App\Domain\Geo\ImportPlaceNames;
 use App\Domain\Offers\ExpireOffers;
 use App\Domain\Offers\Offer;
+use App\Domain\Offers\SyncTimedOffers;
 use App\Domain\Retail\ImportRetailDirectory;
 use App\Domain\Retail\ImportUaeBranches;
 use App\Domain\Search\OfferDocument;
@@ -29,6 +30,12 @@ Artisan::command('offers:expire', function (ExpireOffers $expire) {
 })->purpose('Expire finished offers/brochures and start scheduled ones');
 
 Schedule::command('offers:expire')->dailyAt('00:05')->timezone(config('app.market_timezone'))->withoutOverlapping();
+
+Artisan::command('offers:sync-times', function (SyncTimedOffers $sync) {
+    $this->info("Synced {$sync()} timed offers whose window opened or closed.");
+})->purpose('Show timed offers in search during their daily window only');
+
+Schedule::command('offers:sync-times')->everyMinute()->withoutOverlapping();
 
 Artisan::command('search:create-key', function (SearchKeys $keys) {
     $this->info('Add this to backend/.env as TYPESENSE_SEARCH_KEY (Typesense shows it only once):');

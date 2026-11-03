@@ -1,14 +1,14 @@
 ---
 // One store's offer, shown like an online-shop product card. Plain HTML; the like button hydrates,
 // and "add to plan" is handled by one listener for the whole page (lib/quick-add.ts).
-import { Plus } from 'lucide-react';
+import { Clock, Plus } from 'lucide-react';
 import LikeButton from '../islands/LikeButton';
 import Price from './Price.astro';
 import ResponsiveImage from './ResponsiveImage.astro';
 import StoreLogo from './StoreLogo.astro';
 import type { ComparePrice, NearbyPrice } from '../lib/feed';
 import type { OfferHit } from '../lib/search';
-import { aed, distanceLabel, endsIn, offerTargets, shortDate, tintFor } from '../lib/format';
+import { aed, distanceLabel, endsIn, offerTargets, shortDate, timeLeft, tintFor } from '../lib/format';
 
 interface Props {
   offer: OfferHit;
@@ -115,6 +115,13 @@ const options = offer.group_found ?? 1;
       )}
     </div>
 
-    <p class="mt-2 text-xs text-muted">{endsIn(offer.valid_to)}</p>
+    {offer.time_window && offer.window_ends_at && (
+      <p data-timed class="mt-2 flex flex-wrap items-center gap-x-1.5 text-xs font-semibold text-warn">
+        <Clock class="size-3.5 shrink-0" aria-hidden="true" />
+        <span>{offer.time_window}</span>
+        <span class="tabular-nums" data-ends-at={offer.window_ends_at} aria-live="off">{timeLeft(offer.window_ends_at)}</span>
+      </p>
+    )}
+    <p class:list={[offer.time_window ? 'mt-0.5' : 'mt-2', 'text-xs text-muted']}>{endsIn(offer.valid_to)}</p>
   </div>
 </article>

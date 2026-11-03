@@ -30,6 +30,16 @@ export function distanceLabel(km: number): string {
   return km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
 }
 
+/** A timed offer's countdown: "2h 15m left", "42m 10s left", "ended", from a unix timestamp. */
+export function timeLeft(endsAt: number, now = Date.now()): string {
+  const seconds = Math.floor((endsAt * 1000 - now) / 1000);
+  if (seconds <= 0) return 'ended';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return h > 0 ? `${h}h ${m}m left` : `${m}m ${String(s).padStart(2, '0')}s left`;
+}
+
 /** "ends today", "ends tomorrow", "ends in 4 days" from a unix timestamp (end of the last valid day). */
 export function endsIn(validTo: number | string, now = new Date()): string {
   const end = typeof validTo === 'number' ? new Date(validTo * 1000) : new Date(`${validTo}T23:59:59+04:00`);

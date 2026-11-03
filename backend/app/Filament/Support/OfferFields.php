@@ -10,8 +10,10 @@ use App\Domain\Offers\PromoType;
 use Closure;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Database\Eloquent\Builder;
 
 /** The offer form's product, price, promotion and condition fields, shared by brochure entry and the Offers page. */
@@ -88,6 +90,35 @@ final class OfferFields
             TextInput::make('condition_label.en')->label('Limit text')->placeholder('e.g. Max 3 kg per customer')->columnSpan(2)
                 ->helperText('As the brochure words it: "Min 2 pcs", "Max 2 per customer"…'),
             TextInput::make('condition_label.ar')->label('Limit text (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->columnSpan(2),
+        ];
+    }
+
+    /**
+     * A daily window, e.g. 8:00–11:00 on each day of the offer. Off = the whole day. Times hidden by switching
+     * it off are still saved, as empty, so an offer can go back to whole days.
+     */
+    public static function times(): array
+    {
+        $timed = fn (Get $get) => (bool) $get('timed');
+
+        return [
+            Toggle::make('timed')
+                ->label('Only at certain times')
+                ->helperText('e.g. 8:00 AM – 11:00 AM on each day. Off = all day.')
+                ->inline(false)
+                ->live()
+                ->dehydrated(false)
+                ->afterStateHydrated(fn (Toggle $component, ?Offer $record) => $component->state($record?->isTimed() ?? false))
+                ->afterStateUpdated(function (bool $state, Set $set) {
+                    if (! $state) {
+                        $set('start_time', null);
+                        $set('end_time', null);
+                    }
+                }),
+            TimePicker::make('start_time')->label('From time')->seconds(false)
+                ->visible($timed)->required($timed)->dehydratedWhenHidden(),
+            TimePicker::make('end_time')->label('Until time')->seconds(false)->after('start_time')
+                ->visible($timed)->required($timed)->dehydratedWhenHidden(),
         ];
     }
 

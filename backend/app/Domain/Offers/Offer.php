@@ -14,12 +14,14 @@ use App\Domain\Engagement\Report;
 use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
 use App\Domain\Search\OfferDocument;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
 use Laravel\Scout\Searchable;
 use Spatie\Translatable\HasTranslations;
 
@@ -77,6 +79,57 @@ class Offer extends Model
             ->whereDate('valid_to', '>=', $day);
     }
 
+    /** Live offers that are on right now: whole-day ones, and timed ones inside today's window. */
+    public function scopeOnNow(Builder $query): Builder
+    {
+        $time = now(config('app.market_timezone'))->format('H:i:s');
+
+        return $query->live()->where(fn (Builder $q) => $q
+            ->whereNull('start_time')
+            ->orWhere(fn (Builder $q) => $q->where('start_time', '<=', $time)->where('end_time', '>', $time)));
+    }
+
+    /** Only on during a daily window, e.g. 08:00–11:00 on each of its days. */
+    public function isTimed(): bool
+    {
+        return $this->start_time !== null && $this->end_time !== null;
+    }
+
+    /** Valid today and, for a timed offer, inside today's window (market time). */
+    public function isOnNow(): bool
+    {
+        $now = now(config('app.market_timezone'));
+        $today = $now->toDateString();
+        if ($this->valid_from?->toDateString() > $today || $this->valid_to?->toDateString() < $today) {
+            return false;
+        }
+
+        return ! $this->isTimed() || (self::clock($this->start_time) <= $now->format('H:i:s') && $now->format('H:i:s') < self::clock($this->end_time));
+    }
+
+    /** When today's window closes, for the countdown; null for whole-day offers. */
+    public function windowEndsAt(): ?CarbonInterface
+    {
+        return $this->isTimed() ? now(config('app.market_timezone'))->setTimeFromTimeString(self::clock($this->end_time)) : null;
+    }
+
+    /** "8:00 AM – 11:00 AM", or null for whole-day offers. */
+    public function windowLabel(): ?string
+    {
+        if (! $this->isTimed()) {
+            return null;
+        }
+        $format = fn (string $time) => Carbon::createFromTimeString(self::clock($time))->format('g:i A');
+
+        return $format($this->start_time).' – '.$format($this->end_time);
+    }
+
+    /** "08:00" or "08:00:00" from a form or the database → "08:00:00". */
+    private static function clock(string $time): string
+    {
+        return strlen($time) === 5 ? "{$time}:00" : $time;
+    }
+
     /** Offers anyone can buy: leaves out prices only the store's own employees get. */
     public function scopeForShoppers(Builder $query): Builder
     {
@@ -89,13 +142,13 @@ class Offer extends Model
     }
 
     /**
-     * Only offers valid today are searchable, by the market's calendar: a scheduled offer joins on its
-     * first day (ExpireOffers), and expired ones and products not approved or active drop out of Typesense.
+     * Only offers on right now are searchable, by the market's clock: a scheduled offer joins on its first
+     * day (ExpireOffers), a timed one only inside its daily window (SyncTimedOffers), and expired ones and
+     * products not approved or active drop out of Typesense.
      */
     public function shouldBeSearchable(): bool
     {
-        $today = now(config('app.market_timezone'))->toDateString();
-        if ($this->status !== OfferStatus::Published || $this->valid_from?->toDateString() > $today || $this->valid_to?->toDateString() < $today) {
+        if ($this->status !== OfferStatus::Published || ! $this->isOnNow()) {
             return false;
         }
         $product = $this->loadMissing('variant.product')->variant?->product;

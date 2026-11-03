@@ -42,7 +42,8 @@ class OffersTable
                     ->badge()
                     ->color('warning')
                     ->placeholder('—'),
-                TextColumn::make('valid_to')->label('Until')->date('d M Y')->sortable(),
+                TextColumn::make('valid_to')->label('Until')->date('d M Y')->sortable()
+                    ->description(fn (Offer $offer) => $offer->isTimed() ? 'Daily '.$offer->windowLabel() : null),
                 TextColumn::make('status')->badge(),
                 TextColumn::make('price_set_at')->label('Price set')->since()->sortable()->toggleable(),
             ])
