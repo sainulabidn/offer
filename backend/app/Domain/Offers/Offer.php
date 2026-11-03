@@ -30,7 +30,7 @@ class Offer extends Model
 
     protected $guarded = ['validity'];
 
-    public array $translatable = ['promo_label'];
+    public array $translatable = ['promo_label', 'condition_label'];
 
     protected function casts(): array
     {
@@ -64,6 +64,17 @@ class Offer extends Model
         return $query->where('status', OfferStatus::Published)
             ->whereDate('valid_from', '<=', $day)
             ->whereDate('valid_to', '>=', $day);
+    }
+
+    /** Offers anyone can buy: leaves out prices only the store's own employees get. */
+    public function scopeForShoppers(Builder $query): Builder
+    {
+        return $query->whereRaw("coalesce((conditions->>'staff_only')::boolean, false) = false");
+    }
+
+    public function isStaffOnly(): bool
+    {
+        return (bool) ($this->conditions['staff_only'] ?? false);
     }
 
     /**

@@ -27,6 +27,15 @@ describe('resolvePrefs', () => {
     expect(resolvePrefs({ url: url('/'), cookie: 'all=1' }).allUae).toBe(true);
   });
 
+  it('hides and shows store-employee offers from the URL or the cookie', () => {
+    expect(resolvePrefs({ url: url('/') }).hideStaffOnly).toBe(false);
+    expect(resolvePrefs({ url: url('/?staff=0') }).hideStaffOnly).toBe(true);
+    expect(resolvePrefs({ url: url('/'), cookie: 'so=0' }).hideStaffOnly).toBe(true);
+    expect(resolvePrefs({ url: url('/?staff=1'), cookie: 'so=0' }).hideStaffOnly).toBe(false);
+    // The search form: a hidden 0, then the ticked checkbox's 1.
+    expect(resolvePrefs({ url: url('/search?staff=0&staff=1') }).hideStaffOnly).toBe(false);
+  });
+
   it('never throws on a broken cookie or URL', () => {
     const bad = ['%', '%%%', 'at=abc', 'at=91,200', 'at=25', 'at=1,2,3', 'r=-5', 'r=99999', 's=a.b', 'at=,', '\u0000', 'a=b&&&==='];
     for (const cookie of bad) {
@@ -59,7 +68,7 @@ describe('prefsKey', () => {
 
   it('differs for anything that changes the page', () => {
     const base = 'at=25.29,55.37&r=10&i=50';
-    const keys = [base, 'at=25.3,55.37&r=10&i=50', 'at=25.29,55.37&r=5&i=50', 'at=25.29,55.37&r=10&i=25', `${base}&all=1`, `${base}&s=12`].map((cookie) =>
+    const keys = [base, 'at=25.3,55.37&r=10&i=50', 'at=25.29,55.37&r=5&i=50', 'at=25.29,55.37&r=10&i=25', `${base}&all=1`, `${base}&s=12`, `${base}&so=0`].map((cookie) =>
       prefsKey(resolvePrefs({ url: url(), cookie })),
     );
 
@@ -84,9 +93,9 @@ describe('prefsKey', () => {
 
 describe('serializePrefs', () => {
   it('round-trips through the cookie', () => {
-    const cookie = serializePrefs({ at: { lat: 25.2894, lng: 55.3704 }, radiusKm: 25, itemRadiusKm: 10, allUae: true, stores: [12, 45], label: 'Home & work', place: 'abc' });
+    const cookie = serializePrefs({ at: { lat: 25.2894, lng: 55.3704 }, radiusKm: 25, itemRadiusKm: 10, allUae: true, stores: [12, 45], hideStaffOnly: true, label: 'Home & work', place: 'abc' });
 
-    expect(resolvePrefs({ url: url(), cookie })).toEqual({ at: { lat: 25.29, lng: 55.37 }, emirate: null, radiusKm: 25, itemRadiusKm: 10, allUae: true, stores: [12, 45] });
+    expect(resolvePrefs({ url: url(), cookie })).toEqual({ at: { lat: 25.29, lng: 55.37 }, emirate: null, radiusKm: 25, itemRadiusKm: 10, allUae: true, stores: [12, 45], hideStaffOnly: true });
     expect(cookieLabel(cookie)).toEqual({ label: 'Home & work', place: 'abc' });
   });
 });

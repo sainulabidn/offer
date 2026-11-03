@@ -99,3 +99,26 @@ it('enters an offer through the brochure page', function () {
 
     expect(Offer::firstOrFail()->unit_price)->toBe('9.1900');
 });
+
+it('saves an employee-only offer and its limit text', function () {
+    $operator = User::factory()->create();
+    $operator->assignRole('data_operator');
+    actingAs($operator, 'admin');
+
+    livewire(OffersRelationManager::class, ['ownerRecord' => $this->brochure, 'pageClass' => EditBrochure::class])
+        ->callAction(TestAction::make(CreateAction::class)->table(), data: [
+            'product_variant_id' => $this->riceFiveKg->id,
+            'price' => '39.95',
+            'promo_type' => 'price',
+            'status' => 'draft',
+            'conditions' => ['staff_only' => true],
+            'condition_label' => ['en' => 'Max 3 kg per customer', 'ar' => 'الحد الأقصى ٣ كجم'],
+        ])
+        ->assertHasNoFormErrors();
+
+    $offer = Offer::firstOrFail();
+    expect($offer->isStaffOnly())->toBeTrue()
+        ->and($offer->getTranslation('condition_label', 'en'))->toBe('Max 3 kg per customer')
+        ->and($offer->getTranslation('condition_label', 'ar'))->toBe('الحد الأقصى ٣ كجم')
+        ->and(Offer::forShoppers()->count())->toBe(0);
+});

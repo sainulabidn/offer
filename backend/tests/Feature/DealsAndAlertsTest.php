@@ -32,9 +32,9 @@ beforeEach(function () {
     $this->fiveKg = $this->rice->variants()->where('slug', '5-kg')->firstOrFail();
 
     // Publishes a one-offer brochure for the 5 kg rice.
-    $this->publish = function (string $from, string $to, string $price, ?string $regular = null): Offer {
+    $this->publish = function (string $from, string $to, string $price, ?string $regular = null, array $conditions = []): Offer {
         $brochure = Brochure::create(['chain_id' => $this->chain->id, 'title' => ['en' => "Deals {$from}"], 'slug' => "deals-{$from}", 'valid_from' => $from, 'valid_to' => $to]);
-        $offer = Offer::create(['brochure_id' => $brochure->id, 'product_variant_id' => $this->fiveKg->id, 'price' => $price, 'regular_price' => $regular]);
+        $offer = Offer::create(['brochure_id' => $brochure->id, 'product_variant_id' => $this->fiveKg->id, 'price' => $price, 'regular_price' => $regular, 'conditions' => $conditions]);
         app(PublishBrochure::class)($brochure);
 
         return $offer->fresh();
@@ -54,6 +54,26 @@ it('scores a deal against the last 90 days and flags an inflated was-price', fun
         ->and($offer->is_lowest_90d)->toBeTrue()
         // 70.00 was never charged: the highest real price was 52.00.
         ->and($offer->was_price_suspicious)->toBeTrue();
+});
+
+it('keeps prices for store employees out of deal scores and alerts', function () {
+    Notification::fake();
+    ($this->publish)('2026-09-01', '2026-09-07', '48.00');
+    $staff = ($this->publish)('2026-09-10', '2026-09-16', '30.00', null, ['staff_only' => true]);
+    $offer = ($this->publish)('2026-10-23', '2026-10-29', '45.95');
+
+    // 30.00 for employees would have been the lowest; shoppers never paid less than 45.95.
+    expect($offer->is_lowest_90d)->toBeTrue()
+        ->and((float) $offer->deal_score)->toBe(4.27)
+        ->and($staff->deal_score)->toBeNull()
+        ->and($staff->is_lowest_90d)->toBeFalse();
+
+    // A live employee-only price is never emailed to a shopper watching the pack.
+    $watcher = User::factory()->create();
+    Alert::create(['user_id' => $watcher->id, 'target_type' => 'variant', 'target_id' => $this->fiveKg->id]);
+    ($this->publish)('2026-10-24', '2026-10-30', '30.00', null, ['staff_only' => true]);
+
+    Notification::assertNotSentTo($watcher, WatchlistOffers::class);
 });
 
 it('emails alert owners once, honouring price and radius conditions', function () {

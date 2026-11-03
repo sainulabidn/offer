@@ -66,7 +66,7 @@ export default function PlanBuilder() {
         const variants = plan.items.flatMap((i) => ('variantId' in i.match ? [i.match.variantId] : []));
         const groups = plan.items.flatMap((i) => ('productGroupId' in i.match ? [i.match.productGroupId] : []));
         const which = [variants.length && `variant_id:[${variants.join(',')}]`, groups.length && `product_group_id:[${groups.join(',')}]`].filter(Boolean).join(' || ');
-        const result = await searchHits({ q: '*', filter_by: `brochure_id:[${near.brochureIds.join(',')}] && (${which})` });
+        const result = await searchHits({ q: '*', filter_by: `brochure_id:[${near.brochureIds.join(',')}] && staff_only:false && (${which})` });
         if (alive) setHits(result);
       } catch {
         if (alive) setError('Could not load prices. Check your connection.');

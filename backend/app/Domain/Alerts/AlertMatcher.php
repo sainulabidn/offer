@@ -20,7 +20,7 @@ final class AlertMatcher
     /** @return int how many people were notified */
     public function forBrochure(Brochure $brochure): int
     {
-        $offers = Offer::query()->live()->where('brochure_id', $brochure->id)
+        $offers = Offer::query()->live()->forShoppers()->where('brochure_id', $brochure->id)
             ->with(['chain', 'variant.product.productGroup', 'variant.optionValues'])
             ->get();
         if ($offers->isEmpty()) {

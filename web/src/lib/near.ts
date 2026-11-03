@@ -73,11 +73,16 @@ export function radiusFilter(at: Point, km: number): string {
   return `locations:(${at.lat.toFixed(decimals)},${at.lng.toFixed(decimals)},${km} km)`;
 }
 
-/** The Typesense filters that keep items inside the shopper's radius. */
+/** Leaves out offers only a store's own employees can buy, when the shopper unticked them. */
+export function staffFilters(prefs: Prefs): string[] {
+  return prefs.hideStaffOnly ? ['staff_only:false'] : [];
+}
+
+/** The Typesense filters that keep items inside the shopper's radius, and to the offers they want to see. */
 export function itemFilters(dir: Directory, prefs: Prefs): string[] {
   const { at } = placeOf(dir, prefs);
   const km = itemRadius(dir, prefs);
-  return at && km ? [radiusFilter(at, km)] : [];
+  return [...(at && km ? [radiusFilter(at, km)] : []), ...staffFilters(prefs)];
 }
 
 /** Today in the market's timezone; the UAE has one offset all year. */

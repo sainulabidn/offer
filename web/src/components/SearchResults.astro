@@ -23,7 +23,8 @@ const minDiscount = Number(params.get('min_discount')) || 0;
 // From a home page card: every tomato, whatever the origin or variety.
 const groupId = Number(params.get('group')) || 0;
 
-const activeFilters = chains.length + brands.length + (cardOnly ? 1 : 0) + (minDiscount ? 1 : 0);
+const hideStaffOnly = Astro.locals.prefs.hideStaffOnly;
+const activeFilters = chains.length + brands.length + (cardOnly ? 1 : 0) + (minDiscount ? 1 : 0) + (hideStaffOnly ? 1 : 0);
 
 const filters = [...baseFilters];
 if (groupId) filters.push(`product_group_id:=${groupId}`);
@@ -93,6 +94,9 @@ const facet = (field: string) => result.facets.find((f) => f.field === field)?.v
         </select>
       </label>
       <label class="flex min-h-9 items-center gap-2"><input type="checkbox" name="card" value="1" checked={cardOnly} class="size-4 accent-[var(--color-primary)]" /> Loyalty card prices only</label>
+      {/* An unticked box sends nothing, so the hidden 0 goes first and a tick's 1 overrides it (resolvePrefs). */}
+      <input type="hidden" name="staff" value="0" />
+      <label class="flex min-h-9 items-center gap-2"><input type="checkbox" name="staff" value="1" checked={!hideStaffOnly} class="size-4 accent-[var(--color-primary)]" /> Include store-employee offers</label>
       <button class="btn btn-primary w-full">Apply filters</button>
       <button type="button" id="filters-close" class="btn btn-quiet w-full lg:hidden">Close</button>
     </form>

@@ -205,6 +205,7 @@ export function keepUrlChoices() {
   if (url.searchParams.has('items') && (choice.allUae !== saved.allUae || choice.itemRadiusKm !== saved.itemRadiusKm)) {
     savePrefs({ allUae: choice.allUae, itemRadiusKm: choice.itemRadiusKm });
   }
+  if (url.searchParams.has('staff') && choice.hideStaffOnly !== saved.hideStaffOnly) writePrefs({ hideStaffOnly: choice.hideStaffOnly });
 }
 
 /**

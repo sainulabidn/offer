@@ -1,5 +1,5 @@
 ---
-import { ArrowRight, LocateFixed, X } from 'lucide-react';
+import { ArrowRight, LocateFixed, Square, SquareCheck, X } from 'lucide-react';
 import Base from '../layouts/Base.astro';
 import CategoryNav from '../components/CategoryNav.astro';
 import CompareTable from '../components/CompareTable.astro';
@@ -9,7 +9,7 @@ import StoreRail from '../components/StoreRail.astro';
 import { api } from '../lib/api';
 import ForYouRail from '../islands/ForYouRail';
 import { cheapestNearby, comparePrices } from '../lib/feed';
-import { itemFilters, itemRadius, nearestBranches, placeOf, regionId, storeCards, storeRadius, storesFor, directory } from '../lib/near';
+import { itemFilters, itemRadius, nearestBranches, placeOf, regionId, staffFilters, storeCards, storeRadius, storesFor, directory } from '../lib/near';
 import { cacheFor } from '../lib/format';
 import { searchOffers } from '../lib/search';
 
@@ -25,7 +25,7 @@ const selected = storeCards(dir).filter((store) => prefs.stores.includes(store.i
 const [categories, cheapest, ending, trendingIds] = await Promise.all([
   api.categories(),
   cheapestNearby(dir, prefs, { perPage: 20 }),
-  searchOffers({ sort: 'ending', perPage: 5 }),
+  searchOffers({ sort: 'ending', perPage: 5, filters: staffFilters(prefs) }),
   api.trending(regionId(dir, prefs) ?? null),
 ]);
 // Needs a real rise in the area; a rail of one or two looks broken.
@@ -67,7 +67,7 @@ cacheFor(Astro.response.headers);
     <StoreRail stores={stores} selected={prefs.stores} radiusKm={radius} showDistance={Boolean(place.at && !place.rough)} />
   </section>
 
-  <ForYouRail client:only="react" radiusFilter={itemFilters(dir, prefs)[0]} />
+  <ForYouRail client:only="react" filters={itemFilters(dir, prefs)} />
 
   {selected.length > 0 && (
     <section class="mt-5" aria-labelledby="selected-title">
@@ -82,13 +82,18 @@ cacheFor(Astro.response.headers);
   <section class:list={['mt-5', selected.length > 0 && 'hidden']} aria-labelledby="cheapest-title">
     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
       <h2 id="cheapest-title" class="text-xl font-bold">{itemKm ? 'Cheapest near you' : 'Cheapest in the UAE'}</h2>
-      {itemKm ? (
-        <a href="/?items=all" rel="nofollow" class="chip chip-on" aria-label={`Within ${itemKm} km. Remove this limit`}>
-          Within {itemKm} km <X class="size-4" aria-hidden="true" />
+      <div class="flex flex-wrap gap-2">
+        {itemKm ? (
+          <a href="/?items=all" rel="nofollow" class="chip chip-on" aria-label={`Within ${itemKm} km. Remove this limit`}>
+            Within {itemKm} km <X class="size-4" aria-hidden="true" />
+          </a>
+        ) : place.at && (
+          <a href={`/?items=${dir.settings.item_radius_default}`} rel="nofollow" class="chip">Limit to {dir.settings.item_radius_default} km</a>
+        )}
+        <a href={`/?staff=${prefs.hideStaffOnly ? 1 : 0}`} rel="nofollow" role="checkbox" aria-checked={prefs.hideStaffOnly ? 'false' : 'true'} class:list={['chip', !prefs.hideStaffOnly && 'chip-on']}>
+          {prefs.hideStaffOnly ? <Square class="size-4" aria-hidden="true" /> : <SquareCheck class="size-4" aria-hidden="true" />} Include store-employee offers
         </a>
-      ) : place.at && (
-        <a href={`/?items=${dir.settings.item_radius_default}`} rel="nofollow" class="chip">Limit to {dir.settings.item_radius_default} km</a>
-      )}
+      </div>
     </div>
     <OfferGrid offers={cheapest.hits} distances={distances} compare={compare} empty={itemKm ? `No offers within ${itemKm} km. Remove the distance limit to see all of the UAE.` : undefined} />
     <div class="mt-4 text-center">

@@ -39,6 +39,10 @@ export interface OfferHit {
   promo_buy?: number;
   promo_get?: number;
   card_required?: boolean;
+  /** Only the store's own employees get this price. */
+  staff_only?: boolean;
+  /** "Max 3 kg per customer", as the brochure words it. */
+  condition_label?: string;
   valid_to: number;
   like_count: number;
   under_review?: boolean;

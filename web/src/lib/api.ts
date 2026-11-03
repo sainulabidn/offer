@@ -30,6 +30,10 @@ export interface StoreOffer {
   was_price_suspicious: boolean;
   promo_type: string;
   promo_label: string | null;
+  /** "Max 3 kg per customer", as the brochure words it. */
+  condition_label: string | null;
+  /** Only the store's own employees get this price. */
+  staff_only: boolean;
   valid_to: string;
 }
 

@@ -38,11 +38,12 @@ const similar = await searchOffers({
 });
 
 cacheFor(Astro.response.headers);
-const best = variant?.offers[0];
+// The headline and "Cheapest" badge use prices shoppers can pay, not ones for the store's employees.
+const best = variant?.offers.find((offer) => !offer.staff_only);
 const activity = `product:${product.id} group:${product.product_group.id}${product.brand ? ` brand:${product.brand.id}` : ''} category:${product.category.id}`;
 
 // schema.org Product + AggregateOffer, so search engines can show price ranges and validity.
-const allOffers = product.variants.flatMap((v) => v.offers);
+const allOffers = product.variants.flatMap((v) => v.offers).filter((o) => !o.staff_only);
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Product',
@@ -128,14 +129,21 @@ const jsonLd = {
       <h2 class="mt-6 mb-2 text-lg font-bold">Prices today{variant ? ` for ${variant.label}` : ''}</h2>
       {variant && variant.offers.length > 0 ? (
         <ul class="divide-y divide-line/70 overflow-hidden card">
-          {variant.offers.map((offer, i) => (
+          {variant.offers.map((offer) => (
             <li class="flex items-center gap-3 p-3">
               <StoreLogo name={offer.chain.name} logo={logoOf(offer.chain.id)} />
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-x-2">
                   <a href={`/stores/${offer.chain.slug}`} class="font-semibold hover:underline">{offer.chain.name}</a>
-                  {i === 0 && variant.offers.length > 1 && <span class="badge badge-good">Cheapest</span>}
+                  {offer === best && variant.offers.length > 1 && <span class="badge badge-good">Cheapest</span>}
                 </div>
+                {(offer.staff_only || offer.condition_label) && (
+                  <p class="text-xs font-medium">
+                    {offer.staff_only && <span class="text-warn">Store employees only</span>}
+                    {offer.staff_only && offer.condition_label && <span class="text-muted"> · </span>}
+                    {offer.condition_label && <span class="text-muted">{offer.condition_label}</span>}
+                  </p>
+                )}
                 <div class="text-xs text-muted">
                   {offer.is_lowest_90d && <span class="font-semibold text-link">Lowest in 90 days · </span>}
                   {offer.was_price_suspicious && <span class="text-warn" title="This 'was' price is higher than any price this store charged in the last 90 days">“Was” price unusually high · </span>}

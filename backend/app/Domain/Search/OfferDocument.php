@@ -88,6 +88,10 @@ final class OfferDocument
                 ['name' => 'promo_get', 'type' => 'int32', 'index' => false, 'optional' => true],
                 ['name' => 'max_per_customer', 'type' => 'int32', 'index' => false, 'optional' => true],
                 ['name' => 'card_required', 'type' => 'bool', 'facet' => true],
+                // Always set, so "staff_only:false" keeps every offer a shopper can buy.
+                ['name' => 'staff_only', 'type' => 'bool', 'facet' => true],
+                // "Max 3 kg per customer", as the brochure words it.
+                ['name' => 'condition_label', 'type' => 'string', 'index' => false, 'optional' => true],
                 ['name' => 'under_review', 'type' => 'bool', 'optional' => true],
                 ['name' => 'origin', 'type' => 'string', 'facet' => true, 'optional' => true],
                 ['name' => 'valid_from', 'type' => 'int64'],
@@ -154,6 +158,8 @@ final class OfferDocument
             'promo_get' => $offer->promo_type === PromoType::Bogo ? (int) ($params['get'] ?? 0) ?: null : null,
             'max_per_customer' => isset($offer->conditions['max_per_customer']) ? (int) $offer->conditions['max_per_customer'] : null,
             'card_required' => (bool) ($offer->conditions['card_required'] ?? false),
+            'staff_only' => $offer->isStaffOnly(),
+            'condition_label' => $offer->getTranslation('condition_label', 'en', false) ?: null,
             // Three shopper reports of a wrong price or expiry show "being checked" until staff review.
             'under_review' => ($offer->conditions['under_review'] ?? false) ?: null,
             'origin' => $variant->attributes['origin'] ?? $product->attributes['origin'] ?? null,

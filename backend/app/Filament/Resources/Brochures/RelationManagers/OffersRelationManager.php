@@ -93,6 +93,11 @@ class OffersRelationManager extends RelationManager
                 TextInput::make('promo_label.en')->label('Promotion text')->placeholder('e.g. 2 for 10')->columnSpan(2),
                 TextInput::make('conditions.max_per_customer')->label('Max per customer')->integer()->minValue(1),
                 Toggle::make('conditions.card_required')->label('Loyalty card price')->inline(false),
+                // Shown with a label; shoppers can hide these, and they never count in comparisons, scores or alerts.
+                Toggle::make('conditions.staff_only')->label('Store employees only')->inline(false),
+                TextInput::make('condition_label.en')->label('Limit text')->placeholder('e.g. Max 3 kg per customer')->columnSpan(2)
+                    ->helperText('As the brochure words it: "Min 2 pcs", "Max 2 per customer"…'),
+                TextInput::make('condition_label.ar')->label('Limit text (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->columnSpan(2),
                 DatePicker::make('valid_from')->native(false)->helperText('Empty = brochure dates'),
                 DatePicker::make('valid_to')->native(false)->afterOrEqual('valid_from'),
             ]);
@@ -117,6 +122,12 @@ class OffersRelationManager extends RelationManager
                     ->placeholder('—'),
                 TextColumn::make('discount_pct')->label('Off')->suffix('%')->placeholder('—')->sortable(),
                 TextColumn::make('promo_type')->badge(),
+                TextColumn::make('audience')
+                    ->label('Who')
+                    ->state(fn (Offer $offer) => $offer->isStaffOnly() ? 'Employees only' : null)
+                    ->badge()
+                    ->color('warning')
+                    ->placeholder('—'),
                 TextColumn::make('status')->badge(),
             ])
             ->filters([

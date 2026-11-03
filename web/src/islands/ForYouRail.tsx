@@ -12,13 +12,13 @@ import { toast } from '../lib/quick-add';
  * their activity lives here, not on the server. Shows nothing until there's something to go on, so
  * first-time shoppers see no gap.
  */
-export default function ForYouRail({ radiusFilter }: { radiusFilter?: string }) {
+export default function ForYouRail({ filters = [] }: { filters?: string[] }) {
   const [entries, setEntries] = useState<ForYouEntry[]>([]);
 
   useEffect(() => {
     if (!personalOn()) return;
     (async () => {
-      const [dir, candidates] = await Promise.all([loadDirectory(), forYouCandidates(radiusFilter)]);
+      const [dir, candidates] = await Promise.all([loadDirectory(), forYouCandidates(filters)]);
       const settings = dir.settings as unknown as { value_weights: ValueWeights; feed: { slots: number; max_per_group: number; max_per_chain: number; discovery_slots: number } };
       const limits: FeedLimits = { slots: settings.feed.slots, maxPerGroup: settings.feed.max_per_group, maxPerChain: settings.feed.max_per_chain, discoverySlots: settings.feed.discovery_slots };
       rememberSettings(dir.settings as never);

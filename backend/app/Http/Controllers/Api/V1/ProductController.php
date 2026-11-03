@@ -90,6 +90,8 @@ class ProductController extends Controller
                     'was_price_suspicious' => $offer->was_price_suspicious,
                     'promo_type' => $offer->promo_type->value,
                     'promo_label' => $offer->getTranslation('promo_label', 'en', false) ?: null,
+                    'condition_label' => $offer->getTranslation('condition_label', 'en', false) ?: null,
+                    'staff_only' => $offer->isStaffOnly(),
                     'valid_to' => $offer->valid_to->toDateString(),
                 ]),
             ]),

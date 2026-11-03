@@ -64,6 +64,21 @@ it('indexes multi-buy details for the shopping plan', function () {
         ->promo_qty->toBe(2)->promo_total->toEqual(80)->max_per_customer->toBe(4);
 });
 
+it('indexes employee-only offers with their limit text, and lets shoppers leave them out', function () {
+    $this->offer->update(['conditions' => ['staff_only' => true], 'condition_label' => ['en' => 'Max 3 kg per customer']]);
+    app(PublishBrochure::class)($this->brochure);
+
+    expect(Offer::search('basmati')->raw()['hits'][0]['document'])
+        ->staff_only->toBeTrue()
+        ->condition_label->toBe('Max 3 kg per customer')
+        ->and(Offer::search('basmati')->options(['filter_by' => 'staff_only:false'])->raw()['found'])->toBe(0);
+
+    $this->offer->update(['conditions' => []]);
+    Offer::syncSearch(Offer::whereKey($this->offer->id)->get());
+
+    expect(Offer::search('basmati')->options(['filter_by' => 'staff_only:false'])->raw()['found'])->toBe(1);
+});
+
 it('finds offers of a parent category', function () {
     app(PublishBrochure::class)($this->brochure);
     $pantry = Category::where('slug', 'pantry')->value('id');

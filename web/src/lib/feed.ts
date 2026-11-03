@@ -29,9 +29,10 @@ export async function comparePrices(hits: OfferHit[], dir: Directory, prefs: Pre
   const chains = new Map(dir.chains.map((chain) => [chain.id, chain]));
   const variantIds = [...new Set(hits.map((hit) => hit.variant_id))];
 
-  // One row per pack and chain, so two different retail groups are always available.
+  // One row per pack and chain, so two different retail groups are always available. Never a price
+  // only that store's employees get: the card would claim the store is cheaper than it is.
   const others = await searchOffers({
-    filters: [`variant_id:[${variantIds.join(',')}]`, `chain_grade:<=${BIG_STORE_GRADE}`, ...itemFilters(dir, prefs)],
+    filters: [...new Set([`variant_id:[${variantIds.join(',')}]`, `chain_grade:<=${BIG_STORE_GRADE}`, 'staff_only:false', ...itemFilters(dir, prefs)])],
     sort: 'unit',
     groupBy: 'variant_id,chain_id',
     perPage: 250,
@@ -85,12 +86,12 @@ export type PackOffer = CompareOffer & { hit: OfferHit };
 
 const usualCutoff = (dir: Directory) => new Date(Date.now() - dir.settings.usual_price_max_days * DAY).toISOString().slice(0, 10);
 
-/** Live offers at these stores, in the shape the comparison needs. */
+/** Live offers at these stores that any shopper can buy, in the shape the comparison needs. */
 async function packOffers(dir: Directory, columns: CompareColumn[]): Promise<PackOffer[]> {
   const brochureIds = [...new Set(columns.flatMap((column) => column.brochureIds))];
   if (!brochureIds.length) return [];
 
-  const { hits } = await searchOffers({ filters: [`brochure_id:[${brochureIds.join(',')}]`], sort: 'rank', perPage: 250 });
+  const { hits } = await searchOffers({ filters: [`brochure_id:[${brochureIds.join(',')}]`, 'staff_only:false'], sort: 'rank', perPage: 250 });
   return hits.map((hit) => ({
     hit,
     variantId: hit.variant_id,

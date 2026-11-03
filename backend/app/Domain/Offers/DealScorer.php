@@ -9,6 +9,8 @@ namespace App\Domain\Offers;
  * - deal_score: % below the 90-day median price per unit (negative = more expensive than usual)
  * - is_lowest_90d: no store charged less for this pack in 90 days
  * - was_price_suspicious: the "was" price is over 10% above anything this chain charged in 90 days
+ *
+ * Prices only the store's employees get are left out of the history and are never scored.
  */
 final class DealScorer
 {
@@ -16,7 +18,14 @@ final class DealScorer
 
     public function score(Offer $offer): void
     {
+        if ($offer->isStaffOnly()) {
+            $offer->forceFill(['deal_score' => null, 'is_lowest_90d' => false, 'was_price_suspicious' => false]);
+
+            return;
+        }
+
         $history = Offer::query()
+            ->forShoppers()
             ->where('product_variant_id', $offer->product_variant_id)
             ->whereKeyNot($offer->id)
             ->whereIn('status', [OfferStatus::Published, OfferStatus::Expired])

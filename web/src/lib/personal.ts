@@ -57,7 +57,7 @@ export function toCandidate(hit: ForYouHit, ignored: number, due = false): ForYo
  * The first ranking, in Typesense: what the shopper shows interest in rises to the top, then the shared
  * order, one offer per product. Only ids go out, and only in the query for the public offers index.
  */
-export async function forYouCandidates(radiusFilter: string | undefined): Promise<ForYouCandidate[]> {
+export async function forYouCandidates(filters: string[]): Promise<ForYouCandidate[]> {
   const profile = loadProfile();
   const settings = activitySettings();
   const now = Date.now();
@@ -83,7 +83,7 @@ export async function forYouCandidates(radiusFilter: string | undefined): Promis
     group_limit: '1',
     per_page: String(CANDIDATES),
   });
-  if (radiusFilter) params.set('filter_by', radiusFilter);
+  if (filters.length) params.set('filter_by', filters.join(' && '));
 
   const response = await fetch(`${url}/collections/${collection}/documents/search?${params}`, { headers: { 'X-TYPESENSE-API-KEY': key } });
   if (!response.ok) return [];

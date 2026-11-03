@@ -19,6 +19,8 @@ export interface Prefs {
   allUae: boolean;
   /** Selected branch ids, sorted. */
   stores: number[];
+  /** The shopper unticked "Include store-employee offers". */
+  hideStaffOnly: boolean;
 }
 
 export const PREFS_COOKIE = 'offer_prefs';
@@ -26,7 +28,7 @@ export const MAX_STORES = 4;
 
 const MAX_RADIUS_KM = 500; // a sanity limit; the site's own limit is applied when drawing
 
-export const NO_PREFS: Prefs = { at: null, emirate: null, radiusKm: null, itemRadiusKm: null, allUae: false, stores: [] };
+export const NO_PREFS: Prefs = { at: null, emirate: null, radiusKm: null, itemRadiusKm: null, allUae: false, stores: [], hideStaffOnly: false };
 
 /** Cloudflare's region codes for the emirates → their region slugs. */
 const EMIRATES: Record<string, string> = {
@@ -72,6 +74,9 @@ export function resolvePrefs({ url, cookie, regionCode }: { url: URL; cookie?: s
 
   const at = point(q.get('near')) ?? point(saved.get('at'));
   const items = q.get('items');
+  // The search form sends a hidden staff=0 before the checkbox's staff=1, so the last one counts.
+  const staffValues = q.getAll('staff');
+  const staff = staffValues[staffValues.length - 1];
 
   return {
     at,
@@ -81,13 +86,14 @@ export function resolvePrefs({ url, cookie, regionCode }: { url: URL; cookie?: s
     allUae: items === null ? saved.get('all') === '1' : items === 'all',
     // has(): an empty ?stores= means "none selected", not "use the saved ones".
     stores: storeIds(q.has('stores') ? q.get('stores') : saved.get('s')),
+    hideStaffOnly: staff === undefined ? saved.get('so') === '0' : staff === '0',
   };
 }
 
 /** The part of the edge cache key that depends on the shopper. */
 export function prefsKey(prefs: Prefs): string {
   const at = prefs.at ? `${prefs.at.lat},${prefs.at.lng}` : (prefs.emirate ?? '');
-  return [at, prefs.radiusKm ?? '', prefs.itemRadiusKm ?? '', prefs.allUae ? 1 : 0, prefs.stores.join('.')].join('|');
+  return [at, prefs.radiusKm ?? '', prefs.itemRadiusKm ?? '', prefs.allUae ? 1 : 0, prefs.stores.join('.'), prefs.hideStaffOnly ? 1 : 0].join('|');
 }
 
 /** Everything the browser keeps in the cookie. `label` and `place` are for the browser alone. */
@@ -98,6 +104,7 @@ export function serializePrefs(prefs: Omit<Prefs, 'emirate'> & { label?: string;
   if (prefs.itemRadiusKm) out.set('i', String(prefs.itemRadiusKm));
   if (prefs.allUae) out.set('all', '1');
   if (prefs.stores.length) out.set('s', prefs.stores.join('.'));
+  if (prefs.hideStaffOnly) out.set('so', '0');
   if (prefs.label) out.set('l', prefs.label);
   if (prefs.place) out.set('p', prefs.place);
   return out.toString();
