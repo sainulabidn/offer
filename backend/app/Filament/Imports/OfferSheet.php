@@ -14,34 +14,31 @@ use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * An offer sheet: a CSV ready for prices, one row per chosen store and pack, with the branches, dates,
- * times and shared texts already filled in. The person types the prices and imports it (OfferImporter);
- * rows left without a price are skipped. Only stores, branches and packs the person may use are included.
+ * The rows of an offer sheet: one per chosen store and pack, with the branches, dates, times and shared
+ * texts filled in, ready for prices. The Offer builder page edits them in place; they can also be
+ * downloaded as a CSV for OfferImporter. Only stores, branches and packs the person may use are included.
  */
 final class OfferSheet
 {
     /** More rows than this is too much to price by hand; narrow the products instead. */
     public const int MAX_ROWS = 20_000;
 
-    /**
-     * @param  array<string, mixed>  $options  chain_ids, branch_ids, valid_from, valid_to, start_time, end_time,
-     *                                         promotion_text, limit_text, limit_text_ar, max_per_customer, employees_only,
-     *                                         loyalty_card, category_ids, brand_ids, product_group_ids, search, only_priced
-     */
-    public static function download(User $user, array $options): StreamedResponse
+    public static function csv(string $name, array $rows): StreamedResponse
     {
-        $rows = self::rows($user, $options);
-        $columns = array_keys(OfferImportGuide::COLUMNS);
+        return OfferImportGuide::download($name, array_keys(OfferImportGuide::COLUMNS), array_map(fn (array $row) => array_values(self::csvRow($row)), $rows));
+    }
 
-        return OfferImportGuide::download(
-            'offer-sheet-'.$options['valid_from'].'.csv',
-            $columns,
-            array_map(fn (array $row) => array_map(fn (string $column) => $row[$column] ?? '', $columns), $rows),
+    /** @return array<string, string> a row as its CSV cells (OfferImportGuide::COLUMNS); other keys are for the Offer builder */
+    public static function csvRow(array $row): array
+    {
+        return array_map(
+            fn (string $column) => is_bool($row[$column] ?? null) ? ($row[$column] ? 'yes' : '') : (string) ($row[$column] ?? ''),
+            array_combine(array_keys(OfferImportGuide::COLUMNS), array_keys(OfferImportGuide::COLUMNS)),
         );
     }
 
     /** "3 stores × 412 packs = 1,236 rows", or what is missing. */
-    public static function summary(User $user, array $options): string
+    public static function summary(User $user, array $options, int $max = self::MAX_ROWS): string
     {
         $stores = count(self::stores($user, $options));
         if ($stores === 0) {
@@ -51,27 +48,33 @@ final class OfferSheet
         $rows = $stores * $packs;
 
         return sprintf('%d %s × %s %s = %s rows%s', $stores, str('store')->plural($stores), number_format($packs), str('pack')->plural($packs), number_format($rows),
-            $rows > self::MAX_ROWS ? '. That is too many: choose fewer products (at most '.number_format(self::MAX_ROWS).' rows).' : '');
+            $rows > $max ? '. That is too many: choose fewer products (at most '.number_format($max).' rows).' : '');
     }
 
     /**
-     * @return list<array<string, string>>
+     * @param  array<string, mixed>  $options  chain_ids, branch_ids, valid_from, valid_to, start_time, end_time,
+     *                                         promotion_text, limit_text, limit_text_ar, max_per_customer, employees_only,
+     *                                         loyalty_card, category_ids, brand_ids, product_group_ids, search, only_priced
+     * @return list<array<string, mixed>> CSV columns plus chain_id, variant_id, branch_ids, store_name and branch_label
      *
      * @throws RuntimeException when there are too many rows or nothing to put in them
      */
-    public static function rows(User $user, array $options): array
+    public static function rows(User $user, array $options, int $max = self::MAX_ROWS): array
     {
         $stores = self::stores($user, $options);
         if ($stores === []) {
             throw new RuntimeException('Choose at least one of your stores.');
         }
         $packs = self::packs($options);
-        if ($packs->count() * count($stores) > self::MAX_ROWS) {
-            throw new RuntimeException('That is more than '.number_format(self::MAX_ROWS).' rows. Choose fewer products or stores.');
+        if ($packs->doesntExist()) {
+            throw new RuntimeException('No products match these filters.');
+        }
+        if ($packs->count() * count($stores) > $max) {
+            throw new RuntimeException('That is more than '.number_format($max).' rows. Choose fewer products or stores.');
         }
 
         $usual = self::usualPrices(array_keys($stores));
-        $shared = array_filter([
+        $shared = [
             'from' => (string) $options['valid_from'],
             'until' => (string) $options['valid_to'],
             'from_time' => self::clock($options['start_time'] ?? null),
@@ -80,9 +83,9 @@ final class OfferSheet
             'limit_text' => trim((string) ($options['limit_text'] ?? '')),
             'limit_text_ar' => trim((string) ($options['limit_text_ar'] ?? '')),
             'max_per_customer' => (string) ($options['max_per_customer'] ?? ''),
-            'employees_only' => ($options['employees_only'] ?? false) ? 'yes' : '',
-            'loyalty_card' => ($options['loyalty_card'] ?? false) ? 'yes' : '',
-        ], fn ($value) => $value !== '' && $value !== null);
+            'employees_only' => (bool) ($options['employees_only'] ?? false),
+            'loyalty_card' => (bool) ($options['loyalty_card'] ?? false),
+        ];
 
         $rows = [];
         foreach ($packs->lazy() as $variant) {
@@ -92,9 +95,16 @@ final class OfferSheet
                     continue;
                 }
                 $rows[] = [
+                    'chain_id' => $chainId,
+                    'variant_id' => $variant->id,
+                    'branch_ids' => $branches->modelKeys(),
+                    'store_name' => $chain->name,
+                    'branch_label' => $branches->isEmpty() ? 'All branches' : $branches->pluck('name')->implode(', '),
                     'store' => $chain->slug,
-                    'branches' => $branches,
-                    ...($variant->gtin ? ['barcode' => $variant->gtin] : ['product' => $variant->product->slug, 'pack' => $variant->slug]),
+                    'branches' => $branches->pluck('slug')->implode('|'),
+                    'barcode' => $variant->gtin ?? '',
+                    'product' => $variant->gtin ? '' : $variant->product->slug,
+                    'pack' => $variant->gtin ? '' : $variant->slug,
                     'name' => $variant->label(),
                     'usual_price' => $price ?? '',
                     ...$shared,
@@ -106,10 +116,10 @@ final class OfferSheet
     }
 
     /**
-     * The chosen stores the person may add offers for, each with its "branches" cell: the chosen branches of
-     * that store, or empty (every branch) for those who manage the whole store, or else all of their branches.
+     * The chosen stores the person may add offers for, each with its branches: the chosen ones of that store,
+     * none (every branch) for those who manage the whole store, or else all of their branches there.
      *
-     * @return array<int, array{0: Chain, 1: string}>
+     * @return array<int, array{0: Chain, 1: \Illuminate\Database\Eloquent\Collection<int, Branch>}>
      */
     private static function stores(User $user, array $options): array
     {
@@ -121,14 +131,14 @@ final class OfferSheet
             $wholeStore = Access::allows($user, 'chains', 'edit', $chain);
 
             $branches = match (true) {
-                $chosen->isNotEmpty() => $chosen,
-                $wholeStore => collect(),
+                $chosen->isNotEmpty() => $chosen->values(),
+                $wholeStore => $mine->take(0),
                 default => $mine,
             };
             if ($branches->isEmpty() && ! $wholeStore) {
                 continue; // none of this store's branches are theirs
             }
-            $stores[$chain->id] = [$chain, $branches->pluck('slug')->implode('|')];
+            $stores[$chain->id] = [$chain, $branches];
         }
 
         return $stores;
@@ -168,9 +178,9 @@ final class OfferSheet
         return $prices;
     }
 
-    private static function clock(?string $time): ?string
+    private static function clock(?string $time): string
     {
-        return $time ? substr($time, 0, 5) : null;
+        return $time ? substr($time, 0, 5) : '';
     }
 
     /** @return Collection<int, string> branch id → "Chain · Branch", for the chosen stores, the person's own only */

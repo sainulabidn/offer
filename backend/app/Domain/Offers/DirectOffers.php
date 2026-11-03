@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Offers a store or our team adds on the Offers page or by CSV, without a brochure. They go live at once.
@@ -32,10 +33,51 @@ final class DirectOffers
      */
     public function add(array $attributes, array $branchIds, ?User $user): Offer
     {
+        [$offer, $replaced] = $this->store($attributes, $branchIds, $user);
+
+        $replaced->unsearchable();
+        $this->index($offer);
+
+        return $offer;
+    }
+
+    /**
+     * Many offers at once (the Offer builder): each is checked and saved on its own, so one that fails
+     * leaves the rest; search and alerts are updated once at the end.
+     *
+     * @param  array<array-key, array{0: array<string, mixed>, 1: list<int>}>  $items  attributes and branch ids, as for add()
+     * @return array<array-key, Offer|string> per item: the offer, or why it wasn't saved
+     */
+    public function addMany(array $items, ?User $user): array
+    {
+        $results = [];
+        $added = new EloquentCollection;
+        $replaced = new EloquentCollection;
+        foreach ($items as $key => [$attributes, $branchIds]) {
+            try {
+                [$offer, $old] = $this->store($attributes, $branchIds, $user);
+                $added->push($offer);
+                $replaced = $replaced->merge($old);
+                $results[$key] = $offer;
+            } catch (ValidationException $e) {
+                $results[$key] = collect($e->errors())->flatten()->first() ?? $e->getMessage();
+            }
+        }
+
+        $replaced->unsearchable();
+        Offer::syncSearch(Offer::whereKey($added->modelKeys())->with(OfferDocument::RELATIONS)->get());
+        $added->pluck('brochure_id')->unique()->each(fn (int $id) => MatchAlerts::dispatch($id)->delay(now()->addMinutes(self::ALERT_DELAY_MINUTES)));
+
+        return $results;
+    }
+
+    /** @return array{0: Offer, 1: EloquentCollection<int, Offer>} the new offer, and the earlier ones it replaced */
+    private function store(array $attributes, array $branchIds, ?User $user): array
+    {
         $chainId = (int) $attributes['chain_id'];
         PriceWait::check($user, $chainId, (int) $attributes['product_variant_id']);
 
-        [$offer, $replaced] = DB::transaction(function () use ($attributes, $branchIds, $chainId, $user) {
+        return DB::transaction(function () use ($attributes, $branchIds, $chainId, $user) {
             $container = $this->container($chainId, $branchIds, $user);
             $this->cover($container, (string) $attributes['valid_from'], (string) $attributes['valid_to']);
 
@@ -52,11 +94,6 @@ final class DirectOffers
 
             return [$offer, $replaced];
         });
-
-        $replaced->unsearchable();
-        $this->index($offer);
-
-        return $offer;
     }
 
     /** Changes a direct offer. Its store and branches stay; add a new offer to change those. */

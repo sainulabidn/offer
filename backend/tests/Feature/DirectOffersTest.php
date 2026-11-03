@@ -181,7 +181,7 @@ it('guides the CSV import, with a sample from the person’s own store that impo
         ->and(Offer::get()->filter->isStaffOnly())->toHaveCount(1);
 });
 
-it('prepares an offer sheet for the person’s own stores and chosen products, and imports only the priced rows', function () {
+it('makes offer sheet rows for the person’s own stores and chosen products, and imports only the priced rows', function () {
     $nesto = Chain::create(['name' => ['en' => 'Nesto'], 'slug' => 'nesto', 'country_id' => $this->lulu->country_id, 'format' => $this->lulu->format, 'retail_group_id' => $this->lulu->retail_group_id]);
     $nesto->branches()->create(['name' => ['en' => 'Al Nahda'], 'slug' => 'nesto-al-nahda', 'location' => Point::makeGeodetic(25.29, 55.37)]);
     $riceCategory = $this->rice->product->category;
@@ -208,19 +208,13 @@ it('prepares an offer sheet for the person’s own stores and chosen products, a
     $import = Import::create(['user_id' => $this->owner->id, 'file_name' => 'sheet.csv', 'file_path' => 'sheet.csv', 'importer' => OfferImporter::class, 'total_rows' => count($rows)]);
     $columns = array_combine(array_keys(OfferImportGuide::COLUMNS), array_keys(OfferImportGuide::COLUMNS));
     foreach ($rows as $row) {
-        (new OfferImporter($import, $columns, []))($row);
+        (new OfferImporter($import, $columns, []))(OfferSheet::csvRow($row));
     }
     $import->forceFill(['successful_rows' => count($rows), 'processed_rows' => count($rows), 'completed_at' => now()->addSecond()])->save();
 
     expect(Offer::sole())->price->toBe('39.95')->start_time->toBe('08:00:00')
         ->and(OfferImporter::getCompletedNotificationBody($import))->toContain('1 offer added')
         ->when(count($rows) > 1, fn ($e) => $e->toContain((count($rows) - 1).' '.str('row')->plural(count($rows) - 1).' without a price skipped'));
-
-    // The wizard downloads it.
-    asOfferAdmin($this->owner);
-    livewire(ListOffers::class)->callAction('offerSheet', data: ['chain_ids' => [$this->lulu->id], 'valid_from' => '2026-10-24', 'valid_to' => '2026-10-26'])
-        ->assertHasNoFormErrors()
-        ->assertFileDownloaded('offer-sheet-2026-10-24.csv');
 });
 
 it('imports offers from a CSV, one live offer per row', function () {

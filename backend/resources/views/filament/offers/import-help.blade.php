@@ -2,7 +2,7 @@
 <div style="display: grid; gap: 1.25rem; font-size: 0.875rem; line-height: 1.5">
     <x-filament::section heading="Steps">
         <ol style="list-style: decimal; padding-inline-start: 1.25rem; display: grid; gap: 0.35rem">
-            <li><strong>Easiest: Prepare offer sheet.</strong> Choose your stores and branches, the dates (and times), shared texts and which products. You get a CSV with a row for every store and pack, filled in except the price. Type the prices; rows you leave without a price are skipped.</li>
+            <li><strong>Easiest: the Offer builder</strong> (Offers → Offer builder). Choose your stores and branches, the dates (and times), shared texts and which products, then type or generate the prices in the table and save, with no CSV at all. It can also download the table as a CSV to import later; rows without a price are skipped.</li>
             <li>Or <strong>download the sample</strong> (button below). It is made from your own store, branches and real packs, so you can edit it and import it straight back.</li>
             <li>Keep the first row (the column names). Add <strong>one row per offer</strong>. Only <strong>store</strong>, <strong>price</strong>, <strong>until</strong> and the pack (barcode, or product and pack) are required.</li>
             <li>In Excel: <em>File → Save as → CSV UTF-8 (comma delimited)</em>. Plain "CSV" can break Arabic text.</li>
