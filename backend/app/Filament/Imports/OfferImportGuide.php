@@ -39,7 +39,7 @@ final class OfferImportGuide
         'promotion_text' => 'The promotion as shoppers see it, e.g. 2 for 18.',
         'max_per_customer' => 'A number, when the brochure limits how many each customer may buy.',
         'loyalty_card' => 'yes when the price needs the store\'s loyalty card. Empty = no.',
-        'employees_only' => 'yes when only the store\'s own employees get this price. Empty = no.',
+        'employees_only' => 'yes when only the store\'s registered customers get this price (the column keeps its old name). Empty = no.',
         'limit_text' => 'The limit as the brochure words it, e.g. Max 3 kg per customer or Min 2 pcs.',
         'limit_text_ar' => 'The same in Arabic.',
         'from' => 'First day, as YYYY-MM-DD. Empty = today.',
@@ -58,7 +58,7 @@ final class OfferImportGuide
     }
 
     /**
-     * Three rows for the person's first store: a plain price, a "2 for" with a limit, and an employees-only
+     * Three rows for the person's first store: a plain price, a "2 for" with a limit, and a registered-customers-only
      * price at chosen branches. Codes the person can't see are replaced by placeholders.
      *
      * @return list<array<string, string>>

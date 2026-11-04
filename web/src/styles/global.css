@@ -201,18 +201,6 @@
     @apply text-[0.65em];
   }
 
-  .hero {
-    background:
-      radial-gradient(70% 120% at 100% 0%, rgb(58 176 124 / 0.55) 0%, transparent 60%),
-      radial-gradient(60% 90% at 0% 100%, rgb(232 89 60 / 0.22) 0%, transparent 65%),
-      #0f5c3f;
-    color: #fdfbf6;
-  }
-
-  .sticker {
-    @apply grid place-items-center rounded-2xl bg-white/95 shadow-float;
-  }
-
   /* Soft colours for store initials and photo-less products, picked by name. */
   .tint-0 { background: #e2f1e9; color: #0f5c3f; }
   .tint-1 { background: #fdebe5; color: #a83a22; }

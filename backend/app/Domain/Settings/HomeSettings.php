@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Cache;
 final class HomeSettings
 {
     public const array DEFAULTS = [
-        'radius_options' => [5, 10, 25, 50],
+        'radius_options' => [1, 2, 5, 10, 25, 50],
         'radius_default' => 10,
         'item_radius_default' => 50,
         'radius_max' => 100,

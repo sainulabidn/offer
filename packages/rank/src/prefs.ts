@@ -19,7 +19,7 @@ export interface Prefs {
   allUae: boolean;
   /** Selected branch ids, sorted. */
   stores: number[];
-  /** The shopper unticked "Include store-employee offers". */
+  /** The shopper unticked "Include registered-customer offers". */
   hideStaffOnly: boolean;
 }
 

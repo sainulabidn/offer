@@ -130,7 +130,7 @@ class Offer extends Model
         return strlen($time) === 5 ? "{$time}:00" : $time;
     }
 
-    /** Offers anyone can buy: leaves out prices only the store's own employees get. */
+    /** Offers anyone can buy: leaves out prices only the store's registered customers get. */
     public function scopeForShoppers(Builder $query): Builder
     {
         return $query->whereRaw("coalesce((conditions->>'staff_only')::boolean, false) = false");

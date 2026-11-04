@@ -44,7 +44,7 @@ export interface StoreOffer {
   promo_label: string | null;
   /** "Max 3 kg per customer", as the brochure words it. */
   condition_label: string | null;
-  /** Only the store's own employees get this price. */
+  /** Only the store's registered customers get this price. */
   staff_only: boolean;
   /** Timed offers: the daily window, "8:00 AM – 11:00 AM", and when today's closes (unix seconds). */
   time_window: string | null;

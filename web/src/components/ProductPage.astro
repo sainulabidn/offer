@@ -69,7 +69,7 @@ const [historyByVariant, similar, categories] = await Promise.all([
 ]);
 const history = variant ? (historyByVariant[String(variant.id)] ?? []) : [];
 
-// The headline and "Cheapest" badge use prices shoppers can pay, not ones for the store's employees.
+// The headline and "Cheapest" badge use prices shoppers can pay, not ones only for the store's registered customers.
 const best = variant?.offers.find((offer) => !offer.staff_only);
 const activity = `product:${product.id} group:${product.product_group.id}${product.brand ? ` brand:${product.brand.id}` : ''} category:${product.category.id}`;
 
@@ -291,7 +291,7 @@ const shareImage = productShareImage(product, onPackPage ? variant.slug : null, 
                 )}
                 {(offer.staff_only || offer.condition_label) && (
                   <p class="text-xs font-medium">
-                    {offer.staff_only && <span class="text-warn">Store employees only</span>}
+                    {offer.staff_only && <span class="text-warn">Registered customers only</span>}
                     {offer.staff_only && offer.condition_label && <span class="text-muted"> · </span>}
                     {offer.condition_label && <span class="text-muted">{offer.condition_label}</span>}
                   </p>

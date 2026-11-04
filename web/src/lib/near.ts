@@ -1,4 +1,5 @@
 import { apiUrl } from './api';
+import { marketToday, storeCards, storeTile, type StoreTile } from './store-cards';
 import { distanceKm, nearest, rankStores, type OpeningHours, type Point, type Prefs, type RankedStore } from '@offer/rank';
 
 /** "Near me": what the shopper's location means, worked out in the Worker from the store directory. */
@@ -34,6 +35,8 @@ export interface StoreCard extends DirectoryBranch {
 }
 
 export type RankedCard = RankedStore<StoreCard>;
+
+export { marketToday, storeCards, storeTile, type StoreTile };
 
 let cached: { at: number; directory: Directory } | null = null;
 
@@ -75,7 +78,7 @@ export function radiusFilter(at: Point, km: number): string {
   return `locations:(${at.lat.toFixed(decimals)},${at.lng.toFixed(decimals)},${km} km)`;
 }
 
-/** Leaves out offers only a store's own employees can buy, when the shopper unticked them. */
+/** Leaves out offers only a store's registered customers can buy, when the shopper unticked them. */
 export function staffFilters(prefs: Prefs): string[] {
   return prefs.hideStaffOnly ? ['staff_only:false'] : [];
 }
@@ -87,34 +90,10 @@ export function itemFilters(dir: Directory, prefs: Prefs): string[] {
   return [...(at && km ? [radiusFilter(at, km)] : []), ...staffFilters(prefs)];
 }
 
-/** Today in the market's timezone; the UAE has one offset all year. */
-export const marketToday = () => new Date(Date.now() + 4 * 3_600_000).toISOString().slice(0, 10);
-
 /** Brochures running today at a branch. */
 export function liveBrochures(dir: Directory, branchId: number): number[] {
   const today = marketToday();
   return dir.brochures.filter((brochure) => brochure.valid_from <= today && brochure.branch_ids.includes(branchId)).map((brochure) => brochure.id);
-}
-
-/** Live offers per branch, from the brochures that cover it. */
-function offersByBranch(dir: Directory): Map<number, number> {
-  const today = marketToday();
-  const counts = new Map<number, number>();
-  for (const brochure of dir.brochures) {
-    if (brochure.valid_from > today) continue;
-    for (const id of brochure.branch_ids) counts.set(id, (counts.get(id) ?? 0) + brochure.offers);
-  }
-  return counts;
-}
-
-/** Every branch with what a store card shows. */
-export function storeCards(dir: Directory): StoreCard[] {
-  const chains = new Map(dir.chains.map((chain) => [chain.id, chain]));
-  const offers = offersByBranch(dir);
-  return dir.branches.map((branch) => {
-    const chain = chains.get(branch.chain_id);
-    return { ...branch, chainId: branch.chain_id, chainSlug: chain?.slug ?? '', groupId: chain?.group_id ?? null, grade: chain?.grade ?? 3, logo: chain?.logo ?? null, offers: offers.get(branch.id) ?? 0 };
-  });
 }
 
 /** The stores to show for this shopper, before their personal order is applied in the browser. */

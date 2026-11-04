@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { isSignedIn } from '../lib/account';
+import { distanceLabel } from '../lib/format';
 import { loadDirectory, searchConfig } from '../lib/plan';
 import { readNotice, clearNotice, keepActivityOnAccount, syncPins, type Notice } from '../lib/places';
 import { readPrefs } from '../lib/prefs';
@@ -8,6 +9,13 @@ import { accountKeepsActivity, consent, loadProfile, pinnedStores, recall, keep,
 import { rankStores, distanceKm } from '@offer/rank';
 
 const ACCOUNT_ASKED = 'offer:account-asked';
+
+interface StartStore {
+  id: number;
+  chainId: number;
+  chain: string;
+  km: number | null;
+}
 
 interface Staple {
   group: number;
@@ -26,7 +34,9 @@ export default function WelcomeBar() {
   const [question, setQuestion] = useState<'consent' | 'account' | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
-  const [stores, setStores] = useState<{ id: number; chainId: number; chain: string }[]>([]);
+  const [stores, setStores] = useState<StartStore[]>([]);
+  const [moreStores, setMoreStores] = useState<StartStore[]>([]);
+  const [allShown, setAllShown] = useState(false);
   const [staples, setStaples] = useState<Staple[]>([]);
   const [pickedStores, setPickedStores] = useState<number[]>([]);
   const [pickedStaples, setPickedStaples] = useState<number[]>([]);
@@ -49,10 +59,17 @@ export default function WelcomeBar() {
     rememberSettings(dir.settings as never);
     const chains = new Map(dir.chains.map((chain) => [chain.id, chain]));
     const { at } = readPrefs();
-    const nearby = dir.branches
-      .map((branch) => ({ ...branch, chainId: branch.chain_id, grade: chains.get(branch.chain_id)?.grade ?? 3, offers: 1 }))
-      .filter((branch) => !at || distanceKm(at, branch) < 30);
-    setStores(rankStores(nearby, { at, radiusKm: 30, weights: { activity: 0, near: 0.6, grade: 0.4, offers: 0 } }).slice(0, 8).map(({ store }) => store));
+    const branches = dir.branches.map((branch) => ({ ...branch, chainId: branch.chain_id, grade: chains.get(branch.chain_id)?.grade ?? 3, offers: 1, km: at ? distanceKm(at, branch) : null }));
+    const top = rankStores(branches.filter((branch) => branch.km === null || branch.km < 30), { at, radiusKm: 30, weights: { activity: 0, near: 0.6, grade: 0.4, offers: 0 } }).slice(0, 8).map(({ store }) => store);
+    // "Show all stores": every other company too, its nearest branch, nearest first (by name without a place).
+    const rest = new Map<number, (typeof branches)[number]>();
+    for (const branch of branches) {
+      if (top.some((store) => store.chainId === branch.chainId)) continue;
+      const known = rest.get(branch.chainId);
+      if (!known || (branch.km ?? 0) < (known.km ?? 0)) rest.set(branch.chainId, branch);
+    }
+    setStores(top);
+    setMoreStores([...rest.values()].sort((a, b) => (a.km ?? 0) - (b.km ?? 0) || a.chain.localeCompare(b.chain)));
 
     const { url, collection, key } = await searchConfig();
     const params = new URLSearchParams({ q: '*', query_by: 'product_name', filter_by: 'item_grade:=1', group_by: 'product_group_id', group_limit: '1', per_page: '16', sort_by: 'product_rank:desc', include_fields: 'product_group,product_group_id,icon,category_ids' });
@@ -67,7 +84,7 @@ export default function WelcomeBar() {
 
   function finish() {
     pickedStores.forEach((id) => {
-      const store = stores.find((candidate) => candidate.id === id);
+      const store = [...stores, ...moreStores].find((candidate) => candidate.id === id);
       if (store) recordActivity('directions', [`branch:${id}`, `chain:${store.chainId}`]);
     });
     if (pickedStores.length) {
@@ -126,15 +143,25 @@ export default function WelcomeBar() {
           </div>
           <div className="flex flex-wrap gap-2">
             {step === 1
-              ? stores.map((store) => {
+              ? (allShown ? [...stores, ...moreStores] : stores).map((store) => {
                   const on = pickedStores.includes(store.id);
-                  return <button key={store.id} type="button" aria-pressed={on} onClick={() => setPickedStores(toggle(pickedStores, store.id))} className={`chip ${on ? 'chip-on' : ''}`}>{on && <Check className="size-4" aria-hidden="true" />}{store.chain}</button>;
+                  return (
+                    <button key={store.id} type="button" aria-pressed={on} onClick={() => setPickedStores(toggle(pickedStores, store.id))} className={`chip ${on ? 'chip-on' : ''}`}>
+                      {on && <Check className="size-4" aria-hidden="true" />}{store.chain}
+                      {allShown && store.km !== null && <span className="text-xs font-normal text-muted">{distanceLabel(store.km)}</span>}
+                    </button>
+                  );
                 })
               : staples.map((staple) => {
                   const on = pickedStaples.includes(staple.group);
                   return <button key={staple.group} type="button" aria-pressed={on} onClick={() => setPickedStaples(toggle(pickedStaples, staple.group))} className={`chip ${on ? 'chip-on' : ''}`}><span aria-hidden="true">{staple.icon}</span> {staple.name}</button>;
                 })}
           </div>
+          {step === 1 && moreStores.length > 0 && (
+            <button type="button" aria-expanded={allShown} onClick={() => setAllShown(!allShown)} className="flex min-h-11 items-center gap-1 text-sm font-semibold text-link">
+              {allShown ? <>Show fewer <ChevronUp className="size-4" aria-hidden="true" /></> : <>Show all stores ({stores.length + moreStores.length}) <ChevronDown className="size-4" aria-hidden="true" /></>}
+            </button>
+          )}
           <div className="flex gap-2">
             <button type="button" onClick={() => (step === 1 ? setStep(2) : finish())} className="btn btn-primary flex-1">{step === 1 ? 'Next' : 'Done'}</button>
             <button type="button" onClick={() => sheet.current?.close()} className="btn btn-quiet">Skip</button>

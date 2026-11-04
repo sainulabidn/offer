@@ -27,7 +27,7 @@ describe('resolvePrefs', () => {
     expect(resolvePrefs({ url: url('/'), cookie: 'all=1' }).allUae).toBe(true);
   });
 
-  it('hides and shows store-employee offers from the URL or the cookie', () => {
+  it('hides and shows registered-customer offers from the URL or the cookie', () => {
     expect(resolvePrefs({ url: url('/') }).hideStaffOnly).toBe(false);
     expect(resolvePrefs({ url: url('/?staff=0') }).hideStaffOnly).toBe(true);
     expect(resolvePrefs({ url: url('/'), cookie: 'so=0' }).hideStaffOnly).toBe(true);

@@ -16,7 +16,7 @@ export default function PlanBuilder() {
   const [hits, setHits] = useState<Hit[] | null>(null);
   const [scope, setScope] = useState<ReturnType<typeof nearbyStores> | null>(null);
   const [places, setPlaces] = useState<Place[]>([]);
-  const [radii, setRadii] = useState({ options: [5, 10, 25, 50], max: 100, walkLimitM: 600 });
+  const [radii, setRadii] = useState({ options: [1, 2, 5, 10, 25, 50], max: 100, walkLimitM: 600 });
   const [error, setError] = useState('');
   const [plans, setPlans] = useState<ServerPlan[]>([]);
   const [shareUrl, setShareUrl] = useState('');

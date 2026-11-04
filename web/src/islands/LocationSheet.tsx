@@ -16,13 +16,24 @@ const MAX_ACCOUNT_PLACES = 10;
 
 const ICONS = { home: HomeIcon, work: Briefcase, other: MapPin };
 
+/** True after the first call in this tab, so the sheet asks once per visit. Storage blocked: never ask, rather than on every page. */
+function askedThisVisit(): boolean {
+  try {
+    if (sessionStorage.getItem('offer:location-asked')) return true;
+    sessionStorage.setItem('offer:location-asked', '1');
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 /** Where the shopper is shopping: saved places, search, GPS (only after a tap), the map, and the radius. */
 export default function LocationSheet() {
   const dialog = useRef<HTMLDialogElement>(null);
   const [places, setPlaces] = useState<Place[]>([]);
   const [names, setNames] = useState<PlaceName[]>([]);
   const [stores, setStores] = useState<Point[]>([]);
-  const [settings, setSettings] = useState({ options: [5, 10, 25, 50], fallback: 10, max: 100 });
+  const [settings, setSettings] = useState({ options: [1, 2, 5, 10, 25, 50], fallback: 10, max: 100 });
   const [radius, setRadius] = useState<number | null>(null);
   const [activePlace, setActivePlace] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -31,10 +42,9 @@ export default function LocationSheet() {
 
   useEffect(() => {
     keepUrlChoices();
-    syncAccount().then(applyAutoDefault).catch(() => {});
+    const settled = syncAccount().then(applyAutoDefault).catch(() => {});
 
-    const open = (e: MouseEvent) => {
-      if (!(e.target as Element).closest('[data-open-location]')) return;
+    const show = () => {
       const saved = readPrefs();
       setRadius(saved.radiusKm);
       setActivePlace(saved.place);
@@ -48,7 +58,17 @@ export default function LocationSheet() {
         })
         .catch(() => setStatus('Could not load the store list. Check your connection.'));
     };
+    const open = (e: MouseEvent) => {
+      if ((e.target as Element).closest('[data-open-location]')) show();
+    };
     document.addEventListener('click', open);
+
+    // A page that needs a place (the home page) asks for one, once per visit: closing the sheet means "not now".
+    // After the account sync and the automatic default, either of which may set a place.
+    settled.then(() => {
+      const saved = readPrefs();
+      if (document.querySelector('[data-ask-location]') && !saved.at && !saved.allUae && !askedThisVisit()) show();
+    });
     return () => document.removeEventListener('click', open);
   }, []);
 

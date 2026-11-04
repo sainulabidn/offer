@@ -38,7 +38,7 @@ class OffersTable
                 TextColumn::make('promo_type')->badge(),
                 TextColumn::make('audience')
                     ->label('Who')
-                    ->state(fn (Offer $offer) => $offer->isStaffOnly() ? 'Employees only' : null)
+                    ->state(fn (Offer $offer) => $offer->isStaffOnly() ? 'Registered customers only' : null)
                     ->badge()
                     ->color('warning')
                     ->placeholder('—'),

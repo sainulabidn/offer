@@ -98,28 +98,23 @@ export async function forYouCandidates(filters: string[]): Promise<ForYouCandida
 }
 
 /**
- * Puts the home page's store cards in this shopper's order: their favourites, then their activity.
- * The server draws everyone the same order, because the page is cached; moving cards with CSS order
- * here means nothing re-renders.
+ * The home page's stores in this shopper's order: their favourites, then their activity. The server
+ * draws everyone the same order, because the page is cached; this runs in the browser after it.
  */
-export function orderStoreCards() {
-  if (!personalOn()) return;
-  const cards = [...document.querySelectorAll<HTMLElement>('[data-store-card]')];
-  if (cards.length < 2) return;
+export function personalStoreOrder<T extends { id: number; chainId: number; score: number; selected: boolean }>(stores: T[]): T[] {
+  if (!personalOn() || stores.length < 2) return stores;
 
   const profile = loadProfile();
   const settings = activitySettings();
   const now = Date.now();
   const pinned = pinnedStores();
-  const branches = cards.map((card) => ({ id: Number(card.dataset.branch), chainId: Number(card.dataset.chain) }));
-  const activity = storeActivity(profile, branches, now, settings);
+  const activity = storeActivity(profile, stores, now, settings);
   const most = Math.max(0, ...Object.values(activity));
 
-  const value = (card: HTMLElement) => {
-    const id = Number(card.dataset.branch);
-    const personal = most > 0 ? (0.5 * Math.max(0, activity[id] ?? 0)) / most : 0;
-    return (card.dataset.selected ? 200 : 0) + (pinned.includes(id) ? 100 : 0) + Number(card.dataset.score) + personal;
+  const value = (store: T) => {
+    const personal = most > 0 ? (0.5 * Math.max(0, activity[store.id] ?? 0)) / most : 0;
+    return (store.selected ? 200 : 0) + (pinned.includes(store.id) ? 100 : 0) + store.score + personal;
   };
 
-  [...cards].sort((a, b) => value(b) - value(a)).forEach((card, order) => (card.style.order = String(order)));
+  return [...stores].sort((a, b) => value(b) - value(a));
 }

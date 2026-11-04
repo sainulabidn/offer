@@ -30,7 +30,7 @@ export async function comparePrices(hits: OfferHit[], dir: Directory, prefs: Pre
   const variantIds = [...new Set(hits.map((hit) => hit.variant_id))];
 
   // One row per pack and chain, so two different retail groups are always available. Never a price
-  // only that store's employees get: the card would claim the store is cheaper than it is.
+  // only that store's registered customers get: the card would claim the store is cheaper than it is.
   const others = await searchOffers({
     filters: [...new Set([`variant_id:[${variantIds.join(',')}]`, `chain_grade:<=${BIG_STORE_GRADE}`, 'staff_only:false', ...itemFilters(dir, prefs)])],
     sort: 'unit',

@@ -23,7 +23,7 @@
                 <th style="{{ $cell }}; text-align: start">Promotion text</th>
                 <th style="{{ $cell }}; text-align: start">Limit text</th>
                 <th style="{{ $cell }}; text-align: start">Max</th>
-                <th style="{{ $cell }}; text-align: start">Employees</th>
+                <th style="{{ $cell }}; text-align: start">Registered customers</th>
                 <th style="{{ $cell }}; text-align: start">Card</th>
                 <th style="{{ $cell }}; text-align: start">From</th>
                 <th style="{{ $cell }}; text-align: start">Until</th>
@@ -84,7 +84,7 @@
                         <div class="fi-input-wrp"><input type="number" min="1" class="fi-input" style="{{ $input('3.5rem') }}" wire:model="rows.{{ $i }}.max_per_customer" aria-label="Max per customer"></div>
                     </td>
                     <td style="{{ $cell }}; padding-top: 0.6rem; text-align: center">
-                        <input type="checkbox" class="fi-checkbox-input" wire:model="rows.{{ $i }}.employees_only" aria-label="Store employees only">
+                        <input type="checkbox" class="fi-checkbox-input" wire:model="rows.{{ $i }}.employees_only" aria-label="Registered customers only">
                     </td>
                     <td style="{{ $cell }}; padding-top: 0.6rem; text-align: center">
                         <input type="checkbox" class="fi-checkbox-input" wire:model="rows.{{ $i }}.loyalty_card" aria-label="Loyalty card price">

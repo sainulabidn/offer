@@ -10,7 +10,7 @@ namespace App\Domain\Offers;
  * - is_lowest_90d: no store charged less for this pack in 90 days
  * - was_price_suspicious: the "was" price is over 10% above anything this chain charged in 90 days
  *
- * Prices only the store's employees get are left out of the history and are never scored.
+ * Prices only the store's registered customers get are left out of the history and are never scored.
  */
 final class DealScorer
 {

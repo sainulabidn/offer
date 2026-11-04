@@ -176,7 +176,7 @@ class OfferBuilder extends Page
                         TextInput::make('limit_text')->placeholder('e.g. Max 3 kg per customer'),
                         TextInput::make('limit_text_ar')->label('Limit text (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
                         TextInput::make('max_per_customer')->integer()->minValue(1),
-                        Toggle::make('employees_only')->label('Store employees only'),
+                        Toggle::make('employees_only')->label('Registered customers only'),
                         Toggle::make('loyalty_card')->label('Loyalty card price'),
                     ]),
                 Section::make('Products')

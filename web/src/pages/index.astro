@@ -5,11 +5,11 @@ import CategoryNav from '../components/CategoryNav.astro';
 import CompareTable from '../components/CompareTable.astro';
 import OfferGrid from '../components/OfferGrid.astro';
 import StoreFocus from '../components/StoreFocus.astro';
-import StoreRail from '../components/StoreRail.astro';
 import { api } from '../lib/api';
 import ForYouRail from '../islands/ForYouRail';
+import NearbyStores from '../islands/NearbyStores';
 import { cheapestNearby, comparePrices } from '../lib/feed';
-import { itemFilters, itemRadius, nearestBranches, placeOf, regionId, staffFilters, storeCards, storeRadius, storesFor, directory } from '../lib/near';
+import { itemFilters, itemRadius, nearestBranches, placeOf, regionId, staffFilters, storeCards, storeRadius, storeTile, storesFor, directory } from '../lib/near';
 import { cacheFor } from '../lib/format';
 import { searchOffers } from '../lib/search';
 import { seoData } from '../lib/seo';
@@ -17,6 +17,8 @@ import { seoData } from '../lib/seo';
 const prefs = Astro.locals.prefs;
 const dir = await directory();
 const place = placeOf(dir, prefs);
+// An emirate guessed from the network is too rough for distances or a radius.
+const exact = Boolean(place.at && !place.rough);
 const radius = storeRadius(dir, prefs);
 const itemKm = itemRadius(dir, prefs);
 const stores = storesFor(dir, prefs);
@@ -32,7 +34,7 @@ const [categories, cheapest, ending, trendingIds] = await Promise.all([
 // Needs a real rise in the area; a rail of one or two looks broken.
 const trending = trendingIds.length >= 4 ? await cheapestNearby(dir, prefs, { perPage: 5, filters: [`product_id:[${trendingIds.join(',')}]`] }) : null;
 const compare = await comparePrices(cheapest.hits, dir, prefs);
-const distances = place.at && !place.rough ? nearestBranches(dir, place.at, itemKm) : undefined;
+const distances = exact ? nearestBranches(dir, place.at, itemKm) : undefined;
 const topSaving = Math.max(0, ...cheapest.hits.map((hit) => Math.round(hit.discount_pct ?? 0)));
 const { settings } = await seoData();
 
@@ -40,34 +42,35 @@ cacheFor(Astro.response.headers);
 ---
 
 <Base title={`${settings.site_name} · ${settings.tagline}`} fullTitle region={regionId(dir, prefs)}>
-  {place.at && !place.rough ? (
+  <h1 class="sr-only">{settings.site_name}: {settings.tagline}</h1>
+  {exact ? (
     <p class="mb-4 text-sm text-muted">
       <strong class="font-semibold text-ink">{cheapest.found} products on offer</strong> near {place.name}
     </p>
   ) : (
-    <section class="hero relative mb-6 overflow-hidden rounded-[1.75rem] p-6 sm:p-9">
-      <div class="relative z-10 max-w-[15rem] sm:max-w-md">
-        <p class="text-sm font-semibold opacity-85">{place.name ? `This week in ${place.name}` : 'This week across the UAE'}</p>
-        <h1 class="mt-1 text-[1.75rem]/[1.15] font-extrabold sm:text-[2.5rem]">Pay less for your weekly shop</h1>
-        {topSaving > 0 && <p class="mt-2 text-sm/relaxed opacity-90">Up to {topSaving}% off on {cheapest.found} products, compared across stores.</p>}
-        <button type="button" data-open-location class="btn mt-4 bg-[#fdfbf6] text-[#0f5c3f] hover:bg-white">
-          <LocateFixed class="size-5" aria-hidden="true" /> Show deals near me
-        </button>
-      </div>
-      <div aria-hidden="true" class="absolute end-3 top-1/2 flex -translate-y-1/2 flex-col items-end gap-2 sm:end-10">
-        <span class="sticker size-14 rotate-6 text-3xl sm:size-20 sm:text-5xl">🍅</span>
-        <span class="sticker me-7 size-16 -rotate-6 text-4xl sm:me-14 sm:size-24 sm:text-6xl">🥚</span>
-        <span class="sticker size-14 rotate-3 text-3xl sm:size-20 sm:text-5xl">🥛</span>
-      </div>
-    </section>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <p class="text-sm text-muted">
+        <strong class="font-semibold text-ink">{cheapest.found} products on offer</strong> {place.name ? `in ${place.name}` : 'across the UAE'}{topSaving > 0 && `, up to ${topSaving}% off`}
+      </p>
+      {/* data-ask-location: without a location, the location sheet opens by itself (LocationSheet); this button brings it back after a close. */}
+      <button type="button" data-open-location data-ask-location class="chip">
+        <LocateFixed class="size-4" aria-hidden="true" /> Set your location
+      </button>
+    </div>
   )}
 
   <CategoryNav categories={categories} />
 
-  <section class="mt-5" aria-labelledby="stores-title">
-    <h2 id="stores-title" class="mb-2 text-xl font-bold">{place.at && !place.rough ? 'Your stores' : place.rough ? `Stores in ${place.name}` : 'Stores'}</h2>
-    <StoreRail stores={stores} selected={prefs.stores} radiusKm={radius} showDistance={Boolean(place.at && !place.rough)} />
-  </section>
+  <NearbyStores
+    client:idle
+    stores={stores.map(storeTile)}
+    title={exact ? `Stores near ${place.name ?? 'you'}` : place.rough ? `Stores in ${place.name}` : 'Stores'}
+    at={exact ? place.at : null}
+    radiusKm={radius}
+    radiusOptions={dir.settings.radius_options}
+    radiusMax={dir.settings.radius_max}
+    selected={prefs.stores}
+  />
 
   <ForYouRail client:only="react" filters={itemFilters(dir, prefs)} />
 
@@ -93,7 +96,7 @@ cacheFor(Astro.response.headers);
           <a href={`/?items=${dir.settings.item_radius_default}`} rel="nofollow" class="chip">Limit to {dir.settings.item_radius_default} km</a>
         )}
         <a href={`/?staff=${prefs.hideStaffOnly ? 1 : 0}`} rel="nofollow" role="checkbox" aria-checked={prefs.hideStaffOnly ? 'false' : 'true'} class:list={['chip', !prefs.hideStaffOnly && 'chip-on']}>
-          {prefs.hideStaffOnly ? <Square class="size-4" aria-hidden="true" /> : <SquareCheck class="size-4" aria-hidden="true" />} Include store-employee offers
+          {prefs.hideStaffOnly ? <Square class="size-4" aria-hidden="true" /> : <SquareCheck class="size-4" aria-hidden="true" />} Include registered-customer offers
         </a>
       </div>
     </div>

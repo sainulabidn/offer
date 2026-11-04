@@ -78,7 +78,7 @@ const ownQ = params.get('q');
       <label class="flex min-h-9 items-center gap-2"><input type="checkbox" name="card" value="1" checked={cardOnly} class="size-4 accent-[var(--color-primary)]" /> Loyalty card prices only</label>
       {/* An unticked box sends nothing, so the hidden 0 goes first and a tick's 1 overrides it (resolvePrefs). */}
       <input type="hidden" name="staff" value="0" />
-      <label class="flex min-h-9 items-center gap-2"><input type="checkbox" name="staff" value="1" checked={!hideStaffOnly} class="size-4 accent-[var(--color-primary)]" /> Include store-employee offers</label>
+      <label class="flex min-h-9 items-center gap-2"><input type="checkbox" name="staff" value="1" checked={!hideStaffOnly} class="size-4 accent-[var(--color-primary)]" /> Include registered-customer offers</label>
       <button class="btn btn-primary w-full">Apply filters</button>
       <button type="button" id="filters-close" class="btn btn-quiet w-full lg:hidden">Close</button>
     </form>

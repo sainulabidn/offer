@@ -86,7 +86,7 @@ final class OfferFields
             TextInput::make('conditions.max_per_customer')->label('Max per customer')->integer()->minValue(1),
             Toggle::make('conditions.card_required')->label('Loyalty card price')->inline(false),
             // Shown with a label; shoppers can hide these, and they never count in comparisons, scores or alerts.
-            Toggle::make('conditions.staff_only')->label('Store employees only')->inline(false),
+            Toggle::make('conditions.staff_only')->label('Registered customers only')->inline(false),
             TextInput::make('condition_label.en')->label('Limit text')->placeholder('e.g. Max 3 kg per customer')->columnSpan(2)
                 ->helperText('As the brochure words it: "Min 2 pcs", "Max 2 per customer"…'),
             TextInput::make('condition_label.ar')->label('Limit text (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->columnSpan(2),
