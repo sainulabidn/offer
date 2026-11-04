@@ -59,13 +59,22 @@
 
         {{-- Items on this page --}}
         <div style="flex: 1 1 440px; min-width: 0">
+            @if ($pastDate)
+                <div style="{{ $card }}; color: #b45309; font-size: 0.875rem">
+                    ⚠ The AI read "valid until {{ \Illuminate\Support\Carbon::parse($pastDate)->format('j M Y') }}", which has passed, so the items keep the brochure's dates. Check them under Brochure details.
+                </div>
+            @endif
             @forelse ($items as $item)
                 <div id="item-{{ $item->id }}" wire:key="item-{{ $item->id }}"
                     x-on:mouseenter="selected = {{ $item->id }}"
                     x-bind:style="{ outline: selected === {{ $item->id }} ? '2px solid #d97706' : 'none' }"
                     style="{{ $card }}; {{ $item->status === ItemStatus::Ignored ? 'opacity: 0.55' : '' }}">
                     <div style="display: flex; justify-content: space-between; gap: 0.6rem; align-items: flex-start">
-                        <div style="min-width: 0">
+                        @if ($canCreate && ! $item->variant && in_array($item->status, [ItemStatus::New, ItemStatus::Matched], true))
+                            <input type="checkbox" wire:model.live="selected" value="{{ $item->id }}" title="Select to create this product"
+                                style="margin-top: 0.3rem; width: 1rem; height: 1rem; flex: 0 0 auto; cursor: pointer">
+                        @endif
+                        <div style="min-width: 0; flex: 1 1 auto">
                             <div style="font-weight: 600">{{ $item->name }}@if ($item->size_text) <span style="font-weight: 400">· {{ $item->size_text }}</span>@endif</div>
                             @if ($item->name_ar)
                                 <div dir="rtl" style="{{ $muted }}">{{ $item->name_ar }}</div>
@@ -95,7 +104,7 @@
                         Product:
                         @if ($item->variant)
                             <strong>{{ $item->variant->label() }}</strong>
-                            <span style="{{ $muted }}">({{ match ($item->match_method) { 'alias' => 'learned', 'barcode' => 'barcode', 'manual' => 'picked', default => 'by name' } }})</span>
+                            <span style="{{ $muted }}">({{ match ($item->match_method) { 'alias' => 'learned', 'barcode' => 'barcode', 'manual' => 'picked', 'created' => 'new product', default => 'by name' } }})</span>
                         @else
                             <em style="color: #b45309">not matched yet</em>
                         @endif

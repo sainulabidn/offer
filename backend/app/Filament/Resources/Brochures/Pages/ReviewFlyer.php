@@ -11,11 +11,14 @@ use App\Domain\Brochures\BrochureStatus;
 use App\Domain\Brochures\ItemStatus;
 use App\Domain\Brochures\PageStatus;
 use App\Domain\Brochures\PublishBrochure;
+use App\Domain\Catalog\PackSize;
+use App\Domain\Catalog\ProductGroup;
 use App\Domain\Catalog\ProductVariant;
 use App\Domain\Flyers\AcceptItems;
 use App\Domain\Flyers\Ai\PageResult;
 use App\Domain\Flyers\AiCall;
 use App\Domain\Flyers\ApplyPageResult;
+use App\Domain\Flyers\CreateProductsFromItems;
 use App\Domain\Flyers\ExtractFlyerPage;
 use App\Domain\Flyers\FlyerSettings;
 use App\Domain\Flyers\ItemValidator;
@@ -27,6 +30,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -34,6 +38,7 @@ use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -58,6 +63,9 @@ class ReviewFlyer extends Page
 
     #[Url(as: 'page')]
     public int $pageNo = 1;
+
+    /** Items ticked for "Create products", kept while moving between pages. @var list<int|string> */
+    public array $selected = [];
 
     public function mount(int|string $record): void
     {
@@ -210,6 +218,20 @@ class ReviewFlyer extends Page
                     }),
                 $this->readAgainAction('readAgain', 'Read page again', tiles: false),
                 $this->readAgainAction('readHalves', 'Read in halves', tiles: true),
+                Action::make('selectUnmatched')
+                    ->label('Select all unmatched')
+                    ->icon(Heroicon::OutlinedCheckCircle)
+                    ->color('gray')
+                    ->size('sm')
+                    ->visible(fn () => $this->canCreateProducts() && $this->unmatchedOnPage() !== [])
+                    ->action(fn () => $this->selected = array_values(array_unique([...$this->selected, ...$this->unmatchedOnPage()]))),
+                Action::make('clearSelection')
+                    ->label('Clear selection')
+                    ->color('gray')
+                    ->size('sm')
+                    ->visible(fn () => $this->selected !== [])
+                    ->action(fn () => $this->selected = []),
+                $this->createProductsAction(),
             ])->key('pageActions'),
             View::make('filament.brochures.review-flyer')->viewData(fn () => $this->viewData()),
         ]);
@@ -323,6 +345,91 @@ class ReviewFlyer extends Page
         $this->recheck($item->refresh());
     }
 
+    /**
+     * Items not in the catalog yet: one row each (name, brand and size as read, editable) and a product group,
+     * chosen once for all or per row. Each becomes a product and pack, and its offer is accepted.
+     */
+    private function createProductsAction(): Action
+    {
+        $groups = fn () => Access::scope(ProductGroup::query(), Access::user(), 'product_groups')->with('category')->get()
+            ->sortBy(fn (ProductGroup $group) => $group->category?->name.' '.$group->name)
+            ->mapWithKeys(fn (ProductGroup $group) => [$group->id => ($group->category ? "{$group->category->name} › " : '').$group->name]);
+
+        return Action::make('createProducts')
+            ->label(fn () => 'Create products ('.count($this->selected).')')
+            ->icon(Heroicon::OutlinedPlusCircle)
+            ->size('sm')
+            ->visible(fn () => $this->canCreateProducts() && $this->selected !== [])
+            ->modalHeading('Add these products to the catalog')
+            ->modalDescription('Each becomes a product with this pack, and its offer is accepted for this brochure\'s store and branches. Check the name and size as shoppers will see them.')
+            ->modalWidth('6xl')
+            ->modalSubmitActionLabel('Create and accept')
+            ->fillForm(fn () => ['rows' => $this->record->items()->whereKey($this->selected)->whereNull('product_variant_id')
+                ->where('status', '!=', ItemStatus::Accepted)->orderBy('brochure_page_id')->orderBy('position')->get()
+                ->map(fn (BrochureItem $item) => ['item_id' => $item->id, 'name' => $item->name, 'brand' => $item->brand_text, 'size' => $item->size_text, 'product_group_id' => null])
+                ->all()])
+            ->schema([
+                Select::make('group_for_all')
+                    ->label('Product group for all')
+                    ->helperText('Sets every row; change single rows below.')
+                    ->options($groups)
+                    ->searchable()
+                    ->live()
+                    ->dehydrated(false)
+                    ->afterStateUpdated(function ($state, Get $get, Set $set) {
+                        foreach (array_keys($get('rows') ?? []) as $key) {
+                            $set("rows.{$key}.product_group_id", $state);
+                        }
+                    }),
+                Repeater::make('rows')
+                    ->hiddenLabel()
+                    ->addable(false)
+                    ->reorderable(false)
+                    ->columns(4)
+                    ->schema([
+                        Hidden::make('item_id'),
+                        TextInput::make('name')->label('Product name')->required()->maxLength(200),
+                        TextInput::make('brand')->maxLength(120),
+                        TextInput::make('size')
+                            ->label('Pack size')
+                            ->required()
+                            ->placeholder('500 g, 1.5 L, 6 x 200 ml, per kg')
+                            ->rule(fn () => function (string $attribute, mixed $value, \Closure $fail) {
+                                if (PackSize::parse((string) $value) === null) {
+                                    $fail('Write it like 500 g, 1.5 L, 6 x 200 ml or per kg.');
+                                }
+                            }),
+                        Select::make('product_group_id')->label('Product group')->options($groups)->searchable()->required(),
+                    ]),
+            ])
+            ->action(function (array $data, CreateProductsFromItems $create) {
+                abort_unless($this->canCreateProducts(), 403);
+                $rows = collect($data['rows'] ?? [])->keyBy(fn (array $row) => (int) $row['item_id'])->all();
+                $result = $create($this->record, $rows, Access::user());
+                $this->selected = array_values(array_map('intval', array_keys($result['failed'])));
+
+                $notification = Notification::make()->title("{$result['created']} ".str('product')->plural($result['created']).' created and accepted');
+                $result['failed']
+                    ? $notification->warning()->body(count($result['failed']).' not created (still selected): '.reset($result['failed']))
+                    : $notification->success()->body('Publish the brochure (or submit it for review) to take the offers live.');
+                $notification->send();
+            });
+    }
+
+    /** May this person add products from flyer items? */
+    private function canCreateProducts(): bool
+    {
+        return $this->canEditItems() && Access::allows(Access::user(), 'products', 'create');
+    }
+
+    /** @return list<int> unmatched items on the current page */
+    private function unmatchedOnPage(): array
+    {
+        $page = $this->currentPage();
+
+        return $page ? $page->items()->whereNull('product_variant_id')->whereIn('status', [ItemStatus::New, ItemStatus::Matched])->pluck('id')->all() : [];
+    }
+
     /** "Did you mean": the reviewer picks one of the matcher's candidates. */
     public function useCandidate(int $id, int $variantId): void
     {
@@ -360,6 +467,8 @@ class ReviewFlyer extends Page
             'items' => $items,
             'labels' => ProductVariant::with(['product', 'optionValues'])->whereKey($candidateIds)->get()->mapWithKeys(fn (ProductVariant $v) => [$v->id => $v->label()]),
             'canEdit' => $this->canEditItems(),
+            'canCreate' => $this->canCreateProducts(),
+            'pastDate' => ($until = $page?->ai_output['until'] ?? null) && $until < now(config('app.market_timezone'))->toDateString() ? $until : null,
             'processing' => $this->record->status === BrochureStatus::Processing || $pages->contains(fn (BrochurePage $p) => $p->ai_status !== PageStatus::Held && $p->ai_status->isOpen()),
             'cost' => (float) AiCall::query()->where('brochure_id', $this->record->id)->sum('cost_usd'),
         ];
@@ -395,7 +504,9 @@ class ReviewFlyer extends Page
     {
         $detected = $this->record->detected ?? [];
 
+        // A date already past is a misreading, never something to apply.
         return ($detected['valid_to'] ?? null) !== null
+            && $detected['valid_to'] >= now(config('app.market_timezone'))->toDateString()
             && ($detected['valid_to'] !== $this->record->valid_to->toDateString() || ($detected['valid_from'] ?? null) !== $this->record->valid_from->toDateString());
     }
 

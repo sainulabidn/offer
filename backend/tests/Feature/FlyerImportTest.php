@@ -14,6 +14,7 @@ use App\Domain\Flyers\Ai\FlyerReadFailed;
 use App\Domain\Flyers\Ai\TokenUsage;
 use App\Domain\Flyers\AiBatch;
 use App\Domain\Flyers\AiCall;
+use App\Domain\Flyers\CreateProductsFromItems;
 use App\Domain\Flyers\FlyerAlias;
 use App\Domain\Flyers\FlyerBatches;
 use App\Domain\Flyers\FlyerSettings;
@@ -36,6 +37,7 @@ use Database\Seeders\DemoCatalogSeeder;
 use Database\Seeders\GeoSeeder;
 use Database\Seeders\StaffSeeder;
 use Database\Seeders\UnitSeeder;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -270,6 +272,48 @@ it('offers branches by their real ids, so a picked branch is the one imported fo
     FlyerReaderManager::fake(new FakeFlyerReader([($this->page)([])]));
     $brochure = app(StartFlyerImport::class)($this->employee, $this->lulu, [($this->upload)(FlyerPdf::pictures(['branch']))], $options->only([$this->marina->id])->keys()->all());
     expect($brochure->scopes->pluck('scope_id')->all())->toBe([$this->marina->id]);
+});
+
+it('creates products for unmatched items and accepts their offers for the brochure\'s store', function () {
+    FlyerReaderManager::fake(new FakeFlyerReader([($this->page)([
+        ($this->mystery)(),
+        ($this->item)(['name' => 'Egyptian Istanbul Cheese', 'brand' => null, 'size' => 'per kg', 'price' => 15.9, 'was' => 21.95]),
+        ($this->item)(['name' => 'Spanish Green Olives', 'brand' => null, 'size' => '2 L', 'price' => 19.9, 'was' => 24.9]),
+        ($this->item)(), // India Gate: already in the catalog
+    ], ['until' => '2026-10-20'])])); // a date already past: not stamped on the items
+    $brochure = app(StartFlyerImport::class)($this->operator, $this->lulu, [($this->upload)(FlyerPdf::pictures(['new products']))]);
+    $items = BrochureItem::pluck('id', 'name');
+    expect(BrochureItem::whereNotNull('valid_to')->count())->toBe(0);
+
+    asFlyerStaff($this->operator);
+    $page = livewire(ReviewFlyer::class, ['record' => $brochure->id])
+        ->callAction(TestAction::make('selectUnmatched')->schemaComponent('pageActions', schema: 'content'));
+    expect($page->get('selected'))->toEqualCanonicalizing([$items['Crunchy Mystery Chips'], $items['Egyptian Istanbul Cheese'], $items['Spanish Green Olives']]);
+    $page->mountAction(TestAction::make('createProducts')->schemaComponent('pageActions', schema: 'content'))
+        ->assertMountedActionModalSee('Product group for all');
+    expect(collect($page->get('mountedActions.0.data.rows'))->pluck('size', 'name')->all())
+        ->toBe(['Crunchy Mystery Chips' => '150 g', 'Egyptian Istanbul Cheese' => 'per kg', 'Spanish Green Olives' => '2 L']);
+
+    $group = Product::where('slug', 'india-gate-classic-basmati-rice')->sole()->product_group_id; // compares per kg
+    $result = app(CreateProductsFromItems::class)($brochure, [
+        $items['Crunchy Mystery Chips'] => ['name' => 'Crunchy Mystery Chips', 'brand' => 'Crunchy', 'size' => '150 g', 'product_group_id' => $group],
+        $items['Egyptian Istanbul Cheese'] => ['name' => 'Egyptian Istanbul Cheese', 'brand' => null, 'size' => 'per kg', 'product_group_id' => $group],
+        $items['Spanish Green Olives'] => ['name' => 'Spanish Green Olives', 'brand' => null, 'size' => '2 L', 'product_group_id' => $group], // litres in a per-kg group
+        $items['India Gate Classic Basmati Rice'] => ['name' => 'India Gate Classic Basmati Rice', 'size' => '5 kg', 'product_group_id' => $group],
+    ], $this->operator);
+
+    expect($result['created'])->toBe(2)
+        ->and($result['failed'])->toHaveKey($items['Spanish Green Olives'])
+        ->and($result['failed'])->not->toHaveKey($items['India Gate Classic Basmati Rice']) // matched already: left alone
+        ->and(Product::where('slug', 'egyptian-istanbul-cheese')->sole()->is_variable_weight)->toBeTrue();
+
+    $chips = BrochureItem::find($items['Crunchy Mystery Chips']);
+    expect($chips->status)->toBe(ItemStatus::Accepted)
+        ->and($chips->match_method)->toBe('created')
+        ->and($chips->offer->brochure_id)->toBe($brochure->id)
+        ->and($chips->offer->chain_id)->toBe($this->lulu->id)
+        ->and($chips->offer->status)->toBe(OfferStatus::Draft)
+        ->and(app(VariantMatcher::class)->match(['name' => 'Crunchy Mystery Chips', 'brand_text' => null, 'size_text' => '150 g'], $this->lulu->id)['match_method'])->toBe('alias');
 });
 
 it('stops at the daily page quota', function () {

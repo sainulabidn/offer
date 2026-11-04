@@ -46,6 +46,9 @@ final class ItemNormalizer
             $note = rtrim(rtrim(number_format((float) $item['pct'], 1, '.', ''), '0'), '.').'% off';
         }
         $size = PackSize::parse($item['size'] ?? null);
+        // Dates the AI read as already over are misreads or a stale page: items keep the brochure's dates instead.
+        $today = now(config('app.market_timezone'))->toDateString();
+        $datesUsable = $page->validTo === null || $page->validTo >= $today;
 
         return [
             'raw' => $item,
@@ -66,8 +69,8 @@ final class ItemNormalizer
                 'max_per_customer' => is_numeric($item['limit'] ?? null) && (int) $item['limit'] > 0 ? (int) $item['limit'] : null,
                 'card_required' => $card ?: null,
             ]),
-            'valid_from' => $page->validFrom,
-            'valid_to' => $page->validTo,
+            'valid_from' => $datesUsable ? $page->validFrom : null,
+            'valid_to' => $datesUsable ? $page->validTo : null,
             'bbox' => self::box($item['box'] ?? null),
             'confidence' => is_numeric($item['sure'] ?? null) ? max(0, min(1, round((float) $item['sure'], 3))) : null,
         ];
