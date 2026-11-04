@@ -133,7 +133,7 @@
                                 <x-filament::button size="xs" icon="heroicon-m-check" wire:click="acceptItem({{ $item->id }})">Accept</x-filament::button>
                             @endif
                             @if ($item->status !== ItemStatus::Ignored)
-                                <x-filament::button size="xs" color="gray" icon="heroicon-m-pencil-square" wire:click="mountAction('editItem', @js(['item' => $item->id]))">
+                                <x-filament::button size="xs" color="gray" icon="heroicon-m-pencil-square" wire:click="mountAction('editItem', { item: {{ (int) $item->id }} })">
                                     {{ $item->status === ItemStatus::Accepted ? 'Change' : 'Edit and accept' }}
                                 </x-filament::button>
                                 <x-filament::button size="xs" color="gray" icon="heroicon-m-x-mark" wire:click="ignoreItem({{ $item->id }})">Ignore</x-filament::button>

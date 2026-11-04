@@ -316,6 +316,27 @@ it('creates products for unmatched items and accepts their offers for the brochu
         ->and(app(VariantMatcher::class)->match(['name' => 'Crunchy Mystery Chips', 'brand_text' => null, 'size_text' => '150 g'], $this->lulu->id)['match_method'])->toBe('alias');
 });
 
+it('fixes an item and accepts it with "Edit and accept"', function () {
+    FlyerReaderManager::fake(new FakeFlyerReader([($this->page)([($this->mystery)()])]));
+    $brochure = app(StartFlyerImport::class)($this->operator, $this->lulu, [($this->upload)(FlyerPdf::pictures(['edit']))]);
+    $item = BrochureItem::sole();
+
+    asFlyerStaff($this->operator);
+    livewire(ReviewFlyer::class, ['record' => $brochure->id])
+        // The button's click must reach the browser as JavaScript: Blade leaves @js() in component attributes as text.
+        ->assertSeeHtml("mountAction('editItem', { item: {$item->id} })")
+        ->assertDontSeeHtml('@js(')
+        ->mountAction('editItem', ['item' => $item->id])
+        ->assertActionMounted('editItem')
+        ->setActionData(['product_variant_id' => $this->rice5->id, 'price' => '3.25'])
+        ->callMountedAction()
+        ->assertHasNoActionErrors();
+
+    expect($item->refresh()->status)->toBe(ItemStatus::Accepted)
+        ->and($item->match_method)->toBe('manual')
+        ->and((string) $item->offer->price)->toBe('3.25');
+});
+
 it('stops at the daily page quota', function () {
     FlyerSettings::save(['user_daily_pages' => 2]);
     FlyerReaderManager::fake(new FakeFlyerReader([($this->page)([])]));
