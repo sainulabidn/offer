@@ -186,8 +186,14 @@ final class OfferSheet
     /** @return Collection<int, string> branch id → "Chain · Branch", for the chosen stores, the person's own only */
     public static function branchOptions(User $user, array $chainIds): Collection
     {
-        return OfferImportGuide::chains($user)->whereKey($chainIds)->orderBy('slug')->get()
-            ->flatMap(fn (Chain $chain) => OfferImportGuide::branches($user, $chain)->get()
-                ->mapWithKeys(fn (Branch $branch) => [$branch->id => "{$chain->name} · {$branch->name}"]));
+        // Built key by key: flatMap() would renumber the branch ids to 0, 1, 2…
+        $options = [];
+        foreach (OfferImportGuide::chains($user)->whereKey($chainIds)->orderBy('slug')->get() as $chain) {
+            foreach (OfferImportGuide::branches($user, $chain)->get() as $branch) {
+                $options[$branch->id] = "{$chain->name} · {$branch->name}";
+            }
+        }
+
+        return collect($options);
     }
 }

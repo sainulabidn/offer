@@ -25,6 +25,7 @@ use App\Domain\Offers\OfferStatus;
 use App\Domain\Offers\PromoType;
 use App\Domain\Retail\Chain;
 use App\Domain\Settings\SiteSetting;
+use App\Filament\Imports\OfferSheet;
 use App\Filament\Pages\ManageFlyerSettings;
 use App\Filament\Resources\Brochures\Pages\ReviewFlyer;
 use App\Filament\Resources\Offers\Pages\ListOffers;
@@ -258,6 +259,17 @@ it('lets only permitted people import, for the stores and branches they may cove
     livewire(ListOffers::class)->assertActionHidden('importFlyer');
     asFlyerStaff($this->owner);
     livewire(ListOffers::class)->assertActionVisible('importFlyer');
+});
+
+it('offers branches by their real ids, so a picked branch is the one imported for', function () {
+    // The picker used to renumber ids 0, 1, 2…: picks failed the import's branch check (and the Offer builder's).
+    $options = OfferSheet::branchOptions($this->operator, [$this->lulu->id]);
+    expect($options->keys()->all())->toEqualCanonicalizing([$this->barsha->id, $this->marina->id])
+        ->and(OfferSheet::branchOptions($this->employee, [$this->lulu->id])->keys()->all())->toBe([$this->marina->id]);
+
+    FlyerReaderManager::fake(new FakeFlyerReader([($this->page)([])]));
+    $brochure = app(StartFlyerImport::class)($this->employee, $this->lulu, [($this->upload)(FlyerPdf::pictures(['branch']))], $options->only([$this->marina->id])->keys()->all());
+    expect($brochure->scopes->pluck('scope_id')->all())->toBe([$this->marina->id]);
 });
 
 it('stops at the daily page quota', function () {
