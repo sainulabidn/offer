@@ -337,5 +337,19 @@ it('keeps flyer AI settings to settings editors and never stores API keys', func
 
     expect(FlyerSettings::get('model'))->toBe('claude-haiku-5-5')
         ->and(FlyerSettings::get('publish_mode'))->toBe('auto')
+        // A saved price table still gets models added to the defaults later.
+        ->and(FlyerSettings::get('prices'))->toHaveKeys(['claude-haiku-5-5', 'gpt-6.1-sol', 'gpt-6-luna']);
+
+    // OpenAI models are offered with their cost; a model of the other provider is refused.
+    livewire(ManageFlyerSettings::class)
+        ->assertSee('gpt-6.1-sol')
+        ->set('data.provider', 'openai')
+        ->set('data.model', 'claude-opus-5-5')
+        ->call('save');
+    expect(FlyerSettings::get('provider'))->toBe('claude');
+
+    livewire(ManageFlyerSettings::class)->set('data.provider', 'openai')->set('data.model', 'gpt-6.1-terra')->call('save');
+    expect(FlyerSettings::get('provider'))->toBe('openai')
+        ->and(FlyerSettings::get('model'))->toBe('gpt-6.1-terra')
         ->and(SiteSetting::pluck('key')->filter(fn ($key) => str_contains($key, 'key'))->all())->toBe([]);
 });

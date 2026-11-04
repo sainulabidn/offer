@@ -186,5 +186,8 @@ it('prices AI calls from the admins\' table, at half price in batches', function
     expect(CostCalculator::cost('claude-haiku-5-5', $usage))->toBe(0.61)
         ->and(CostCalculator::cost('claude-opus-5-5', $usage, batch: true))->toBe(12.1)
         ->and(CostCalculator::cost('unknown-model', $usage))->toBeNull()
+        // OpenAI: cached input at its cached rate (gpt-6.1-sol: $2 in, $0.10 cached, $10 out).
+        ->and(CostCalculator::cost('gpt-6.1-sol', $usage))->toBe(12.1)
+        ->and(FlyerSettings::pageCost('gpt-6-luna'))->toBe((3700 * 0.1 + 2000 * 0.01 + 2300 * 0.5) / 1_000_000)
         ->and(CostCalculator::hasPrice(FlyerSettings::get('model')))->toBeTrue();
 });

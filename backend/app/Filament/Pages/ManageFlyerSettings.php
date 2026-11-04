@@ -24,6 +24,7 @@ use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\DB;
@@ -96,7 +97,11 @@ class ManageFlyerSettings extends Page
     public function form(Schema $schema): Schema
     {
         $keyStatus = fn (string $provider) => FlyerSettings::hasKey($provider) ? 'key set on the server' : 'no key on the server yet';
-        $models = array_keys(FlyerSettings::DEFAULTS['prices']);
+        // The picker suggests the chosen provider's models; the hint gives the rough cost per page of the typed one.
+        $models = fn (?string $provider) => FlyerSettings::MODELS[$provider] ?? array_merge(...array_values(FlyerSettings::MODELS));
+        $costHint = fn (?string $model) => ($cost = FlyerSettings::pageCost(trim((string) $model))) !== null
+            ? 'About $'.number_format($cost, 4).' a page ($'.number_format($cost / 2, 4).' in batches).'
+            : 'Add a price row for this model below.';
 
         return $schema
             ->statePath('data')
@@ -107,11 +112,13 @@ class ManageFlyerSettings extends Page
                     ->schema([
                         Select::make('provider')
                             ->options(collect(FlyerSettings::PROVIDERS)->map(fn (string $label, string $provider) => "{$label} — {$keyStatus($provider)}"))
-                            ->required(),
+                            ->required()
+                            ->live(),
                         TextInput::make('model')
                             ->required()
-                            ->datalist($models)
-                            ->helperText('The provider\'s model id, e.g. claude-opus-5-5, claude-sonnet-5-5, claude-haiku-5-5. It needs a row in the price table below.'),
+                            ->live(onBlur: true)
+                            ->datalist(fn (Get $get) => $models($get('provider')))
+                            ->helperText(fn (Get $get) => $costHint($get('model'))),
                         Select::make('effort')
                             ->options(['low' => 'Low (cheapest)', 'medium' => 'Medium', 'high' => 'High'])
                             ->required()
@@ -119,11 +126,14 @@ class ManageFlyerSettings extends Page
                         Select::make('fallback_provider')
                             ->label('Fallback provider')
                             ->options(FlyerSettings::PROVIDERS)
-                            ->placeholder('None'),
+                            ->placeholder('None')
+                            ->live(),
                         TextInput::make('fallback_model')
                             ->label('Fallback model')
-                            ->datalist($models)
-                            ->helperText('Reads a page when the main model fails or declines it.'),
+                            ->live(onBlur: true)
+                            ->datalist(fn (Get $get) => $models($get('fallback_provider')))
+                            ->helperText(fn (Get $get) => filled($get('fallback_model')) ? $costHint($get('fallback_model')) : 'Reads a page when the main model fails or declines it.'),
+                        Text::make(fn () => $this->modelCosts())->columnSpanFull(),
                     ]),
                 Section::make('Publishing')
                     ->columns(2)
@@ -168,7 +178,7 @@ class ManageFlyerSettings extends Page
                         TextInput::make('match_margin')->label('Name match: lead over the next')->numeric()->minValue(0)->maxValue(0.5)->step(0.05)->required(),
                     ]),
                 Section::make('Prices (USD per million tokens)')
-                    ->description('Every model that reads pages needs a row, so the budget can be kept. Batch requests cost the batch share of these.')
+                    ->description('Every model that reads pages needs a row, so the budget can be kept. Batch requests cost the batch share of these. OpenAI bills cached input at "Cache read" and has no cache-write charge (set it equal to input). Built-in rows come back if removed; change their prices instead.')
                     ->collapsed()
                     ->schema([
                         Repeater::make('prices')
@@ -206,6 +216,15 @@ class ManageFlyerSettings extends Page
             $values[$key] = (bool) $values[$key];
         }
 
+        foreach (['' => 'model', 'fallback_' => 'fallback_model'] as $prefix => $field) {
+            $model = trim((string) ($values[$field] ?? ''));
+            $belongs = $model !== '' ? FlyerSettings::providerOf($model) : null;
+            if ($belongs !== null && filled($values["{$prefix}provider"] ?? null) && $belongs !== $values["{$prefix}provider"]) {
+                Notification::make()->danger()->title("{$model} is a ".FlyerSettings::PROVIDERS[$belongs].' model: choose that provider, or another model.')->send();
+
+                return;
+            }
+        }
         if (! isset($values['prices'][trim($values['model'])])) {
             Notification::make()->danger()->title("Add a price row for {$values['model']} first")->send();
 
@@ -213,6 +232,16 @@ class ManageFlyerSettings extends Page
         }
         FlyerSettings::save($values);
         Notification::make()->success()->title('Saved')->send();
+    }
+
+    /** "Rough cost per page — Claude: opus $0.06 · … OpenAI: …", from the price table, to compare models. */
+    private function modelCosts(): string
+    {
+        return 'Rough cost per flyer page (half in batches) — '.collect(FlyerSettings::MODELS)
+            ->map(fn (array $models, string $provider) => FlyerSettings::PROVIDERS[$provider].': '.collect($models)
+                ->map(fn (string $model) => ($cost = FlyerSettings::pageCost($model)) !== null ? "{$model} \$".number_format($cost, 4) : null)
+                ->filter()->implode(' · '))
+            ->implode('. ').'. Run flyers:eval on reviewed flyers to see how accurate a cheaper model is.';
     }
 
     private function usage(): string
