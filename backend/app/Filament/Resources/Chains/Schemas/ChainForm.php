@@ -73,7 +73,7 @@ class ChainForm
                     ->columnSpanFull()
                     ->visible(Fields::canGrade(...))
                     ->schema([
-                        TextInput::make('brochure_pdf_url')->label('PDF download link')->url()->helperText('Only if the link stays the same for each new brochure.'),
+                        TextInput::make('brochure_pdf_url')->label('PDF download link')->url()->helperText('Only if the link stays the same for each new brochure. To fetch flyers automatically, add it under Flyer sources below.'),
                         TextInput::make('brochure_contact')->label('Brochure contact')->helperText('Who sends brochures or answers questions, e.g. marketing@store.ae.'),
                         Select::make('content_permission')
                             ->label('Permission to show their brochures and logo')

@@ -9,6 +9,7 @@ use App\Domain\Catalog\Category;
 use App\Domain\Catalog\Product;
 use App\Domain\Catalog\ProductGroup;
 use App\Domain\Catalog\ProductVariant;
+use App\Domain\Flyers\Sources\BrochureSource;
 use App\Domain\Offers\Offer;
 use App\Domain\Offers\RegularPrice;
 use App\Domain\Retail\Branch;
@@ -73,6 +74,7 @@ class AppServiceProvider extends ServiceProvider
             'site_setting' => SiteSetting::class,
             'regular_price' => RegularPrice::class,
             'role' => Role::class,
+            'brochure_source' => BrochureSource::class,
         ]);
 
         RateLimiter::for('public-read', fn (Request $request) => Limit::perMinute(600)->by($request->ip()));

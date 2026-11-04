@@ -7,6 +7,7 @@ use App\Domain\Access\Audited;
 use App\Domain\Access\RecordsCreator;
 use App\Domain\Brochures\Brochure;
 use App\Domain\Brochures\BrochureStatus;
+use App\Domain\Flyers\Sources\BrochureSource;
 use App\Domain\Geo\Country;
 use App\Domain\Geo\Region;
 use App\Domain\Search\ReindexBrochures;
@@ -124,5 +125,11 @@ class Chain extends Model
     public function brochures(): HasMany
     {
         return $this->hasMany(Brochure::class);
+    }
+
+    /** Where its flyers are fetched from automatically (with its permission). */
+    public function brochureSources(): HasMany
+    {
+        return $this->hasMany(BrochureSource::class);
     }
 }

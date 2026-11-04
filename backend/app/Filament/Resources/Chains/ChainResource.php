@@ -6,6 +6,7 @@ use App\Domain\Retail\Chain;
 use App\Filament\Resources\Chains\Pages\CreateChain;
 use App\Filament\Resources\Chains\Pages\EditChain;
 use App\Filament\Resources\Chains\Pages\ListChains;
+use App\Filament\Resources\Chains\RelationManagers\BrochureSourcesRelationManager;
 use App\Filament\Resources\Chains\Schemas\ChainForm;
 use App\Filament\Resources\Chains\Tables\ChainsTable;
 use App\Filament\Support\ScopedByAccess;
@@ -43,7 +44,7 @@ class ChainResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            BrochureSourcesRelationManager::class,
         ];
     }
 

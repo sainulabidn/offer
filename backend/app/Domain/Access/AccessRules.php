@@ -35,6 +35,7 @@ final class AccessRules
         'approve' => 'Approve',
         'resolve' => 'Resolve',
         'skip_wait' => 'Skip price wait',
+        'ai_import' => 'Import with AI',
     ];
 
     /** @return array<string, array{label: string, group: string, model: class-string, owner: ?string, actions: array<string, list<Level>>}> */
@@ -65,7 +66,8 @@ final class AccessRules
             'brochures' => [
                 'label' => 'Brochures and offers', 'group' => 'Offers', 'model' => Brochure::class, 'owner' => 'created_by',
                 // skip_wait: may set a pack's price again before config('offers.price_wait_hours') have passed.
-                'actions' => ['view' => $stores, 'create' => $yes, 'edit' => $stores, 'delete' => $stores, 'publish' => $stores, 'skip_wait' => $yes],
+                // ai_import: may upload flyer PDFs and photos for the AI to read (it costs money; see Flyers\FlyerBudget).
+                'actions' => ['view' => $stores, 'create' => $yes, 'edit' => $stores, 'delete' => $stores, 'publish' => $stores, 'skip_wait' => $yes, 'ai_import' => $yes],
             ],
             'reports' => [
                 'label' => 'Shopper reports', 'group' => 'Offers', 'model' => Report::class, 'owner' => null,

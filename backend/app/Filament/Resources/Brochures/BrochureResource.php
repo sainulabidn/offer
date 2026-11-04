@@ -6,6 +6,7 @@ use App\Domain\Brochures\Brochure;
 use App\Filament\Resources\Brochures\Pages\CreateBrochure;
 use App\Filament\Resources\Brochures\Pages\EditBrochure;
 use App\Filament\Resources\Brochures\Pages\ListBrochures;
+use App\Filament\Resources\Brochures\Pages\ReviewFlyer;
 use App\Filament\Resources\Brochures\RelationManagers\OffersRelationManager;
 use App\Filament\Resources\Brochures\Schemas\BrochureForm;
 use App\Filament\Resources\Brochures\Tables\BrochuresTable;
@@ -54,6 +55,7 @@ class BrochureResource extends Resource
             'index' => ListBrochures::route('/'),
             'create' => CreateBrochure::route('/create'),
             'edit' => EditBrochure::route('/{record}/edit'),
+            'review' => ReviewFlyer::route('/{record}/review'),
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Domain\Brochures;
 
 use App\Domain\Access\Audited;
 use App\Domain\Access\RecordsCreator;
+use App\Domain\Flyers\Sources\BrochureSource;
 use App\Domain\Offers\Offer;
 use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
@@ -37,7 +38,31 @@ class Brochure extends Model
             'valid_to' => 'date',
             'status' => BrochureStatus::class,
             'published_at' => 'datetime',
+            'detected' => 'array',
         ];
+    }
+
+    /** Uploaded as a flyer for the AI to read (Flyers\StartFlyerImport). */
+    public function isFlyerImport(): bool
+    {
+        return $this->ai_mode !== null;
+    }
+
+    /** Offers the AI read off the pages, before and after review. */
+    public function items(): HasMany
+    {
+        return $this->hasMany(BrochureItem::class);
+    }
+
+    public function aiRequester(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'ai_requested_by');
+    }
+
+    /** Fetched automatically from this source (Flyers\Sources). */
+    public function brochureSource(): BelongsTo
+    {
+        return $this->belongsTo(BrochureSource::class);
     }
 
     public function chain(): BelongsTo

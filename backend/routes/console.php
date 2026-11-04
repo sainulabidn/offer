@@ -7,6 +7,12 @@ use App\Domain\Catalog\ImportUaeCatalog;
 use App\Domain\Catalog\ProductImage;
 use App\Domain\Engagement\Counters;
 use App\Domain\Engagement\Likes;
+use App\Domain\Flyers\Ai\FlyerReaderManager;
+use App\Domain\Flyers\CostCalculator;
+use App\Domain\Flyers\EvaluateFlyerModel;
+use App\Domain\Flyers\FlyerBatches;
+use App\Domain\Flyers\Sources\CheckSources;
+use App\Domain\Flyers\SweepFlyers;
 use App\Domain\Geo\ImportPlaceNames;
 use App\Domain\Offers\ExpireOffers;
 use App\Domain\Offers\Offer;
@@ -110,7 +116,52 @@ Schedule::command('digest:weekly')->weeklyOn(0, '09:00')->timezone(config('app.m
 if (config('queue.cron_worker')) {
     Schedule::command('queue:work --queue=default,render --stop-when-empty --max-time=50 --tries=3')
         ->everyMinute()->withoutOverlapping()->runInBackground();
+
+    // Flyer AI calls and downloads take minutes, on their own connection (config/flyers.php); FLYER_WORKERS run side by side.
+    foreach (range(1, config('flyers.workers')) as $worker) {
+        Schedule::command('queue:work '.config('flyers.queue_connection')." --queue=ai,fetch --name=long-{$worker} --stop-when-empty --max-time=240 --timeout=300 --tries=3")
+            ->everyMinute()->withoutOverlapping(10)->runInBackground();
+    }
 }
+
+Artisan::command('flyers:sweep', function (SweepFlyers $sweep) {
+    $result = $sweep();
+    $this->info("Queued {$result['requeued']} stuck pages again, resumed {$result['resumed']} held pages, checked {$result['checked']} flyers, deleted {$result['deleted']} abandoned uploads.");
+})->purpose('Keep flyer imports moving: stuck and held pages, finished flyers, abandoned uploads');
+
+Schedule::command('flyers:sweep')->everyTenMinutes()->withoutOverlapping();
+
+Artisan::command('flyers:fetch', function (CheckSources $sources) {
+    $this->info("Queued {$sources->due()} flyer sources for a check.");
+})->purpose('Check store websites for new flyers (each source on its own interval, an hour by default)');
+
+Schedule::command('flyers:fetch')->everyFiveMinutes()->withoutOverlapping();
+
+Artisan::command('flyers:batches', function (FlyerBatches $batches) {
+    $answered = $batches->collect();
+    $this->info("Sent {$batches->submit()} flyer pages in a half-price batch; {$answered} answered.");
+})->purpose('Send economy flyer pages through the AI batch API and collect finished batches');
+
+Schedule::command('flyers:batches')->everyFiveMinutes()->withoutOverlapping();
+
+Artisan::command('flyers:check-stale', function (CheckSources $sources) {
+    $this->info("Warned about {$sources->stale()} sources with no new flyer for longer than usual.");
+})->purpose('Warn once when a store that publishes regularly has no new flyer');
+
+Schedule::command('flyers:check-stale')->dailyAt('10:00')->timezone(config('app.market_timezone'))->withoutOverlapping();
+
+Artisan::command('flyers:eval {brochures* : IDs of brochures whose items were reviewed} {--provider=claude} {--model=claude-haiku-5-5} {--effort=low}', function (EvaluateFlyerModel $evaluate, FlyerReaderManager $readers) {
+    $reader = $readers->make($this->option('provider'), $this->option('model'), $this->option('effort'));
+    if (! CostCalculator::hasPrice($reader->model())) {
+        $this->warn("No price row for {$reader->model()} (Flyer AI settings); costs show as 0.");
+    }
+    $s = $evaluate(array_map('intval', $this->argument('brochures')), $reader);
+    $pct = fn (int $n) => $s['expected'] ? round($n / $s['expected'] * 100).'%' : '—';
+    $this->table(['Model', 'Pages', 'Accepted items', 'Found', 'Price right', 'Was right', 'Product right', 'Failed pages', 'Cost', 'Per page'], [[
+        $reader->model(), $s['pages'], $s['expected'], $pct($s['found']), $pct($s['price']), $pct($s['was']), $pct($s['product']), $s['failed'],
+        '$'.number_format($s['cost'], 4), $s['pages'] ? '$'.number_format($s['cost'] / $s['pages'], 5) : '—',
+    ]]);
+})->purpose('Read reviewed flyers again with another AI model and score it against what reviewers accepted');
 
 Artisan::command('demo:seed', function () {
     $this->call('db:seed', ['--class' => DemoCatalogSeeder::class, '--force' => true]);

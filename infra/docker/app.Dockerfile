@@ -14,6 +14,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends poppler-utils libvips-tools libheif-plugin-aomenc qpdf git unzip \
     && rm -rf /var/lib/apt/lists/*
 
+# Brochure PDFs are up to 50 MB (config/livewire.php); PHP's defaults stop at 2 MB per file and 8 MB per request.
+RUN printf 'upload_max_filesize=64M\npost_max_size=64M\n' > "$PHP_INI_DIR/conf.d/uploads.ini"
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 ENV COMPOSER_ALLOW_SUPERUSER=1

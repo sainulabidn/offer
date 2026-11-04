@@ -41,6 +41,12 @@
         <server name="MAIL_MAILER" value="array" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync" force="true"/>
         <server name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="FLYER_QUEUE_CONNECTION" value="sync" force="true"/>
+        <server name="FLYER_QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="ANTHROPIC_API_KEY" value="" force="true"/>
+        <server name="ANTHROPIC_API_KEY" value="" force="true"/>
+        <env name="OPENAI_API_KEY" value="" force="true"/>
+        <server name="OPENAI_API_KEY" value="" force="true"/>
         <env name="SESSION_DRIVER" value="array" force="true"/>
         <server name="SESSION_DRIVER" value="array" force="true"/>
         <env name="PULSE_ENABLED" value="false"/>

@@ -211,6 +211,19 @@ return [
             'timeout' => 60,
             'nice' => 0,
         ],
+        // ai: flyer pages read by AI; fetch: flyer downloads. Minutes per job (FLYER_QUEUE_CONNECTION=redis-long).
+        'supervisor-long' => [
+            'connection' => 'redis-long',
+            'queue' => ['ai', 'fetch'],
+            'balance' => 'simple',
+            'maxProcesses' => 2,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 3,
+            'timeout' => 300,
+            'nice' => 0,
+        ],
     ],
 
     'environments' => [

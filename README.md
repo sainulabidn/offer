@@ -50,6 +50,19 @@ docker compose --profile web up -d       # + Astro dev server
 | http://localhost:4321 | Public website (Astro) |
 | http://localhost:8025 | Mailpit (local email) |
 
+## Flyer import with AI
+
+Admin → Offers → **Import from flyer (AI)** reads a flyer PDF or page photos into offers; people check them on the review screen before they publish. Stores' websites can also be checked automatically (store → **Flyer sources**, only with the store's permission). Code: `backend/app/Domain/Flyers`.
+
+- **Keys** go in `backend/.env` only: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`. Provider, model, budget and publishing are chosen in the admin under Offers → **Flyer AI settings**.
+- **Workers**: AI calls take minutes, so they run on their own queue connection. Locally set `FLYER_QUEUE_CONNECTION=redis-long` (Horizon runs it). On the server, the cron worker runs `database-long` (`FLYER_WORKERS` adds parallel workers).
+- **Schedule**: `flyers:fetch` (5 min), `flyers:batches` (5 min, half-price batch API), `flyers:sweep` (10 min), `flyers:check-stale` (daily).
+- **Choosing a model**: once a few flyers are reviewed, compare a cheaper model against what reviewers accepted:
+  ```sh
+  docker compose exec app php artisan flyers:eval 12 15 --model=claude-haiku-5-5
+  ```
+- **Server**: PHP needs `pcntl` and `proc_open`, poppler (`pdftoppm`), and uploads up to 64 MB (`upload_max_filesize`, `post_max_size`).
+
 Run tools inside the containers:
 
 ```sh

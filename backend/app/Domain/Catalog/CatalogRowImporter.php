@@ -109,11 +109,7 @@ final class CatalogRowImporter
     /** Accepts the code or any brochure spelling listed in units.aliases (kgs, ltr, pcs…). */
     private function unit(string $value): Unit
     {
-        $needle = mb_strtolower($value);
-
-        return Unit::find($needle)
-            ?? Unit::all()->first(fn (Unit $u) => in_array($needle, $u->aliases ?? [], true))
-            ?? throw new InvalidArgumentException("Unknown unit [{$value}].");
+        return Unit::fromAlias($value) ?? throw new InvalidArgumentException("Unknown unit [{$value}].");
     }
 
     private function category(string $value): Category

@@ -47,4 +47,15 @@ return [
         'secret' => env('TURNSTILE_SECRET'),
     ],
 
+    // AI that reads flyer pages (App\Domain\Flyers). Admins choose the provider and model in the admin;
+    // the keys stay here, never in site settings, which the activity log records.
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+    ],
+
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+        'url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+    ],
+
 ];
