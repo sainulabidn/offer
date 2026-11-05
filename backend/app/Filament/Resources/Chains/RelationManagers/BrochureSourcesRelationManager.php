@@ -24,8 +24,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Where this store's flyers are fetched automatically: a PDF link that stays the same, or a page that links
- * to the current flyers. Checked on their own interval; new flyers are read by AI and wait for review.
+ * Where this store's flyers are fetched automatically: a PDF link that stays the same, a page that links
+ * to the current flyers, or a Nesto store on nestooffers.com. Checked on their own interval; new flyers are read by AI and wait for review.
  * Runs only when the store has given permission (Brochure collection → Content permission).
  */
 class BrochureSourcesRelationManager extends RelationManager
@@ -44,11 +44,23 @@ class BrochureSourcesRelationManager extends RelationManager
         return $schema->columns(2)->components([
             TextInput::make('name')->required()->maxLength(120)->placeholder('e.g. Dubai & Northern Emirates flyer'),
             Select::make('kind')
-                ->options([BrochureSource::KIND_PDF => 'A PDF link that stays the same', BrochureSource::KIND_PAGE => 'A page that links to the flyers'])
+                ->options([
+                    BrochureSource::KIND_PDF => 'A PDF link that stays the same',
+                    BrochureSource::KIND_PAGE => 'A page that links to the flyers',
+                    BrochureSource::KIND_NESTO => 'A Nesto store (nestooffers.com)',
+                ])
                 ->default(BrochureSource::KIND_PDF)
                 ->required()
                 ->live(),
-            TextInput::make('url')->label('Address')->url()->required()->columnSpanFull()->maxLength(2000),
+            TextInput::make('url')
+                ->label('Address')
+                ->url()
+                ->required()
+                ->columnSpanFull()
+                ->maxLength(2000)
+                ->helperText(fn (Get $get) => $get('kind') === BrochureSource::KIND_NESTO
+                    ? 'https://admin.nestooffers.com/api/deal-of-the-week?store_id=…&location_id=… — the store and its location as nestooffers.com numbers them. Store 80, location 44 = offers for every UAE branch.'
+                    : null),
             TextInput::make('link_pattern')
                 ->label('Which links are flyers')
                 ->placeholder(BrochureSource::DEFAULT_PATTERN)
@@ -81,7 +93,11 @@ class BrochureSourcesRelationManager extends RelationManager
                 : 'Not fetched until the store gives permission: set Content permission to "granted" under Brochure collection.')
             ->columns([
                 TextColumn::make('name')->description(fn (BrochureSource $s) => str($s->url)->limit(60)),
-                TextColumn::make('kind')->badge()->formatStateUsing(fn (string $state) => $state === BrochureSource::KIND_PAGE ? 'Page' : 'PDF'),
+                TextColumn::make('kind')->badge()->formatStateUsing(fn (string $state) => match ($state) {
+                    BrochureSource::KIND_PAGE => 'Page',
+                    BrochureSource::KIND_NESTO => 'Nesto',
+                    default => 'PDF',
+                }),
                 TextColumn::make('last_checked_at')->label('Checked')->since()->placeholder('Never'),
                 TextColumn::make('last_new_at')->label('Last new flyer')->since()->placeholder('—'),
                 TextColumn::make('consecutive_failures')

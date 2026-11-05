@@ -17,7 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Checks one source for a new flyer and imports it (StartFlyerImport, as the system). Cheap when nothing
- * changed: the server answers 304 to our ETag/Last-Modified, or the file's hash is one we have. Failures
+ * changed: the server answers 304 to our ETag/Last-Modified, a listed flyer was fetched before (no download),
+ * or the file's hash is one we have. Failures
  * back off — 1, 2, 4… times the check interval, up to a day — and settings editors hear once after three
  * in a row, and once when it works again. Stores without permission are never fetched.
  */
@@ -62,12 +63,12 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
         }
 
         try {
-            $urls = $source->kind === BrochureSource::KIND_PAGE ? $this->newLinks($source, $http) : [$source->url];
-            if ($urls === []) {
+            $flyers = $source->kind === BrochureSource::KIND_PDF ? [new ListedFlyer($source->url)] : $this->unseen($source, $this->listed($source, $http), $http);
+            if ($flyers === []) {
                 $this->record($source, $source->url, 'unchanged');
             }
-            foreach ($urls as $url) {
-                $this->download($source, $url, $http, $start);
+            foreach ($flyers as $flyer) {
+                $this->download($source, $flyer, $http, $start);
             }
             $this->succeeded($source);
         } catch (FetchFailed $e) {
@@ -76,10 +77,13 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
         }
     }
 
-    /** @return list<string> flyer links on the page we haven't fetched before */
-    private function newLinks(BrochureSource $source, SourceFetcher $http): array
+    /** @return list<ListedFlyer> every flyer the page or the store's offer site lists now */
+    private function listed(BrochureSource $source, SourceFetcher $http): array
     {
         $this->allow($source->url, $http);
+        if ($source->kind === BrochureSource::KIND_NESTO) {
+            return (new NestoOffers)($source, $http);
+        }
         [$response, $final] = $http->get($source->url);
         if (! $response->successful()) {
             throw new FetchFailed("The page answered HTTP {$response->status()}.", $response->status());
@@ -88,15 +92,33 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
         if ($links === []) {
             throw new FetchFailed('No flyer links found on the page; it may have changed, or show flyers only with JavaScript.');
         }
-        $seen = $source->fetches()->whereIn('outcome', ['new', 'duplicate', 'unchanged', 'gone'])->pluck('url')->all();
-        // Links the site asks bots to leave alone are skipped, not failed: the page itself was allowed.
-        $fresh = array_filter(array_diff($links, $seen), fn (string $url) => $http->allowedByRobots($url));
+
+        return array_map(fn (string $url) => new ListedFlyer($url), $links);
+    }
+
+    /**
+     * The listed flyers we haven't fetched before, a few per check; known ones cost no download.
+     *
+     * @param  list<ListedFlyer>  $flyers
+     * @return list<ListedFlyer>
+     */
+    private function unseen(BrochureSource $source, array $flyers, SourceFetcher $http): array
+    {
+        $seen = array_flip($source->fetches()->whereIn('outcome', ['new', 'duplicate', 'unchanged', 'gone'])->pluck('url')->all());
+        $fresh = [];
+        foreach ($flyers as $flyer) {
+            // Links the site asks bots to leave alone are skipped, not failed: the page itself was allowed.
+            if (! isset($seen[$flyer->url]) && ! isset($fresh[$flyer->url]) && $http->allowedByRobots($flyer->url)) {
+                $fresh[$flyer->url] = $flyer;
+            }
+        }
 
         return array_slice(array_values($fresh), 0, self::LINKS_PER_CHECK);
     }
 
-    private function download(BrochureSource $source, string $url, SourceFetcher $http, StartFlyerImport $start): void
+    private function download(BrochureSource $source, ListedFlyer $flyer, SourceFetcher $http, StartFlyerImport $start): void
     {
+        $url = $flyer->url;
         $this->allow($url, $http);
         $started = hrtime(true);
         $conditional = $url === $source->url ? array_filter(['If-None-Match' => $source->etag, 'If-Modified-Since' => $source->last_modified]) : [];
@@ -137,7 +159,10 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
         Storage::disk(config('flyers.disk'))->put($path, $bytes);
         try {
             $brochure = $start(null, $source->chain, [$path], array_map('intval', $source->branch_ids ?? []), [
-                'title' => "{$source->name} ".now(config('app.market_timezone'))->format('j M Y'),
+                'title' => $flyer->title ?? "{$source->name} ".now(config('app.market_timezone'))->format('j M Y'),
+                // Dates the store gives are kept as they are (FinishFlyer), so a flyer for next week waits until then.
+                'valid_from' => $flyer->validFrom,
+                'valid_to' => $flyer->validTo,
                 'source' => 'auto_fetch',
                 'source_url' => $final,
                 // Nobody is waiting for it: half price through the batch API (FlyerBatches).

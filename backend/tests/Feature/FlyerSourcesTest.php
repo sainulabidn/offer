@@ -138,6 +138,34 @@ it('reads flyers that flipbooks and app pages name in scripts, and skips links t
         ->and($source->fetches()->pluck('outcome')->all())->toBe(['unchanged', 'new', 'gone']);
 });
 
+it('reads a Nesto store\'s offers with Nesto\'s own dates, and downloads each flyer once', function () {
+    Http::fake([
+        '*/robots.txt' => Http::response('', 404),
+        'admin.nesto.test/api/deal-of-the-week' => Http::response(['data' => [
+            ['id' => 1, 'name' => 'BIG SALE', 'start_date' => '2026-10-24 00:00:00', 'end_date' => '2026-10-27 00:00:00', 'pdfs' => [
+                ['id' => 11, 'title' => 'BIG SALE 25% TO 70% OFF', 'pdf_url' => 'https://cdn.nesto.test/offers-pdf/1.pdf'],
+            ]],
+            // Published ahead: it starts next week.
+            ['id' => 2, 'name' => 'Home Fiesta', 'start_date' => '2026-10-31 00:00:00', 'end_date' => '2026-11-09 00:00:00', 'pdfs' => [
+                ['id' => 12, 'title' => 'Home Fiesta', 'pdf_url' => 'https://cdn.nesto.test/offers-pdf/2.pdf'],
+            ]],
+        ]]),
+        'cdn.nesto.test/offers-pdf/1.pdf' => Http::response($this->pdf),
+        'cdn.nesto.test/offers-pdf/2.pdf' => Http::response(FlyerPdf::pictures(['Nesto next week'])),
+    ]);
+    $source = ($this->source)(['kind' => BrochureSource::KIND_NESTO, 'url' => 'https://admin.nesto.test/api/deal-of-the-week?store_id=125&location_id=5']);
+
+    FetchBrochureSource::dispatchSync($source->id);
+    FetchBrochureSource::dispatchSync($source->id);
+
+    expect(Brochure::orderBy('valid_from')->get()->map(fn (Brochure $b) => [$b->getTranslation('title', 'en'), $b->valid_from->toDateString(), $b->valid_to->toDateString()])->all())
+        ->toBe([['BIG SALE 25% TO 70% OFF', '2026-10-24', '2026-10-27'], ['Home Fiesta', '2026-10-31', '2026-11-09']])
+        ->and($source->fetches()->pluck('outcome')->all())->toBe(['unchanged', 'new', 'new']);
+    Http::assertSent(fn (Request $request) => $request->method() === 'POST' && $request['store_id'] === 125 && $request['location_id'] === 5);
+    // The second check lists the offers again but downloads nothing it has.
+    expect(collect(Http::recorded())->filter(fn (array $pair) => str_contains($pair[0]->url(), '/offers-pdf/'))->count())->toBe(2);
+});
+
 it('backs off after failures, alerts once after three, and says when it works again', function () {
     $up = false;
     Http::fake(function (Request $request) use (&$up) {

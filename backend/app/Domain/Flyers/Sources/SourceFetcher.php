@@ -47,6 +47,21 @@ final class SourceFetcher
         throw new FetchFailed('Too many redirects.');
     }
 
+    /** POST to the JSON API a store's own offer site uses (NestoOffers); public addresses only, no redirects. */
+    public function post(string $url, array $data): Response
+    {
+        $this->assertPublic($url);
+        try {
+            return Http::withHeaders(['User-Agent' => self::USER_AGENT])
+                ->acceptJson()
+                ->timeout(60)
+                ->withOptions(['allow_redirects' => false])
+                ->post($url, $data);
+        } catch (ConnectionException $e) {
+            throw new FetchFailed('Could not connect: '.$e->getMessage());
+        }
+    }
+
     /** Only http(s) to public addresses. @throws FetchFailed */
     public function assertPublic(string $url): void
     {

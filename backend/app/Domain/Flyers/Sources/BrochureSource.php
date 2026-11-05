@@ -24,6 +24,9 @@ class BrochureSource extends Model
 
     public const string KIND_PAGE = 'page';
 
+    /** One Nesto store on nestooffers.com (NestoOffers). */
+    public const string KIND_NESTO = 'nesto';
+
     /** Links on a page that look like flyer PDFs, when the source sets no pattern. */
     public const string DEFAULT_PATTERN = '\.pdf($|[?#])';
 
