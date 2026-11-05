@@ -105,6 +105,39 @@ it('finds new flyer links on a store page and skips the ones it has', function (
     expect(app(SourceFetcher::class)->allowedByRobots('https://shop.test/private/secret.pdf'))->toBeFalse();
 });
 
+it('reads flyers that flipbooks and app pages name in scripts, and skips links the store has deleted', function () {
+    $page = <<<'HTML'
+        <a href="/files/2019-old.pdf">Old</a>
+        <script>window.option_df_1 = {"source":"https:\/\/shop.test\/uploads\/week-45.pdf","wpOptions":"true"};</script>
+        <script>var real3dflipbook_6 = "{\"pdfUrl\":\"https:\\/\\/shop.test\\/uploads\\/weekend.pdf\"}";</script>
+        <iframe src="https://shop.test/pdfjs/viewer.html?file=https://shop.test/uploads/home.pdf"></iframe>
+        <script>self.__next_f.push([1,"{\"path\":\"https://cdn.test/flyers/1793-GMJ Smart Deals 2 to 5 Nov.pdf\",\"outlets\":[]}"])</script>
+        HTML;
+
+    expect(SourceFetcher::links($page, 'https://shop.test/offers', BrochureSource::DEFAULT_PATTERN))->toBe([
+        'https://shop.test/files/2019-old.pdf',
+        'https://shop.test/uploads/week-45.pdf',
+        'https://shop.test/uploads/weekend.pdf',
+        'https://shop.test/uploads/home.pdf',
+        'https://cdn.test/flyers/1793-GMJ%20Smart%20Deals%202%20to%205%20Nov.pdf',
+    ])->and(SourceFetcher::links($page, 'https://shop.test/offers', '/flyers/\d+-GMJ'))->toHaveCount(1);
+
+    Http::fake([
+        'shop.test/robots.txt' => Http::response('', 404),
+        'shop.test/offers' => Http::response('<a href="/files/2019-old.pdf">Old</a> <a href="/files/week-45.pdf">This week</a>'),
+        'shop.test/files/2019-old.pdf' => Http::response('Not found', 404),
+        'shop.test/files/week-45.pdf' => Http::response($this->pdf, 200),
+    ]);
+    $source = ($this->source)(['kind' => BrochureSource::KIND_PAGE, 'url' => 'https://shop.test/offers']);
+
+    FetchBrochureSource::dispatchSync($source->id);
+    FetchBrochureSource::dispatchSync($source->id);
+
+    expect(Brochure::sole()->source_url)->toBe('https://shop.test/files/week-45.pdf')
+        ->and($source->refresh()->consecutive_failures)->toBe(0)
+        ->and($source->fetches()->pluck('outcome')->all())->toBe(['unchanged', 'new', 'gone']);
+});
+
 it('backs off after failures, alerts once after three, and says when it works again', function () {
     $up = false;
     Http::fake(function (Request $request) use (&$up) {

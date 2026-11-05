@@ -6,7 +6,7 @@ use App\Domain\Brochures\Brochure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** One check of a source and what came of it: new, unchanged, duplicate, no_links, blocked or failed. */
+/** One check of a source and what came of it: new, unchanged, duplicate, gone (a dead link on the page), no_links, blocked or failed. */
 class BrochureFetch extends Model
 {
     public const UPDATED_AT = null;

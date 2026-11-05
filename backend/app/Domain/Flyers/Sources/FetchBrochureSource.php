@@ -88,7 +88,7 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
         if ($links === []) {
             throw new FetchFailed('No flyer links found on the page; it may have changed, or show flyers only with JavaScript.');
         }
-        $seen = $source->fetches()->whereIn('outcome', ['new', 'duplicate', 'unchanged'])->pluck('url')->all();
+        $seen = $source->fetches()->whereIn('outcome', ['new', 'duplicate', 'unchanged', 'gone'])->pluck('url')->all();
         // Links the site asks bots to leave alone are skipped, not failed: the page itself was allowed.
         $fresh = array_filter(array_diff($links, $seen), fn (string $url) => $http->allowedByRobots($url));
 
@@ -105,6 +105,12 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
 
         if ($response->status() === 304) {
             $this->record($source, $url, 'unchanged', 304, ms: $ms);
+
+            return;
+        }
+        // Pages often keep linking old flyers they have deleted: skip those for good rather than fail every check.
+        if ($url !== $source->url && in_array($response->status(), [404, 410], true)) {
+            $this->record($source, $url, 'gone', $response->status(), ms: $ms);
 
             return;
         }

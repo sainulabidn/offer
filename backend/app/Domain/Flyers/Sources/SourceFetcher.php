@@ -114,7 +114,9 @@ final class SourceFetcher
     }
 
     /**
-     * Flyer links on a page: anchors whose absolute address matches the pattern (case-insensitive), in page order.
+     * Flyer links on a page whose absolute address matches the pattern (case-insensitive): anchors in page order,
+     * then PDF addresses the page keeps in its scripts and data, where flipbooks (dFlip, Real3D) and app pages
+     * name their flyers.
      *
      * @return list<string>
      */
@@ -124,13 +126,20 @@ final class SourceFetcher
         @$document->loadHTML('<?xml encoding="utf-8"?>'.$html, LIBXML_NOERROR | LIBXML_NOWARNING);
         $links = [];
         foreach ($document->getElementsByTagName('a') as $anchor) {
-            $url = self::absolute($pageUrl, trim($anchor->getAttribute('href')));
-            if ($url !== null && @preg_match('~'.str_replace('~', '\~', $pattern).'~i', $url)) {
-                $links[] = $url;
-            }
+            $links[] = self::absolute($pageUrl, trim($anchor->getAttribute('href')));
+        }
+        // Quoted strings ending in .pdf, also with JSON-escaped slashes (https:\/\/…) and spaces in the file name.
+        preg_match_all('~["\'](https?:(?:\\\\*/){2}(?:[^"\'\\\\<>\n]|\\\\+/)+?\.pdf(?:[?#][^"\'\\\\<>\s]*)?)\\\\*["\']~i', $html, $embedded);
+        foreach ($embedded[1] as $url) {
+            $url = str_replace(['\\', ' '], ['', '%20'], html_entity_decode($url));
+            // A viewer that takes the PDF as a parameter (viewer.html?file=https://…pdf): the PDF itself.
+            $links[] = preg_match('~.(https?://.+)$~', $url, $inner) ? $inner[1] : $url;
         }
 
-        return array_values(array_unique($links));
+        return array_values(array_unique(array_filter(
+            $links,
+            fn (?string $url) => $url !== null && @preg_match('~'.str_replace('~', '\~', $pattern).'~i', $url),
+        )));
     }
 
     /** An href (absolute, //host, /path or relative) on $base as an absolute http(s) address, without #fragment. */

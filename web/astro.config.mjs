@@ -30,6 +30,7 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     // The repo is mounted from Windows into Docker, where file events don't arrive; poll instead.
-    server: { watch: { usePolling: true, interval: 300 } },
+    // dev.96h.in is the Cloudflare tunnel to this dev server.
+    server: { allowedHosts: ['dev.96h.in'], watch: { usePolling: true, interval: 300 } },
   },
 });
