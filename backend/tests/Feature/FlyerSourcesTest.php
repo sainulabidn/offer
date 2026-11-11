@@ -176,7 +176,7 @@ it('imports a WowDeals catalogue as page pictures, skipping expired ones and one
         HTML;
     Http::fake([
         '*/robots.txt' => Http::response('', 404),
-        'www.wowdeals.me/ae/carrefour/catalogs' => Http::response($card('better-value-3', 'Better Value Everyday', '10 Nov - 19 Nov', '17 Days left')
+        'www.wowdeals.me/ae/carrefour/catalogs' => Http::response($card('better-value-3', 'Better Value Everyday', '10 - 19 Nov', '17 Days left')
             .$card('diwali-2', 'Diwali Deals', '10 Oct - 20 Oct', 'Expired')),
         'www.wowdeals.me/ae/carrefour/catalogs/better-value-3' => Http::response(
             '<img src="https://cdn.wowdeals.me/uploads/catalogues/issues/11/265394/1800x1800/0002.jpg"><img src="https://cdn.wowdeals.me/uploads/catalogues/issues/11/265394/1800x1800/0001.jpg">'

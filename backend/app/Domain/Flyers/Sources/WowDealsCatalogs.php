@@ -56,20 +56,23 @@ final class WowDealsCatalogs
         return array_values($pages);
     }
 
-    /** "23 Oct - 5 Dec" (no year) → ["2026-10-23", "2026-12-05"], taking the year that puts the start nearest today. */
+    /**
+     * "23 Oct - 5 Dec" or "10 - 19 Nov" (no year) → ["2026-10-23", "2026-12-05"], taking the year that puts the
+     * start nearest today.
+     */
     private static function dates(string $text): array
     {
-        if (! preg_match('~^(\d{1,2} [A-Za-z]{3})\w*\s*-\s*(\d{1,2} [A-Za-z]{3})~', trim($text), $m)) {
+        if (! preg_match('~^(\d{1,2})(?:\s+([A-Za-z]{3})\w*)?\s*-\s*(\d{1,2})\s+([A-Za-z]{3})~', trim($text), $m)) {
             return [null, null];
         }
         $today = now(config('app.market_timezone'))->startOfDay();
-        $from = Carbon::createFromFormat('j M Y', "{$m[1]} {$today->year}", config('app.market_timezone'))->startOfDay();
+        $from = Carbon::createFromFormat('j M Y', "{$m[1]} ".($m[2] ?: $m[4])." {$today->year}", config('app.market_timezone'))->startOfDay();
         if ($from->diffInDays($today, false) < -180) {
             $from->subYear();
         } elseif ($from->diffInDays($today, false) > 180) {
             $from->addYear();
         }
-        $to = Carbon::createFromFormat('j M Y', "{$m[2]} {$from->year}", config('app.market_timezone'))->startOfDay();
+        $to = Carbon::createFromFormat('j M Y', "{$m[3]} {$m[4]} {$from->year}", config('app.market_timezone'))->startOfDay();
         if ($to->lt($from)) {
             $to->addYear();
         }
