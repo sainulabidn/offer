@@ -3,8 +3,11 @@
 namespace App\Filament\Resources\Branches\Tables;
 
 use App\Domain\Retail\Branch;
+use App\Filament\Resources\BrochureSources\BrochureSourceResource;
 use App\Filament\Support\Fields;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -31,6 +34,12 @@ class BranchesTable
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('flyer_sources')
+                    ->label('Flyer sources')
+                    ->icon(Heroicon::OutlinedRss)
+                    ->color('gray')
+                    ->url(fn (Branch $branch) => BrochureSourceResource::urlFor(branch: $branch))
+                    ->visible(fn () => BrochureSourceResource::canViewAny()),
             ]);
     }
 }

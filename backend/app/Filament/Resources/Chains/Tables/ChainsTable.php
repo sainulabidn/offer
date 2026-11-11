@@ -7,6 +7,7 @@ use App\Domain\Retail\BrochureFrequency;
 use App\Domain\Retail\Chain;
 use App\Domain\Retail\ChainFormat;
 use App\Domain\Retail\ContentPermission;
+use App\Filament\Resources\BrochureSources\BrochureSourceResource;
 use App\Filament\Support\Fields;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -70,6 +71,11 @@ class ChainsTable
             ->recordActions([
                 EditAction::make(),
                 ActionGroup::make([
+                    Action::make('flyer_sources')
+                        ->label('Flyer sources')
+                        ->icon(Heroicon::OutlinedRss)
+                        ->url(fn (Chain $chain) => BrochureSourceResource::urlFor(chain: $chain))
+                        ->visible(fn () => BrochureSourceResource::canViewAny()),
                     Action::make('brochure_page')
                         ->label('Open offers page')
                         ->icon(Heroicon::OutlinedGlobeAlt)

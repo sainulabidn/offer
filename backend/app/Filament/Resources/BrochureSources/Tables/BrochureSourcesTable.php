@@ -4,6 +4,7 @@ namespace App\Filament\Resources\BrochureSources\Tables;
 
 use App\Domain\Flyers\Sources\BrochureSource;
 use App\Domain\Flyers\Sources\FetchBrochureSource;
+use App\Domain\Retail\Branch;
 use App\Domain\Retail\Chain;
 use App\Domain\Retail\ContentPermission;
 use App\Filament\Resources\BrochureSources\Schemas\BrochureSourceForm;
@@ -133,6 +134,21 @@ class BrochureSourcesTable
         };
     }
 
+    /** Sources whose flyers are for this branch: its store's sources for every branch, or ones that chose it. */
+    private static function coveringBranch(Builder $query, int $branchId): Builder
+    {
+        $branch = Branch::query()->find($branchId);
+        if (! $branch) {
+            return $query->whereRaw('false');
+        }
+
+        return $query->where('chain_id', $branch->chain_id)->where(fn (Builder $q) => $q
+            ->whereRaw('jsonb_array_length(branch_ids) = 0')
+            // The form may have stored the ids as numbers or as strings.
+            ->orWhereRaw('branch_ids @> ?::jsonb', [json_encode([$branchId])])
+            ->orWhereRaw('branch_ids @> ?::jsonb', [json_encode([(string) $branchId])]));
+    }
+
     private static function checkNow(BrochureSource $source): void
     {
         $source->update(['next_check_at' => now()->addMinutes(15)]);
@@ -149,6 +165,16 @@ class BrochureSourcesTable
                 ->searchable()
                 ->options(fn () => Chain::query()->whereHas('brochureSources')->orderBy('slug')->get()->mapWithKeys(fn (Chain $c) => [$c->id => $c->name]))
                 ->attribute('chain_id'),
+            SelectFilter::make('branch')
+                ->label('Covers branch')
+                ->searchable()
+                ->options(fn () => Branch::query()
+                    ->whereIn('chain_id', BrochureSource::query()->select('chain_id'))
+                    ->with('chain')
+                    ->orderBy('slug')
+                    ->get()
+                    ->mapWithKeys(fn (Branch $b) => [$b->id => "{$b->chain?->name} — {$b->name}"]))
+                ->query(fn (Builder $query, array $data) => $query->when($data['value'] ?? null, fn (Builder $query, $branchId) => self::coveringBranch($query, (int) $branchId))),
             SelectFilter::make('status')
                 ->options(['ok' => 'OK', 'failing' => 'Failing', 'paused' => 'Paused', 'never' => 'Never checked'])
                 ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {

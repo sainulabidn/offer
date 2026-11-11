@@ -4,6 +4,8 @@ namespace App\Filament\Resources\BrochureSources;
 
 use App\Domain\Access\Access;
 use App\Domain\Flyers\Sources\BrochureSource;
+use App\Domain\Retail\Branch;
+use App\Domain\Retail\Chain;
 use App\Filament\Resources\BrochureSources\Pages\ManageBrochureSources;
 use App\Filament\Resources\BrochureSources\Schemas\BrochureSourceForm;
 use App\Filament\Resources\BrochureSources\Tables\BrochureSourcesTable;
@@ -40,6 +42,15 @@ class BrochureSourceResource extends Resource
     public static function getAuthorizationResponse(string|UnitEnum $action, ?Model $record = null): Response
     {
         return Access::allows(Access::user(), 'settings', 'edit') ? Response::allow() : Response::deny();
+    }
+
+    /** This page filtered to one store's sources, or to the sources covering one branch. */
+    public static function urlFor(?Chain $chain = null, ?Branch $branch = null): string
+    {
+        return static::getUrl('index', ['filters' => array_filter([
+            'chain' => $chain ? ['values' => [$chain->id]] : null,
+            'branch' => $branch ? ['value' => $branch->id] : null,
+        ])]);
     }
 
     public static function form(Schema $schema): Schema

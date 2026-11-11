@@ -19,6 +19,7 @@ use App\Filament\Resources\BrochureSources\Pages\ManageBrochureSources;
 use App\Filament\Resources\Chains\Pages\EditChain;
 use App\Filament\Resources\Chains\RelationManagers\BrochureSourcesRelationManager;
 use App\Models\User;
+use Clickbar\Magellan\Data\Geometries\Point;
 use Database\Seeders\CatalogStructureSeeder;
 use Database\Seeders\DemoCatalogSeeder;
 use Database\Seeders\GeoSeeder;
@@ -248,6 +249,24 @@ it('lists every store\'s sources on one page, filtered by store and status', fun
         ->searchTable('Other store')
         ->assertCanSeeTableRecords([$elsewhere])
         ->assertCanNotSeeTableRecords([$failing, $paused]);
+
+    // Links from a store or a branch open the page already filtered.
+    $dubai = $this->lulu->branches()->create(['name' => ['en' => 'Al Barsha'], 'slug' => 'lulu-al-barsha-test', 'location' => Point::makeGeodetic(25.11, 55.20)]);
+    $abuDhabi = $this->lulu->branches()->create(['name' => ['en' => 'Khalidiya'], 'slug' => 'lulu-khalidiya-test', 'location' => Point::makeGeodetic(24.47, 54.35)]);
+    $regional = ($this->source)(['name' => 'Abu Dhabi flyer', 'branch_ids' => [(string) $abuDhabi->id]]);
+    expect(BrochureSourceResource::urlFor(chain: $this->lulu))->toContain('filters');
+    Livewire\Livewire::withQueryParams(['filters' => ['chain' => ['values' => [$this->lulu->id]]]])
+        ->test(ManageBrochureSources::class)
+        ->assertCanSeeTableRecords([$failing, $paused, $regional])
+        ->assertCanNotSeeTableRecords([$elsewhere]);
+    Livewire\Livewire::withQueryParams(['filters' => ['branch' => ['value' => $dubai->id]]])
+        ->test(ManageBrochureSources::class)
+        ->assertCanSeeTableRecords([$failing, $paused]) // for every Lulu branch
+        ->assertCanNotSeeTableRecords([$regional, $elsewhere]);
+    Livewire\Livewire::withQueryParams(['filters' => ['branch' => ['value' => $abuDhabi->id]]])
+        ->test(ManageBrochureSources::class)
+        ->assertCanSeeTableRecords([$failing, $regional]);
+    Pest\Livewire\livewire(EditChain::class, ['record' => $this->lulu->getRouteKey()])->assertActionVisible('flyer_sources');
 
     Pest\Livewire\livewire(ManageBrochureSources::class)
         ->callAction('create', ['chain_id' => $other->id, 'name' => 'Added here', 'kind' => BrochureSource::KIND_PDF, 'url' => 'https://other.test/a.pdf', 'check_minutes' => 60, 'is_active' => true])
