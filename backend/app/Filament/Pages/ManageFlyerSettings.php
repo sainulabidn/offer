@@ -42,7 +42,7 @@ class ManageFlyerSettings extends Page
 
     protected static string|UnitEnum|null $navigationGroup = 'Offers';
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 7;
 
     protected static ?string $navigationLabel = 'Flyer AI settings';
 

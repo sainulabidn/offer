@@ -14,6 +14,8 @@ use App\Domain\Retail\BrochureFrequency;
 use App\Domain\Retail\Chain;
 use App\Domain\Retail\ContentPermission;
 use App\Filament\Pages\FlyerCollection;
+use App\Filament\Resources\BrochureSources\BrochureSourceResource;
+use App\Filament\Resources\BrochureSources\Pages\ManageBrochureSources;
 use App\Filament\Resources\Chains\Pages\EditChain;
 use App\Filament\Resources\Chains\RelationManagers\BrochureSourcesRelationManager;
 use App\Models\User;
@@ -219,6 +221,43 @@ it('shows staff which stores are due, and settings editors their sources', funct
         'ownerRecord' => $this->lulu,
         'pageClass' => EditChain::class,
     ])->assertOk()->assertSee('Weekly flyer')->assertSee('2 failed');
+});
+
+it('lists every store\'s sources on one page, filtered by store and status', function () {
+    $failing = ($this->source)(['consecutive_failures' => 2, 'last_error' => 'HTTP 404']);
+    $paused = ($this->source)(['name' => 'Old flyer', 'is_active' => false]);
+    $other = Chain::create(['name' => ['en' => 'Nesto'], 'slug' => 'nesto', 'country_id' => $this->lulu->country_id, 'format' => $this->lulu->format, 'retail_group_id' => $this->lulu->retail_group_id]);
+    $elsewhere = $other->brochureSources()->create(['name' => 'Other store flyer', 'kind' => BrochureSource::KIND_PAGE, 'url' => 'https://other.test/offers']);
+    Auth::forgetGuards();
+    Pest\Laravel\actingAs($this->admin, 'admin');
+
+    Pest\Livewire\livewire(ManageBrochureSources::class)
+        ->assertOk()
+        ->assertCanSeeTableRecords([$failing, $paused, $elsewhere])
+        ->filterTable('chain', [$this->lulu->id])
+        ->assertCanSeeTableRecords([$failing, $paused])
+        ->assertCanNotSeeTableRecords([$elsewhere])
+        ->filterTable('status', 'failing')
+        ->assertCanSeeTableRecords([$failing])
+        ->assertCanNotSeeTableRecords([$paused])
+        ->resetTableFilters()
+        ->filterTable('kind', [BrochureSource::KIND_PAGE])
+        ->assertCanSeeTableRecords([$elsewhere])
+        ->assertCanNotSeeTableRecords([$failing])
+        ->resetTableFilters()
+        ->searchTable('Other store')
+        ->assertCanSeeTableRecords([$elsewhere])
+        ->assertCanNotSeeTableRecords([$failing, $paused]);
+
+    Pest\Livewire\livewire(ManageBrochureSources::class)
+        ->callAction('create', ['chain_id' => $other->id, 'name' => 'Added here', 'kind' => BrochureSource::KIND_PDF, 'url' => 'https://other.test/a.pdf', 'check_minutes' => 60, 'is_active' => true])
+        ->assertHasNoActionErrors();
+    expect($other->brochureSources()->where('name', 'Added here')->sole()->next_check_at)->not->toBeNull();
+
+    $staff = User::factory()->create();
+    Auth::forgetGuards();
+    Pest\Laravel\actingAs($staff, 'admin');
+    expect(BrochureSourceResource::canViewAny())->toBeFalse();
 });
 
 it('queues due sources and warns once when a weekly store goes quiet', function () {
