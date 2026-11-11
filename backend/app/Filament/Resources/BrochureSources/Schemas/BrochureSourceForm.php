@@ -43,14 +43,18 @@ class BrochureSourceForm
                 ->required()
                 ->columnSpanFull()
                 ->maxLength(2000)
-                ->helperText(fn (Get $get) => $get('kind') === BrochureSource::KIND_NESTO
-                    ? 'https://admin.nestooffers.com/api/deal-of-the-week?store_id=…&location_id=… — the store and its location as nestooffers.com numbers them. Store 80, location 44 = offers for every UAE branch.'
-                    : null),
+                ->helperText(fn (Get $get) => match ($get('kind')) {
+                    BrochureSource::KIND_NESTO => 'https://admin.nestooffers.com/api/deal-of-the-week?store_id=…&location_id=… — the store and its location as nestooffers.com numbers them. Store 80, location 44 = offers for every UAE branch.',
+                    BrochureSource::KIND_WOWDEALS => 'The store\'s catalogue list, e.g. https://www.wowdeals.me/ae/carrefour/catalogs. Only for stores whose own flyers can\'t be fetched.',
+                    default => null,
+                }),
             TextInput::make('link_pattern')
                 ->label('Which links are flyers')
-                ->placeholder(BrochureSource::DEFAULT_PATTERN)
-                ->helperText('A regular expression matched against each link; empty = links ending in .pdf. E.g. "uploads/.*flyer.*\.pdf".')
-                ->visible(fn (Get $get) => $get('kind') === BrochureSource::KIND_PAGE)
+                ->placeholder(fn (Get $get) => $get('kind') === BrochureSource::KIND_WOWDEALS ? 'Every catalogue' : BrochureSource::DEFAULT_PATTERN)
+                ->helperText(fn (Get $get) => $get('kind') === BrochureSource::KIND_WOWDEALS
+                    ? 'A regular expression matched against each catalogue\'s address, to keep one region\'s, e.g. "abu-dhabi|al-ain".'
+                    : 'A regular expression matched against each link; empty = links ending in .pdf. E.g. "uploads/.*flyer.*\.pdf".')
+                ->visible(fn (Get $get) => in_array($get('kind'), [BrochureSource::KIND_PAGE, BrochureSource::KIND_WOWDEALS], true))
                 ->columnSpanFull(),
             Select::make('branch_ids')
                 ->label('Branches')
@@ -77,6 +81,7 @@ class BrochureSourceForm
             BrochureSource::KIND_PDF => 'A PDF link that stays the same',
             BrochureSource::KIND_PAGE => 'A page that links to the flyers',
             BrochureSource::KIND_NESTO => 'A Nesto store (nestooffers.com)',
+            BrochureSource::KIND_WOWDEALS => 'A store on WowDeals (third party, page pictures)',
         ];
     }
 

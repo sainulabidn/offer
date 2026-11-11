@@ -27,6 +27,9 @@ class BrochureSource extends Model
     /** One Nesto store on nestooffers.com (NestoOffers). */
     public const string KIND_NESTO = 'nesto';
 
+    /** A store on the third-party flyer site WowDeals, as page pictures (WowDealsCatalogs). */
+    public const string KIND_WOWDEALS = 'wowdeals';
+
     /** Links on a page that look like flyer PDFs, when the source sets no pattern. */
     public const string DEFAULT_PATTERN = '\.pdf($|[?#])';
 

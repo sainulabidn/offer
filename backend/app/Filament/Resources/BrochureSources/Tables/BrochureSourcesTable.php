@@ -130,6 +130,7 @@ class BrochureSourcesTable
         return match ($kind) {
             BrochureSource::KIND_PAGE => 'Page',
             BrochureSource::KIND_NESTO => 'Nesto',
+            BrochureSource::KIND_WOWDEALS => 'WowDeals',
             default => 'PDF',
         };
     }

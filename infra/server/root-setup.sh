@@ -131,13 +131,21 @@ if [[ ! -s "$KEY_FILE" ]]; then
 fi
 key="$(cat "$KEY_FILE")"
 mkdir -p "$TS_DATA"
-# Recreate when the image or key changed; otherwise just make sure it runs.
-current="$(docker inspect -f '{{.Config.Image}} {{join .Args " "}}' "$TS_NAME" 2>/dev/null || true)"
-if [[ "$current" != "$TS_IMAGE "*"--api-key $key"* ]]; then
+# The key reaches Typesense through a root-only env file, never the command line: arguments show in
+# `ps` to every account on this shared server. The file is also root's own copy of the master key,
+# which other apps on the server (the Lead10 CRM) depend on if this account is ever removed.
+TS_ENV="/etc/offer-typesense.env"
+(umask 077 && printf 'TYPESENSE_API_KEY=%s\nTYPESENSE_DATA_DIR=/data\nTYPESENSE_ENABLE_CORS=false\n' "$key" > "$TS_ENV")
+chown root:root "$TS_ENV"; chmod 600 "$TS_ENV"
+# Recreate when the image or key changed, or the key is still on the command line; otherwise just make sure it runs.
+ts_image="$(docker inspect -f '{{.Config.Image}}' "$TS_NAME" 2>/dev/null || true)"
+ts_args="$(docker inspect -f '{{join .Args " "}}' "$TS_NAME" 2>/dev/null || true)"
+ts_env_ok="$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$TS_NAME" 2>/dev/null | grep -cxF "TYPESENSE_API_KEY=$key" || true)"
+if [[ "$ts_image" != "$TS_IMAGE" || "$ts_args" == *"--api-key"* || "$ts_env_ok" != "1" ]]; then
     docker rm -f "$TS_NAME" >/dev/null 2>&1 || true
     docker run -d --name "$TS_NAME" --restart unless-stopped \
-        -p 127.0.0.1:8108:8108 -v "$TS_DATA:/data" \
-        "$TS_IMAGE" --data-dir /data --api-key "$key" --enable-cors=false >/dev/null
+        -p 127.0.0.1:8108:8108 -v "$TS_DATA:/data" --env-file "$TS_ENV" \
+        "$TS_IMAGE" >/dev/null
     note "started  $TS_NAME ($TS_IMAGE)"
 else
     docker start "$TS_NAME" >/dev/null 2>&1 || true

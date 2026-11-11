@@ -169,6 +169,35 @@ it('reads a Nesto store\'s offers with Nesto\'s own dates, and downloads each fl
     expect(collect(Http::recorded())->filter(fn (array $pair) => str_contains($pair[0]->url(), '/offers-pdf/'))->count())->toBe(2);
 });
 
+it('imports a WowDeals catalogue as page pictures, skipping expired ones and ones it has', function () {
+    $card = fn (string $slug, string $title, string $dates, string $label) => <<<HTML
+        <div class="product-name"> <a href="https://www.wowdeals.me/ae/carrefour/catalogs/{$slug}"> {$title} </a> </div>
+        <div class="price-box"> <span class="catalog-date"> {$dates} </span> <span class="label label-success">{$label}</span> </div>
+        HTML;
+    Http::fake([
+        '*/robots.txt' => Http::response('', 404),
+        'www.wowdeals.me/ae/carrefour/catalogs' => Http::response($card('better-value-3', 'Better Value Everyday', '10 Nov - 19 Nov', '17 Days left')
+            .$card('diwali-2', 'Diwali Deals', '10 Oct - 20 Oct', 'Expired')),
+        'www.wowdeals.me/ae/carrefour/catalogs/better-value-3' => Http::response(
+            '<img src="https://cdn.wowdeals.me/uploads/catalogues/issues/11/265394/1800x1800/0002.jpg"><img src="https://cdn.wowdeals.me/uploads/catalogues/issues/11/265394/1800x1800/0001.jpg">'
+            .'<img src="https://cdn.wowdeals.me/uploads/catalogues/issues/11/265394/cover/300x406/cover.jpg">'),
+        'cdn.wowdeals.me/uploads/catalogues/issues/11/265394/1800x1800/0001.jpg' => Http::response(FlyerPdf::jpeg('Page one')),
+        'cdn.wowdeals.me/uploads/catalogues/issues/11/265394/1800x1800/0002.jpg' => Http::response(FlyerPdf::jpeg('Page two')),
+    ]);
+    $source = ($this->source)(['kind' => BrochureSource::KIND_WOWDEALS, 'url' => 'https://www.wowdeals.me/ae/carrefour/catalogs']);
+
+    FetchBrochureSource::dispatchSync($source->id);
+    FetchBrochureSource::dispatchSync($source->id);
+
+    $brochure = Brochure::sole();
+    expect([$brochure->type, $brochure->getTranslation('title', 'en'), $brochure->valid_from->toDateString(), $brochure->valid_to->toDateString()])
+        ->toBe(['images', 'Better Value Everyday', '2026-11-10', '2026-11-19'])
+        ->and($brochure->pages()->count())->toBe(2)
+        ->and($brochure->brochure_source_id)->toBe($source->id)
+        ->and($source->fetches()->pluck('outcome')->all())->toBe(['unchanged', 'new']);
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), 'diwali-2'));
+});
+
 it('backs off after failures, alerts once after three, and says when it works again', function () {
     $up = false;
     Http::fake(function (Request $request) use (&$up) {

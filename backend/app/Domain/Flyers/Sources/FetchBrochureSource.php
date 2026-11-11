@@ -32,6 +32,9 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
     /** New links taken from a page per check (the newest flyers are usually listed first). */
     private const int LINKS_PER_CHECK = 5;
 
+    /** Flyers published as page pictures taken per check: each is many downloads. */
+    private const int PICTURE_FLYERS_PER_CHECK = 2;
+
     public int $tries = 1;
 
     public int $timeout = 120;
@@ -68,7 +71,9 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
                 $this->record($source, $source->url, 'unchanged');
             }
             foreach ($flyers as $flyer) {
-                $this->download($source, $flyer, $http, $start);
+                $source->kind === BrochureSource::KIND_WOWDEALS
+                    ? $this->downloadPictures($source, $flyer, (new WowDealsCatalogs)->pages($flyer, $http), $http, $start)
+                    : $this->download($source, $flyer, $http, $start);
             }
             $this->succeeded($source);
         } catch (FetchFailed $e) {
@@ -83,6 +88,9 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
         $this->allow($source->url, $http);
         if ($source->kind === BrochureSource::KIND_NESTO) {
             return (new NestoOffers)($source, $http);
+        }
+        if ($source->kind === BrochureSource::KIND_WOWDEALS) {
+            return (new WowDealsCatalogs)($source, $http);
         }
         [$response, $final] = $http->get($source->url);
         if (! $response->successful()) {
@@ -113,7 +121,7 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
             }
         }
 
-        return array_slice(array_values($fresh), 0, self::LINKS_PER_CHECK);
+        return array_slice(array_values($fresh), 0, $source->kind === BrochureSource::KIND_WOWDEALS ? self::PICTURE_FLYERS_PER_CHECK : self::LINKS_PER_CHECK);
     }
 
     private function download(BrochureSource $source, ListedFlyer $flyer, SourceFetcher $http, StartFlyerImport $start): void
@@ -157,24 +165,78 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
 
         $path = config('flyers.directory').'/incoming/'.Str::random(20).'.pdf';
         Storage::disk(config('flyers.disk'))->put($path, $bytes);
+        $brochure = $this->import($source, $flyer, [$path], $final, $start);
+        $this->record($source, $url, 'new', $response->status(), strlen($bytes), $hash, $brochure->id, ms: $ms);
+        $source->update([...$validators, 'last_hash' => $url === $source->url ? $hash : $source->last_hash, 'last_new_at' => now(), 'stale_alerted_at' => null]);
+    }
+
+    /**
+     * A flyer published as page pictures (WowDealsCatalogs): each page is downloaded and the set imported as
+     * one brochure; a set already imported comes back as that brochure (StartFlyerImport) and counts as known.
+     *
+     * @param  list<string>  $pages
+     */
+    private function downloadPictures(BrochureSource $source, ListedFlyer $flyer, array $pages, SourceFetcher $http, StartFlyerImport $start): void
+    {
+        if ($pages === []) {
+            throw new FetchFailed("No page pictures found for {$flyer->url}; the page may have changed.");
+        }
+        $disk = Storage::disk(config('flyers.disk'));
+        $started = hrtime(true);
+        $paths = [];
+        $bytes = 0;
         try {
-            $brochure = $start(null, $source->chain, [$path], array_map('intval', $source->branch_ids ?? []), [
+            foreach (array_slice($pages, 0, StartFlyerImport::MAX_IMAGES) as $i => $url) {
+                $this->allow($url, $http);
+                [$response] = $http->get($url);
+                $type = $response->successful() ? (@getimagesizefromstring($response->body())[2] ?? null) : null;
+                if (! in_array($type, [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
+                    throw new FetchFailed('Page '.($i + 1)." of {$flyer->url} did not return a picture (HTTP {$response->status()}).", $response->status());
+                }
+                $paths[] = $path = config('flyers.directory').'/incoming/'.Str::random(20).image_type_to_extension($type);
+                $disk->put($path, $response->body());
+                $bytes += strlen($response->body());
+            }
+        } catch (FetchFailed $e) {
+            $disk->delete($paths);
+            throw $e;
+        }
+        $ms = (int) ((hrtime(true) - $started) / 1_000_000);
+
+        $brochure = $this->import($source, $flyer, $paths, $flyer->url, $start);
+        $this->record($source, $flyer->url, $brochure->wasRecentlyCreated ? 'new' : 'duplicate', 200, $bytes, $brochure->file_hash, $brochure->id, ms: $ms);
+        if ($brochure->wasRecentlyCreated) {
+            $source->update(['last_new_at' => now(), 'stale_alerted_at' => null]);
+        }
+    }
+
+    /**
+     * Starts reading downloaded files (a PDF, or page pictures) as the system, with the store's title and dates.
+     *
+     * @param  list<string>  $paths
+     */
+    private function import(BrochureSource $source, ListedFlyer $flyer, array $paths, string $from, StartFlyerImport $start): Brochure
+    {
+        try {
+            $brochure = $start(null, $source->chain, $paths, array_map('intval', $source->branch_ids ?? []), [
                 'title' => $flyer->title ?? "{$source->name} ".now(config('app.market_timezone'))->format('j M Y'),
                 // Dates the store gives are kept as they are (FinishFlyer), so a flyer for next week waits until then.
                 'valid_from' => $flyer->validFrom,
                 'valid_to' => $flyer->validTo,
                 'source' => 'auto_fetch',
-                'source_url' => $final,
+                'source_url' => $from,
                 // Nobody is waiting for it: half price through the batch API (FlyerBatches).
                 'mode' => FlyerSettings::get('batch_for_sources') ? 'economy' : 'fast',
             ]);
         } catch (ValidationException $e) {
-            Storage::disk(config('flyers.disk'))->delete($path);
+            Storage::disk(config('flyers.disk'))->delete($paths);
             throw new FetchFailed('Downloaded, but not imported: '.collect($e->errors())->flatten()->first());
         }
-        $brochure->forceFill(['brochure_source_id' => $source->id])->save();
-        $this->record($source, $url, 'new', $response->status(), strlen($bytes), $hash, $brochure->id, ms: $ms);
-        $source->update([...$validators, 'last_hash' => $url === $source->url ? $hash : $source->last_hash, 'last_new_at' => now(), 'stale_alerted_at' => null]);
+        if ($brochure->wasRecentlyCreated) {
+            $brochure->forceFill(['brochure_source_id' => $source->id])->save();
+        }
+
+        return $brochure;
     }
 
     private function allow(string $url, SourceFetcher $http): void
