@@ -19,3 +19,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Claude Code personal settings
+.claude/settings.local.json
