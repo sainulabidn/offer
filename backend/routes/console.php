@@ -11,6 +11,8 @@ use App\Domain\Flyers\Ai\FlyerReaderManager;
 use App\Domain\Flyers\CostCalculator;
 use App\Domain\Flyers\EvaluateFlyerModel;
 use App\Domain\Flyers\FlyerBatches;
+use App\Domain\Flyers\ImportReviewedFlyer;
+use App\Domain\Flyers\ReviewedFlyerWorkspace;
 use App\Domain\Flyers\Sources\CheckSources;
 use App\Domain\Flyers\SweepFlyers;
 use App\Domain\Geo\ImportPlaceNames;
@@ -23,6 +25,7 @@ use App\Domain\Search\OfferDocument;
 use App\Domain\Search\RankSync;
 use App\Domain\Search\SearchKeys;
 use App\Domain\Search\Synonyms;
+use App\Models\User;
 use Database\Seeders\DemoCatalogSeeder;
 use Database\Seeders\DemoNearbySeeder;
 use Database\Seeders\DemoOffersSeeder;
@@ -162,6 +165,49 @@ Artisan::command('flyers:eval {brochures* : IDs of brochures whose items were re
         '$'.number_format($s['cost'], 4), $s['pages'] ? '$'.number_format($s['cost'] / $s['pages'], 5) : '—',
     ]]);
 })->purpose('Read reviewed flyers again with another AI model and score it against what reviewers accepted');
+
+Artisan::command('flyers:import-reviewed {manifests* : JSON manifests (see ImportReviewedFlyer)} {--user=1 : User recorded as uploader and reviewer} {--draft : Leave the offers as drafts instead of publishing}', function (ImportReviewedFlyer $import) {
+    $user = User::find($this->option('user'));
+    foreach ($this->argument('manifests') as $manifest) {
+        $this->line("<info>{$manifest}</info>");
+        try {
+            $s = $import($manifest, $user, fn (string $line) => $this->line("  {$line}"), publish: ! $this->option('draft'));
+        } catch (Throwable $e) {
+            $this->error('  '.$e->getMessage());
+
+            continue;
+        }
+        if ($s['skipped']) {
+            $this->warn("  Skipped: {$s['skipped']}");
+
+            continue;
+        }
+        $this->line("  Brochure {$s['brochure']->id}: {$s['items']} items, {$s['accepted']} accepted, {$s['created']} new products, {$s['photos']} photos, {$s['published']} published");
+        foreach ($s['problems'] as $problem) {
+            $this->warn("  - {$problem}");
+        }
+    }
+})->purpose('Import flyers whose offers were read outside the flyer AI (manifest JSON per flyer), creating missing products and publishing');
+
+Artisan::command('flyers:workspace-export {--active : Only active sources}', function (ReviewedFlyerWorkspace $workspace) {
+    $this->line(json_encode($workspace->export(! $this->option('active')), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+})->purpose('Print the flyer sources and the flyers already imported, as JSON for flyers:workspace-download');
+
+Artisan::command('flyers:workspace-download {export : JSON from flyers:workspace-export} {dir : Working folder} {--source=* : Only these source ids}', function (ReviewedFlyerWorkspace $workspace) {
+    $export = json_decode((string) file_get_contents($this->argument('export')), true, flags: JSON_THROW_ON_ERROR);
+    $dir = rtrim($this->argument('dir'), '/');
+    @mkdir($dir, 0777, true);
+    $folders = $workspace->download($export, $dir, array_map('intval', $this->option('source')), fn (string $line) => $this->line($line));
+    foreach ($folders as $folder) {
+        $this->line("  {$folder}: ".$workspace->render($folder).' pages rendered');
+    }
+})->purpose('Download every current flyer of the exported sources and render gridded pages to read (see ReviewedFlyerWorkspace)');
+
+Artisan::command('flyers:workspace-render {folders*}', function (ReviewedFlyerWorkspace $workspace) {
+    foreach ($this->argument('folders') as $folder) {
+        $this->line("{$folder}: ".$workspace->render(rtrim($folder, '/')).' pages');
+    }
+})->purpose('Render gridded pages and a manifest skeleton for flyer folders added by hand (flyer.json + files)');
 
 Artisan::command('demo:seed', function () {
     $this->call('db:seed', ['--class' => DemoCatalogSeeder::class, '--force' => true]);
