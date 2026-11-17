@@ -90,13 +90,13 @@ cacheFor(Astro.response.headers);
       <div class="flex flex-wrap gap-2">
         {itemKm ? (
           <a href="/?items=all" rel="nofollow" class="chip chip-on" aria-label={`Within ${itemKm} km. Remove this limit`}>
-            Within {itemKm} km <X class="size-4" aria-hidden="true" />
+            {itemKm} km <X class="size-4" aria-hidden="true" />
           </a>
         ) : place.at && (
           <a href={`/?items=${dir.settings.item_radius_default}`} rel="nofollow" class="chip">Limit to {dir.settings.item_radius_default} km</a>
         )}
-        <a href={`/?staff=${prefs.hideStaffOnly ? 1 : 0}`} rel="nofollow" role="checkbox" aria-checked={prefs.hideStaffOnly ? 'false' : 'true'} class:list={['chip', !prefs.hideStaffOnly && 'chip-on']}>
-          {prefs.hideStaffOnly ? <Square class="size-4" aria-hidden="true" /> : <SquareCheck class="size-4" aria-hidden="true" />} Include registered-customer offers
+        <a href={`/?staff=${prefs.hideStaffOnly ? 1 : 0}`} rel="nofollow" role="checkbox" aria-label="Include registered-customer offers" aria-checked={prefs.hideStaffOnly ? 'false' : 'true'} class:list={['chip', !prefs.hideStaffOnly && 'chip-on']}>
+          {prefs.hideStaffOnly ? <Square class="size-4" aria-hidden="true" /> : <SquareCheck class="size-4" aria-hidden="true" />} Customers
         </a>
       </div>
     </div>

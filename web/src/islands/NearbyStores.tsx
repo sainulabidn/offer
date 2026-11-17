@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrowLeftRight, ArrowRight, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { MAX_STORES, rankStores, type Point } from '@offer/rank';
-import { distanceLabel, initials, tintFor } from '../lib/format';
+import { distanceLabel } from '../lib/format';
 import type { Directory } from '../lib/near';
 import { personalStoreOrder } from '../lib/personal';
 import { savePrefs } from '../lib/places';
@@ -107,7 +107,7 @@ export default function NearbyStores({ stores: initial, title, at, radiusKm, rad
                 }}
                 className="chip cursor-pointer appearance-none pe-8 text-base md:text-sm"
               >
-                {choices.map((km) => <option key={km} value={km}>{`Within ${km} km`}</option>)}
+                {choices.map((km) => <option key={km} value={km}>{`${km} km`}</option>)}
                 <option value="custom">Custom…</option>
               </select>
               <ChevronDown className="pointer-events-none absolute end-2.5 top-1/2 size-4 -translate-y-1/2" aria-hidden="true" />
@@ -159,11 +159,8 @@ export default function NearbyStores({ stores: initial, title, at, radiusKm, rad
               <li key={store.id} className={`relative ${expanded ? '' : 'w-[11.5rem] md:w-auto'}`}>
                 <a
                   href={`/stores/${store.chainSlug}/${store.slug}`}
-                  className={`card flex h-[4.75rem] items-center gap-2.5 p-2.5 transition hover:border-primary ${comparing ? 'pe-10' : ''} ${ticked ? 'border-primary ring-2 ring-primary' : ''}`}
+                  className={`card flex h-[4.75rem] items-center p-2.5 ps-3 transition hover:border-primary ${comparing ? 'pe-10' : ''} ${ticked ? 'border-primary ring-2 ring-primary' : ''}`}
                 >
-                  {store.logo
-                    ? <img src={store.logo} alt="" loading="lazy" decoding="async" className="size-11 shrink-0 rounded-full bg-white object-contain" />
-                    : <span aria-hidden="true" className={`grid size-11 shrink-0 place-items-center rounded-full text-xs font-bold ${tintFor(store.chain)}`}>{initials(store.chain)}</span>}
                   <span className="min-w-0">
                     <span className="block truncate text-sm/tight font-semibold">{store.chain}</span>
                     <span className="block truncate text-xs text-muted">{store.name}</span>

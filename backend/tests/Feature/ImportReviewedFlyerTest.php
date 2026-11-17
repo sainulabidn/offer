@@ -76,6 +76,23 @@ it('imports a reviewed flyer: matches known packs, creates missing products with
     expect(app(ImportReviewedFlyer::class)($path, null, fn () => null)['skipped'])->toContain("brochure {$brochure->id}");
 });
 
+it('does not let one "1 pc" product match another that only looks alike', function () {
+    $fridge = fn (string $name, string $brand, float $price, array $box) => ['name' => $name, 'brand' => $brand, 'size' => '1 pc', 'price' => $price, 'promo' => 'price', 'box' => $box, 'sure' => 0.9,
+        'category' => 'Electronics & Appliances > Large Appliances', 'group' => 'Refrigerators'];
+    $path = ($this->manifest)([
+        $fridge('Toshiba Double Door Refrigerator GR-RT559 411L', 'Toshiba', 1599, [0, 0, 500, 500]),
+        $fridge('LG Double Door Refrigerator LTB452 342L', 'LG', 1749, [500, 0, 1000, 500]),
+        $fridge('Toshiba Double Door Refrigerator GR-RT559 411L', 'Toshiba', 1599, [0, 500, 500, 1000]),
+    ]);
+
+    $stats = app(ImportReviewedFlyer::class)($path, null, fn () => null);
+
+    expect($stats['created'])->toBe(2)
+        ->and($stats['accepted'])->toBe(3)
+        ->and(Product::where('slug', 'lg-double-door-refrigerator-ltb452-342l')->exists())->toBeTrue()
+        ->and($stats['brochure']->items()->pluck('product_variant_id')->unique())->toHaveCount(2);
+});
+
 it('reports items it cannot place and keeps the rest, from the command line', function () {
     $path = ($this->manifest)([
         ['name' => 'India Gate Classic Basmati Rice', 'brand' => 'India Gate', 'size' => '5 kg', 'price' => 39.95, 'promo' => 'price', 'box' => [0, 0, 500, 500], 'sure' => 0.95],

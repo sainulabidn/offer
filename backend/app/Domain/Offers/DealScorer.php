@@ -40,7 +40,8 @@ final class DealScorer
         $lowest = false;
         if ($current !== null && $unitPrices->isNotEmpty()) {
             $median = $unitPrices->median();
-            $score = $median > 0 ? round(($median - $current) / $median * 100, 2) : null;
+            // Clamped to the column (numeric 5,2): a pack priced far from its history must not break publishing.
+            $score = $median > 0 ? max(-999.99, min(999.99, round(($median - $current) / $median * 100, 2))) : null;
             $lowest = $current <= $unitPrices->first();
         }
 

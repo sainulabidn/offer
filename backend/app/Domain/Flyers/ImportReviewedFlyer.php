@@ -12,6 +12,7 @@ use App\Domain\Catalog\CatalogRowImporter;
 use App\Domain\Catalog\Category;
 use App\Domain\Catalog\GenerateImageSizes;
 use App\Domain\Catalog\PackSize;
+use App\Domain\Catalog\Product;
 use App\Domain\Catalog\ProductImage;
 use App\Domain\Catalog\ProductVariant;
 use App\Domain\Flyers\Ai\FlyerSchema;
@@ -23,8 +24,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use InvalidArgumentException;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -225,9 +226,11 @@ final class ImportReviewedFlyer
             try {
                 if (is_numeric($hint['variant_id'] ?? null) && ProductVariant::whereKey((int) $hint['variant_id'])->exists()) {
                     $item->update(['product_variant_id' => (int) $hint['variant_id'], 'match_method' => 'manual']);
-                } elseif ($item->product_variant_id === null) {
-                    $this->createProduct($item, $hint);
-                    $stats['created']++;
+                } elseif ($item->match_method === 'name' && ! $this->sameProduct($item, $hint)) {
+                    $item->update(['product_variant_id' => null, 'match_method' => null]);
+                }
+                if ($item->product_variant_id === null) {
+                    $stats['created'] += $this->createProduct($item, $hint) ? 1 : 0;
                 }
                 $item->refresh();
                 if ($item->regular_price !== null && (float) $item->regular_price <= (float) $item->price) {
@@ -250,9 +253,11 @@ final class ImportReviewedFlyer
         }
     }
 
-    private function createProduct(BrochureItem $item, array $hint): void
+    /** @return bool whether the product is new (a product of the same name gets the pack instead) */
+    private function createProduct(BrochureItem $item, array $hint): bool
     {
         $name = trim((string) ($hint['product'] ?? '')) ?: $item->name;
+        $isNew = ! Product::where('slug', Str::slug($name))->exists();
         $size = PackSize::parse($item->size_text) ?? PackSize::parse('1 pc');
         $category = $this->category((string) ($hint['category'] ?? '')
             ?: throw new InvalidArgumentException('no catalog match and no category hint'));
@@ -268,6 +273,39 @@ final class ImportReviewedFlyer
             'sold_by_weight' => $size->byWeight,
         ]);
         $item->update(['product_variant_id' => $variant->id, 'match_method' => 'created']);
+
+        return $isNew;
+    }
+
+    /**
+     * A fuzzy name match (VariantMatcher) is only trusted when it is plainly the same product: the same brand,
+     * the same numbers and model codes, and most words in common. Without this, "1 pc" goods match whatever
+     * similar thing exists ("LG Refrigerator LTB452" → "Toshiba Refrigerator GR-RT559"), since size can't tell them apart.
+     */
+    private function sameProduct(BrochureItem $item, array $hint): bool
+    {
+        $product = ProductVariant::with('product.brand')->find($item->product_variant_id)?->product;
+        if (! $product) {
+            return false;
+        }
+        $brand = fn (?string $name) => $name ? Str::slug($name) : null;
+        if ($brand($item->brand_text) !== $brand($product->brand?->getTranslation('name', 'en'))) {
+            return false;
+        }
+        $tokens = fn (string $s) => array_values(array_unique(array_filter(preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($s)))));
+        $mine = $tokens(trim((string) ($hint['product'] ?? '')) ?: $item->name);
+        $theirs = $tokens($product->getTranslation('name', 'en'));
+        $digits = fn (array $t) => array_values(array_filter($t, fn ($w) => preg_match('/\d/', $w)));
+        $a = $digits($mine);
+        $b = $digits($theirs);
+        sort($a);
+        sort($b);
+        if ($a !== $b) {
+            return false;
+        }
+        $union = count(array_unique([...$mine, ...$theirs]));
+
+        return $union > 0 && count(array_intersect($mine, $theirs)) / $union >= 0.7;
     }
 
     /** "Electronics > Mobile Phones": each level found by slug or name, else created under the one before. */
