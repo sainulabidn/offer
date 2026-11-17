@@ -1,7 +1,6 @@
 ---
 import { ArrowRight, LocateFixed, Square, SquareCheck, X } from 'lucide-react';
 import Base from '../layouts/Base.astro';
-import CategoryNav from '../components/CategoryNav.astro';
 import CompareTable from '../components/CompareTable.astro';
 import OfferGrid from '../components/OfferGrid.astro';
 import StoreFocus from '../components/StoreFocus.astro';
@@ -25,8 +24,7 @@ const stores = storesFor(dir, prefs);
 // A saved id can outlive its store; the page then treats it as not selected.
 const selected = storeCards(dir).filter((store) => prefs.stores.includes(store.id));
 
-const [categories, cheapest, ending, trendingIds] = await Promise.all([
-  api.categories(),
+const [cheapest, ending, trendingIds] = await Promise.all([
   cheapestNearby(dir, prefs, { perPage: 20 }),
   searchOffers({ sort: 'ending', perPage: 5, filters: staffFilters(prefs) }),
   api.trending(regionId(dir, prefs) ?? null),
@@ -58,8 +56,6 @@ cacheFor(Astro.response.headers);
       </button>
     </div>
   )}
-
-  <CategoryNav categories={categories} />
 
   <NearbyStores
     client:idle
