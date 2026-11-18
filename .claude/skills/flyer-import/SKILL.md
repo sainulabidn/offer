@@ -98,9 +98,16 @@ archive the brochure and import again). `--draft` leaves offers unpublished for 
 - Skip pages whose prices have already ended (day-only / 3-day deals); add `@<page>|from=…;until=…` for pages
   with shorter dates than the flyer. Check that the page image is current (Big Mart's hotoffers.pdf was a 2023
   flyer; Al Madina's offers page PDF was from 2025).
-- Chains with no branches on the site (seen 2026-11: Al Mushrif Coop, Hashim, Day to Day) import fine but
-  their offers show at no store until branches are added. Branch-specific flyers: set `branch_ids` (look the
-  branch up on live); Nesto store sources already carry theirs.
+- A store with no branches shows its offers nowhere: the website places offers by their brochure's branches.
+  Add branches to `backend/database/data/uae-branches-extra.json` (address from the flyer footer, lat/lng from
+  Nominatim, one request per second) and deploy: `retail:import-branches` adds them and attaches the store's
+  live brochures. Branch-specific flyers: set `branch_ids` (look the branch up on live); Nesto store sources
+  already carry theirs.
+- Source kinds for third-party flyer sites: `wowdeals` (www.wowdeals.me/ae/<store>/catalogs) and `d4d`
+  (d4donline.com/en/uae/<city>/offers/<store>-<id>, all UAE cities read). D4D returned HTTP 500 for every
+  page after ~50 quick requests in 2026-11; space requests out and retry later.
+- Sources are left inactive (`is_active=false`) on purpose: an active source is fetched on schedule and sent to
+  the flyer AI. This workflow lists them with `flyers:workspace-export` either way.
 - deploy.ps1's last step (Cloudflare Worker) failed with "No access" on the routes API in 2026-11: the git push
   to live (backend) had already happened, so server code was deployed.
 
