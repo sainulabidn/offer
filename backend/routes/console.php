@@ -197,6 +197,7 @@ Artisan::command('flyers:workspace-download {export : JSON from flyers:workspace
     $export = json_decode((string) file_get_contents($this->argument('export')), true, flags: JSON_THROW_ON_ERROR);
     $dir = rtrim($this->argument('dir'), '/');
     @mkdir($dir, 0777, true);
+    $dir = realpath($dir); // absolute: vipsthumbnail resolves a relative output path against the input's folder
     $folders = $workspace->download($export, $dir, array_map('intval', $this->option('source')), fn (string $line) => $this->line($line));
     foreach ($folders as $folder) {
         $this->line("  {$folder}: ".$workspace->render($folder).' pages rendered');
@@ -205,7 +206,7 @@ Artisan::command('flyers:workspace-download {export : JSON from flyers:workspace
 
 Artisan::command('flyers:workspace-render {folders*}', function (ReviewedFlyerWorkspace $workspace) {
     foreach ($this->argument('folders') as $folder) {
-        $this->line("{$folder}: ".$workspace->render(rtrim($folder, '/')).' pages');
+        $this->line("{$folder}: ".$workspace->render(realpath(rtrim($folder, '/')) ?: rtrim($folder, '/')).' pages');
     }
 })->purpose('Render gridded pages and a manifest skeleton for flyer folders added by hand (flyer.json + files)');
 
