@@ -131,6 +131,7 @@ class BrochureSourcesTable
             BrochureSource::KIND_PAGE => 'Page',
             BrochureSource::KIND_NESTO => 'Nesto',
             BrochureSource::KIND_WOWDEALS => 'WowDeals',
+            BrochureSource::KIND_D4D => 'D4D',
             default => 'PDF',
         };
     }

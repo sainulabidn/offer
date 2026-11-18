@@ -41,6 +41,8 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
 
     public int $uniqueFor = 600;
 
+    private WowDealsCatalogs|D4dOnlineFlyers|null $pictures = null;
+
     public function __construct(public int $sourceId)
     {
         $this->onConnection(config('flyers.queue_connection'));
@@ -71,8 +73,8 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
                 $this->record($source, $source->url, 'unchanged');
             }
             foreach ($flyers as $flyer) {
-                $source->kind === BrochureSource::KIND_WOWDEALS
-                    ? $this->downloadPictures($source, $flyer, (new WowDealsCatalogs)->pages($flyer, $http), $http, $start)
+                in_array($source->kind, BrochureSource::PICTURE_KINDS, true)
+                    ? $this->downloadPictures($source, $flyer, $this->picturesOf($source)->pages($flyer, $http), $http, $start)
                     : $this->download($source, $flyer, $http, $start);
             }
             $this->succeeded($source);
@@ -89,8 +91,8 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
         if ($source->kind === BrochureSource::KIND_NESTO) {
             return (new NestoOffers)($source, $http);
         }
-        if ($source->kind === BrochureSource::KIND_WOWDEALS) {
-            return (new WowDealsCatalogs)($source, $http);
+        if (in_array($source->kind, BrochureSource::PICTURE_KINDS, true)) {
+            return ($this->picturesOf($source))($source, $http);
         }
         [$response, $final] = $http->get($source->url);
         if (! $response->successful()) {
@@ -121,7 +123,7 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
             }
         }
 
-        return array_slice(array_values($fresh), 0, $source->kind === BrochureSource::KIND_WOWDEALS ? self::PICTURE_FLYERS_PER_CHECK : self::LINKS_PER_CHECK);
+        return array_slice(array_values($fresh), 0, in_array($source->kind, BrochureSource::PICTURE_KINDS, true) ? self::PICTURE_FLYERS_PER_CHECK : self::LINKS_PER_CHECK);
     }
 
     private function download(BrochureSource $source, ListedFlyer $flyer, SourceFetcher $http, StartFlyerImport $start): void
@@ -237,6 +239,12 @@ class FetchBrochureSource implements ShouldBeUnique, ShouldQueue
         }
 
         return $brochure;
+    }
+
+    /** The reader for a picture source; one per check, since D4D keeps the pages it read while listing. */
+    private function picturesOf(BrochureSource $source): WowDealsCatalogs|D4dOnlineFlyers
+    {
+        return $this->pictures ??= $source->kind === BrochureSource::KIND_D4D ? new D4dOnlineFlyers : new WowDealsCatalogs;
     }
 
     private function allow(string $url, SourceFetcher $http): void

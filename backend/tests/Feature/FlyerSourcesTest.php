@@ -198,6 +198,35 @@ it('imports a WowDeals catalogue as page pictures, skipping expired ones and one
     Http::assertNotSent(fn (Request $request) => str_contains($request->url(), 'diwali-2'));
 });
 
+it('imports a D4D Online flyer as page pictures from every UAE city of the store, skipping expired ones', function () {
+    $work = fn (string $name, array $images, string $published, string $expires) => '<script type="application/ld+json">'
+        .json_encode(['@context' => 'https://schema.org', '@type' => 'CreativeWork', 'name' => $name, 'image' => $images,
+            'author' => ['@type' => 'Organization', 'name' => 'Mark & Save'], 'datePublished' => $published, 'expires' => $expires])
+        .'</script>';
+    $base = 'd4donline.com/en/uae';
+    Http::fake([
+        '*/robots.txt' => Http::response('', 404),
+        "{$base}/dubai/offers/mark-save-3573" => Http::response('<a href="https://d4donline.com/en/uae/dubai/offers/mark-save-3573/802944/dubai-uae-mark-save-offers-al-warsan-dubai">x</a>'
+            .'<a href="https://d4donline.com/en/uae/dubai/offers/mark-save-3573/700001/dubai-uae-mark-save-offers-old">x</a>'),
+        "{$base}/sharjah/offers/mark-save-3573" => Http::response('<a href="https://d4donline.com/en/uae/sharjah/offers/mark-save-3573/802944/sharjah-uae-mark-save-offers-al-warsan-dubai">x</a>'),
+        "{$base}/*/offers/mark-save-3573" => Http::response('', 404),
+        "{$base}/dubai/offers/mark-save-3573/802944/*" => Http::response($work('Al Warsan - Dubai',
+            ['https://cdn.d4donline.com/u/d/26/10/24/p1.webp', 'https://cdn.d4donline.com/u/d/26/10/24/p2.webp'], '2026-10-23T03:13:00+00:00', '2026-10-30T19:59:00+00:00')),
+        "{$base}/dubai/offers/mark-save-3573/700001/*" => Http::response($work('Old', ['https://cdn.d4donline.com/u/old.webp'], '2026-10-01T03:00:00+00:00', '2026-10-05T19:59:00+00:00')),
+        'cdn.d4donline.com/u/d/26/10/24/p1.webp' => Http::response(FlyerPdf::jpeg('Page one')),
+        'cdn.d4donline.com/u/d/26/10/24/p2.webp' => Http::response(FlyerPdf::jpeg('Page two')),
+    ]);
+    $source = ($this->source)(['kind' => BrochureSource::KIND_D4D, 'url' => 'https://d4donline.com/en/uae/dubai/offers/mark-save-3573']);
+
+    FetchBrochureSource::dispatchSync($source->id);
+
+    $brochure = Brochure::sole();
+    expect([$brochure->type, $brochure->getTranslation('title', 'en'), $brochure->valid_from->toDateString(), $brochure->valid_to->toDateString()])
+        ->toBe(['images', 'Mark & Save - Al Warsan - Dubai', '2026-10-23', '2026-10-30'])
+        ->and($brochure->pages()->count())->toBe(2);
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), 'old.webp'));
+});
+
 it('backs off after failures, alerts once after three, and says when it works again', function () {
     $up = false;
     Http::fake(function (Request $request) use (&$up) {

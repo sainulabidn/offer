@@ -47,3 +47,20 @@ it('keeps branches staff edited, and only fills what they left empty', function 
         ->and($mine->fresh()->phone)->toBe($row['phone'])
         ->and(Branch::where('source_ref', "osm:{$row['osm']}")->count())->toBe(1);
 });
+
+it('adds the branches kept by hand, and attaches live brochures of stores that had none', function () {
+    $hashim = Chain::where('slug', 'hashim-hypermarket')->firstOrFail();
+    expect($hashim->branches()->count())->toBe(0);
+    $brochure = App\Domain\Brochures\Brochure::create([
+        'chain_id' => $hashim->id, 'title' => ['en' => 'Midweek'], 'slug' => 'midweek', 'type' => 'images',
+        'valid_from' => now()->toDateString(), 'valid_to' => now()->addDays(3)->toDateString(),
+        'status' => App\Domain\Brochures\BrochureStatus::Published,
+    ]);
+
+    app(ImportUaeBranches::class)();
+
+    $extra = collect(json_decode(file_get_contents(database_path('data/uae-branches-extra.json')), true)['branches'])->where('chain', 'hashim-hypermarket');
+    expect($hashim->branches()->count())->toBe($extra->count())
+        ->and($hashim->branches()->first()->source_ref)->toStartWith('extra:hashim-hyperma/')
+        ->and($brochure->branches()->count())->toBe($extra->count());
+});

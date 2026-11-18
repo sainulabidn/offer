@@ -30,6 +30,12 @@ class BrochureSource extends Model
     /** A store on the third-party flyer site WowDeals, as page pictures (WowDealsCatalogs). */
     public const string KIND_WOWDEALS = 'wowdeals';
 
+    /** A store on the third-party flyer site D4D Online, as page pictures (D4dOnlineFlyers). */
+    public const string KIND_D4D = 'd4d';
+
+    /** Kinds whose flyers are page pictures rather than a PDF. */
+    public const array PICTURE_KINDS = [self::KIND_WOWDEALS, self::KIND_D4D];
+
     /** Links on a page that look like flyer PDFs, when the source sets no pattern. */
     public const string DEFAULT_PATTERN = '\.pdf($|[?#])';
 

@@ -5,6 +5,7 @@ namespace App\Domain\Flyers;
 use App\Domain\Brochures\Brochure;
 use App\Domain\Brochures\BrochureStatus;
 use App\Domain\Flyers\Sources\BrochureSource;
+use App\Domain\Flyers\Sources\D4dOnlineFlyers;
 use App\Domain\Flyers\Sources\FetchFailed;
 use App\Domain\Flyers\Sources\ListedFlyer;
 use App\Domain\Flyers\Sources\NestoOffers;
@@ -30,6 +31,9 @@ final class ReviewedFlyerWorkspace
 {
     /** Same long edge as the server renders (FlyerSettings render_long_edge default). */
     private const int EDGE = 2000;
+
+    /** The picture-site reader of the source being downloaded (it may keep pages it read while listing). */
+    private WowDealsCatalogs|D4dOnlineFlyers|null $pictures = null;
 
     public function __construct(private readonly SourceFetcher $http, private readonly PdfTools $tools) {}
 
@@ -172,7 +176,8 @@ final class ReviewedFlyerWorkspace
         return match ($source->kind) {
             BrochureSource::KIND_PDF => [new ListedFlyer($source->url)],
             BrochureSource::KIND_NESTO => (new NestoOffers)($source, $this->http),
-            BrochureSource::KIND_WOWDEALS => (new WowDealsCatalogs)($source, $this->http),
+            BrochureSource::KIND_WOWDEALS => ($this->pictures = new WowDealsCatalogs)($source, $this->http),
+            BrochureSource::KIND_D4D => ($this->pictures = new D4dOnlineFlyers)($source, $this->http),
             default => $this->pageLinks($source),
         };
     }
@@ -196,8 +201,8 @@ final class ReviewedFlyerWorkspace
     private function fetchFiles(BrochureSource $source, ListedFlyer $flyer, string $folder): array
     {
         @mkdir($folder, 0777, true);
-        if ($source->kind === BrochureSource::KIND_WOWDEALS) {
-            $urls = array_slice((new WowDealsCatalogs)->pages($flyer, $this->http), 0, 40);
+        if (in_array($source->kind, BrochureSource::PICTURE_KINDS, true)) {
+            $urls = array_slice($this->pictures->pages($flyer, $this->http), 0, 40);
             if ($urls === []) {
                 throw new FetchFailed('No page pictures found.');
             }
