@@ -89,6 +89,21 @@ archive the brochure and import again). `--draft` leaves offers unpublished for 
 
 ## Notes
 
+- After a run, re-queue flyers with problems as `retry:<folder>` (after fixing hints in items.txt/manifest):
+  `--retry` only places items that weren't accepted. A unit the group doesn't compare (a loaf "1 pc" in
+  "Bread" per kg) goes to a sibling group automatically ("Bread (packs)").
+- Imports run detached on the server (`nohup`, `import.log`/`import.pid` in the flyer's folder); push.sh polls,
+  so a dropped SSH connection doesn't kill an import. If one dies half-way, delete that brochure (draft offers
+  only) and import again.
+- Skip pages whose prices have already ended (day-only / 3-day deals); add `@<page>|from=…;until=…` for pages
+  with shorter dates than the flyer. Check that the page image is current (Big Mart's hotoffers.pdf was a 2023
+  flyer; Al Madina's offers page PDF was from 2025).
+- Chains with no branches on the site (seen 2026-11: Al Mushrif Coop, Hashim, Day to Day) import fine but
+  their offers show at no store until branches are added. Branch-specific flyers: set `branch_ids` (look the
+  branch up on live); Nesto store sources already carry theirs.
+- deploy.ps1's last step (Cloudflare Worker) failed with "No access" on the routes API in 2026-11: the git push
+  to live (backend) had already happened, so server code was deployed.
+
 - Live cron runs `schedule:run` only on the 1st and 15th, so queued jobs (image sizes, alerts) barely run:
   the import does rendering and photo sizes itself.
 - Old offers end by date on their own; `offers:expire` tidies statuses.
