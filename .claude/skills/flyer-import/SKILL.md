@@ -49,6 +49,14 @@ Pages without offers can be left out. Per item (FlyerSchema keys + hints):
 - `box` should hug the product picture only (not the price tag): it is cropped as the product photo when the
   product has none, and highlighted on the review screen. Reading boxes straight off the raw page works too:
   the Read tool shows the picture's pixel size, so box = pixel / width (or height) × 1000.
+- Boxes are thousandths of the page, never pixels: on a 1200x1500 page a box at pixels 60–520 × 540–910 is
+  [50, 360, 433, 607]. Check the first box of every flyer against its picture.
+- Faster than JSON by hand: one line per item in `items.txt` and `items.php` (in this folder) builds the pages:
+  `page|name|brand|size|price|was|l,t,r,b|category|group|note|promo` (promo empty = was_now if a was price
+  is given, else price; `card_price` sets card). `@7|from=2026-11-18;until=2026-11-18` gives page 7 its own dates.
+  Run: `MSYS_NO_PATHCONV=1 docker run --rm -v "d:/offer:/repo" -w /repo offer-app:dev php .claude/skills/flyer-import/items.php <dir>/items.txt <dir>/manifest.json`
+- Imports take ~5 s per new product (photo); run `queue.sh <date>` once in the background and append folder
+  names to `<date>/queue.txt` as manifests are ready (one import at a time on the server).
 - The same catalogue for two regions (Lulu Abu Dhabi vs Dubai) usually shares layout but not prices: read each
   page, copy the manifest and change only the prices (`sed`), and compare page files with `md5sum` first.
 - `category`: an existing name (Fresh Food > Fruits & Vegetables, Meat & Poultry, Fish & Seafood, Dairy & Eggs,

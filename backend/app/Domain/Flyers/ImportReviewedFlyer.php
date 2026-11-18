@@ -6,6 +6,7 @@ use App\Domain\Brochures\Brochure;
 use App\Domain\Brochures\BrochureItem;
 use App\Domain\Brochures\BrochurePage;
 use App\Domain\Brochures\BrochureStatus;
+use App\Domain\Brochures\ItemStatus;
 use App\Domain\Brochures\PageStatus;
 use App\Domain\Brochures\PublishBrochure;
 use App\Domain\Catalog\CatalogRowImporter;
@@ -19,7 +20,10 @@ use App\Domain\Flyers\Ai\FlyerSchema;
 use App\Domain\Flyers\Ai\PageResult;
 use App\Domain\Flyers\Ai\TokenUsage;
 use App\Domain\Flyers\Sources\BrochureSource;
+use App\Domain\Offers\Offer;
+use App\Domain\Offers\OfferStatus;
 use App\Domain\Retail\Chain;
+use App\Domain\Search\OfferDocument;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -53,6 +57,9 @@ final class ImportReviewedFlyer
 
     public const string SOURCE = 'reviewed_import';
 
+    /** Suffix of the sibling group made when a group already compares another kind of unit. */
+    private const array DIMENSION_LABELS = ['mass' => 'by weight', 'volume' => 'by volume', 'count' => 'packs', 'length' => 'by length', 'sheets' => 'by sheet', 'washes' => 'by wash'];
+
     public function __construct(
         private readonly PdfTools $tools,
         private readonly ApplyPageResult $apply,
@@ -65,7 +72,7 @@ final class ImportReviewedFlyer
      * @param  callable(string): void  $log
      * @return array{brochure: ?Brochure, skipped: ?string, items: int, accepted: int, created: int, photos: int, published: int, problems: list<string>}
      */
-    public function __invoke(string $manifestPath, ?User $user, callable $log, bool $publish = true): array
+    public function __invoke(string $manifestPath, ?User $user, callable $log, bool $publish = true, bool $retry = false): array
     {
         $manifest = json_decode((string) file_get_contents($manifestPath), true, flags: JSON_THROW_ON_ERROR);
         $dir = dirname(realpath($manifestPath));
@@ -83,8 +90,11 @@ final class ImportReviewedFlyer
         $hash = $isPdf ? hash_file('sha256', $files[0]) : hash('sha256', implode('', array_map('hash_file', array_fill(0, count($files), 'sha256'), $files)));
         $existing = Brochure::where('chain_id', $chain->id)->where('file_hash', $hash)
             ->whereNotIn('status', [BrochureStatus::Rejected, BrochureStatus::Archived])->first();
+        if ($existing && $retry) {
+            return $this->retry($existing, $manifest, $user, $publish, $stats);
+        }
         if ($existing) {
-            $stats['skipped'] = "already imported as brochure {$existing->id} ({$existing->status->value})";
+            $stats['skipped'] = "already imported as brochure {$existing->id} ({$existing->status->value}); --retry places the items not accepted yet";
             $stats['brochure'] = $existing;
 
             return $stats;
@@ -219,7 +229,41 @@ final class ImportReviewedFlyer
         $page->update(['ai_output' => $result->toArray(), 'ai_status' => PageStatus::Done, 'ai_error' => null, 'extracted_at' => now(), 'ai_attempts' => 1]);
         ($this->apply)($page, $result);
 
+        $this->placeItems($page, $items, $user, $stats);
+    }
+
+    /**
+     * An imported flyer again: its items not accepted yet (a missing category hint, a unit the group didn't take…)
+     * are placed from the manifest's corrected hints and published. Accepted items are left alone.
+     */
+    private function retry(Brochure $brochure, array $manifest, ?User $user, bool $publish, array $stats): array
+    {
+        $stats['brochure'] = $brochure;
+        $byNo = collect($manifest['pages'] ?? [])->keyBy(fn ($p) => (int) ($p['page'] ?? 0));
+        foreach ($brochure->pages()->orderBy('page_no')->get() as $page) {
+            if (($data = $byNo->get($page->page_no)) === null) {
+                continue;
+            }
+            $items = array_values(array_filter((array) ($data['items'] ?? []), fn ($i) => is_array($i)
+                && trim((string) ($i['name'] ?? '')) !== '' && is_numeric($i['price'] ?? null) && (float) $i['price'] > 0));
+            $this->placeItems($page, $items, $user, $stats, onlyOpen: true);
+        }
+        $pending = $brochure->offers()->whereIn('status', [OfferStatus::Draft, OfferStatus::Approved])->get();
+        if ($publish && $pending->isNotEmpty()) {
+            $stats['published'] = $this->publish->publishOffers($brochure, $pending);
+            Offer::syncSearch(Offer::query()->whereKey($pending->modelKeys())->with(OfferDocument::RELATIONS)->get());
+        }
+
+        return $stats;
+    }
+
+    /** @param  list<array>  $items  the page's manifest items, by position */
+    private function placeItems(BrochurePage $page, array $items, ?User $user, array &$stats, bool $onlyOpen = false): void
+    {
         foreach ($page->items()->orderBy('position')->get() as $item) {
+            if ($onlyOpen && $item->status === ItemStatus::Accepted) {
+                continue;
+            }
             $hint = $items[$item->position] ?? [];
             $label = "p{$page->page_no} #{$item->position} {$item->name}";
             $stats['items']++;
@@ -261,9 +305,10 @@ final class ImportReviewedFlyer
         $size = PackSize::parse($item->size_text) ?? PackSize::parse('1 pc');
         $category = $this->category((string) ($hint['category'] ?? '')
             ?: throw new InvalidArgumentException('no catalog match and no category hint'));
-        $variant = $this->catalog->import([
+        $group = trim((string) ($hint['group'] ?? '')) ?: $category->getTranslation('name', 'en');
+        $row = [
             'category' => $category->slug,
-            'product_group' => trim((string) ($hint['group'] ?? '')) ?: $category->getTranslation('name', 'en'),
+            'product_group' => $group,
             'brand' => $item->brand_text,
             'product_name' => $name,
             'product_name_ar' => $item->name_ar,
@@ -271,7 +316,16 @@ final class ImportReviewedFlyer
             'unit_qty' => $size->unitQty,
             'unit' => $size->unit->code,
             'sold_by_weight' => $size->byWeight,
-        ]);
+        ];
+        try {
+            $variant = $this->catalog->import($row);
+        } catch (InvalidArgumentException $e) {
+            // The group already compares another unit ("Bread" per kg, this loaf per piece): a sibling group for this one.
+            if (! str_contains($e->getMessage(), 'does not match group')) {
+                throw $e;
+            }
+            $variant = $this->catalog->import([...$row, 'product_group' => $group.' ('.self::DIMENSION_LABELS[$size->unit->dimension->value].')']);
+        }
         $item->update(['product_variant_id' => $variant->id, 'match_method' => 'created']);
 
         return $isNew;

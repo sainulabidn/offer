@@ -166,12 +166,12 @@ Artisan::command('flyers:eval {brochures* : IDs of brochures whose items were re
     ]]);
 })->purpose('Read reviewed flyers again with another AI model and score it against what reviewers accepted');
 
-Artisan::command('flyers:import-reviewed {manifests* : JSON manifests (see ImportReviewedFlyer)} {--user=1 : User recorded as uploader and reviewer} {--draft : Leave the offers as drafts instead of publishing}', function (ImportReviewedFlyer $import) {
+Artisan::command('flyers:import-reviewed {manifests* : JSON manifests (see ImportReviewedFlyer)} {--user=1 : User recorded as uploader and reviewer} {--draft : Leave the offers as drafts instead of publishing} {--retry : For a flyer already imported, place the items not accepted yet}', function (ImportReviewedFlyer $import) {
     $user = User::find($this->option('user'));
     foreach ($this->argument('manifests') as $manifest) {
         $this->line("<info>{$manifest}</info>");
         try {
-            $s = $import($manifest, $user, fn (string $line) => $this->line("  {$line}"), publish: ! $this->option('draft'));
+            $s = $import($manifest, $user, fn (string $line) => $this->line("  {$line}"), publish: ! $this->option('draft'), retry: (bool) $this->option('retry'));
         } catch (Throwable $e) {
             $this->error('  '.$e->getMessage());
 

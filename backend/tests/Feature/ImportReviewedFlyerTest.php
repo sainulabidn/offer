@@ -93,6 +93,31 @@ it('does not let one "1 pc" product match another that only looks alike', functi
         ->and($stats['brochure']->items()->pluck('product_variant_id')->unique())->toHaveCount(2);
 });
 
+it('puts a pack in a sibling group when the group compares another unit, and retries what it could not place', function () {
+    $rice = fn (array $extra = []) => ['name' => 'Gift Rice Hamper', 'size' => '1 pc', 'price' => 49, 'promo' => 'price', 'box' => [0, 0, 500, 500], 'sure' => 0.9, ...$extra];
+    $path = ($this->manifest)([
+        $rice(['category' => 'Rice & Grains', 'group' => 'Basmati Rice']),
+        ['name' => 'Mystery Item', 'size' => '1 pc', 'price' => 5, 'promo' => 'price', 'box' => [500, 500, 1000, 1000], 'sure' => 0.9],
+    ]);
+
+    $first = app(ImportReviewedFlyer::class)($path, null, fn () => null);
+
+    expect($first['accepted'])->toBe(1)
+        ->and(Product::where('slug', 'gift-rice-hamper')->first()->productGroup->getTranslation('name', 'en'))->toBe('Basmati Rice (packs)');
+
+    // The manifest gets the missing hint; --retry places only that item.
+    $path = ($this->manifest)([
+        $rice(['category' => 'Rice & Grains', 'group' => 'Basmati Rice']),
+        ['name' => 'Mystery Item', 'size' => '1 pc', 'price' => 5, 'promo' => 'price', 'box' => [500, 500, 1000, 1000], 'sure' => 0.9, 'category' => 'Snacks & Sweets', 'group' => 'Candy'],
+    ]);
+    $again = app(ImportReviewedFlyer::class)($path, null, fn () => null, retry: true);
+
+    expect($again['items'])->toBe(1)
+        ->and($again['accepted'])->toBe(1)
+        ->and($again['published'])->toBe(1)
+        ->and($first['brochure']->offers()->where('status', OfferStatus::Published)->count())->toBe(2);
+});
+
 it('reports items it cannot place and keeps the rest, from the command line', function () {
     $path = ($this->manifest)([
         ['name' => 'India Gate Classic Basmati Rice', 'brand' => 'India Gate', 'size' => '5 kg', 'price' => 39.95, 'promo' => 'price', 'box' => [0, 0, 500, 500], 'sure' => 0.95],
